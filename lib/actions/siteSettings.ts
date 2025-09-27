@@ -8,7 +8,7 @@ import { updateSiteSettingsSchema } from '../validators';
 export async function updateSiteSettings(formData: FormData) {
   const json = Object.fromEntries(formData.entries());
   const schedule = json.schedule_json ? JSON.parse((json.schedule_json as string) || '[]') : null;
-  const gallery = json.gallery_json ? JSON.parse((json.gallery_json as string) || '[]') : null;
+  const extras = json.gallery_json ? JSON.parse((json.gallery_json as string) || '{}') : null;
 
   const payload = {
     hero_title: json.hero_title,
@@ -17,7 +17,7 @@ export async function updateSiteSettings(formData: FormData) {
     location: json.location || null,
     about_html: json.about_html || null,
     schedule_json: schedule,
-    gallery_json: gallery
+    gallery_json: extras
   };
 
   const parsed = updateSiteSettingsSchema.safeParse(payload);

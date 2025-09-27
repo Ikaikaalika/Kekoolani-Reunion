@@ -42,7 +42,7 @@ export default function GalleryUploader({ onUploaded }: GalleryUploaderProps) {
   };
 
   const copySnippet = async (url: string) => {
-    const snippet = JSON.stringify({ src: url, alt: '' });
+    const snippet = url;
     try {
       await navigator.clipboard.writeText(snippet);
     } catch (err) {
@@ -56,6 +56,7 @@ export default function GalleryUploader({ onUploaded }: GalleryUploaderProps) {
         <h3 className="text-lg font-semibold text-slate-900">Upload to Gallery</h3>
         <p className="text-sm text-slate-600">
           Upload images to Vercel Blob storage. Uploaded URLs are automatically added to your gallery list below.
+          You can also copy an image URL to reuse elsewhere.
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-3">
@@ -82,7 +83,7 @@ export default function GalleryUploader({ onUploaded }: GalleryUploaderProps) {
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-slate-500">{(item.size / 1024).toFixed(1)} KB</span>
                   <Button type="button" size="sm" variant="secondary" onClick={() => copySnippet(item.url)}>
-                    Copy JSON
+                    Copy Image URL
                   </Button>
                 </div>
               </div>
