@@ -6,49 +6,8 @@ export const updateSiteSettingsSchema = z.object({
   event_dates: z.string().optional().nullable(),
   location: z.string().optional().nullable(),
   about_html: z.string().optional().nullable(),
-  schedule_json: z
-    .array(
-      z.object({
-        time: z.string(),
-        title: z.string(),
-        items: z.array(z.string()).optional(),
-        description: z.string().optional().nullable()
-      })
-    )
-    .optional()
-    .nullable(),
-  gallery_json: z
-    .object({
-      gallery: z
-        .array(
-          z.object({
-            src: z.string(),
-            alt: z.string().optional().nullable()
-          })
-        )
-        .optional(),
-      purpose: z.array(z.string()).optional(),
-      costs: z
-        .array(
-          z.object({
-            label: z.string(),
-            detail: z.string()
-          })
-        )
-        .optional(),
-      logistics: z.array(z.string()).optional(),
-      committees: z
-        .array(
-          z.object({
-            name: z.string(),
-            leads: z.string(),
-            notes: z.string().optional().nullable()
-          })
-        )
-        .optional()
-    })
-    .optional()
-    .nullable()
+  schedule_json: z.any().optional().nullable(),
+  gallery_json: z.any().optional().nullable()
 });
 
 export const ticketTypeSchema = z.object({
