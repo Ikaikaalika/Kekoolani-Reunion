@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { createSupabaseServerClient } from '@/lib/supabaseClient';
 import { formatCurrency } from '@/lib/utils';
 import { parseSchedule, parseExtras, SITE_DEFAULTS, DEFAULT_EXTRAS } from '@/lib/siteContent';
+import { normalizeSectionList } from '@/lib/sections';
+import SectionRenderer from '@/components/public/SectionRenderer';
 import type { Database } from '@/types/supabase';
 
 type TicketRow = Database['public']['Tables']['ticket_types']['Row'];
@@ -11,13 +13,19 @@ type SiteSettingsRow = Database['public']['Tables']['site_settings']['Row'];
 async function getSiteContent() {
   const supabase = createSupabaseServerClient();
 
-  const [siteRes, ticketRes] = await Promise.all([
+  const [siteRes, ticketRes, sectionRes] = await Promise.all([
     supabase.from('site_settings').select('*').limit(1).maybeSingle(),
     supabase
       .from('ticket_types')
       .select('*')
       .eq('active', true)
+      .order('position', { ascending: true }),
+    supabase
+      .from('content_sections')
+      .select('*')
+      .eq('published', true)
       .order('position', { ascending: true })
+      .order('created_at', { ascending: true })
   ]);
 
   const tickets = ((ticketRes.data ?? []) as TicketRow[]).map((ticket) => ({
@@ -34,25 +42,51 @@ async function getSiteContent() {
     about_html:
       "<p>At our August 23, 2025 planning meeting we affirmed the purpose of this reunion: to mahalo our parents and grandparents for teaching us aloha ʻohana, to connect the next generation to our roots, and to ensure the Kekoʻolani story continues. ʻHonoring our kūpuna, Celebrating our Future. E ola mau ka ʻohana Kekoʻolani. E hoʻomau i ke aloha o nā kūpuna.ʽ</p><p>The hui confirmed July 10–12, 2026 for our gathering in Hilo with a three-day flow of genealogy talk story, huakaʻi to Waipiʻo and family graves, and a lūʻau evening at The Arc. Committees were formed for registration, hale set-up, hō‘ike program, meals, genealogy archiving, and more. Mahalo nui to everyone who offered kōkua—see the committee roster below for ways to plug in.</p>",
     schedule_json: SITE_DEFAULTS.schedule,
-    gallery_json: DEFAULT_EXTRAS
+    gallery_json: DEFAULT_EXTRAS,
+    show_schedule: true,
+    show_gallery: true,
+    show_purpose: true,
+    show_costs: true,
+    show_logistics: true,
+    show_committees: true
   } as const;
 
   const siteRecord = siteRes.data as SiteSettingsRow | null;
-  const site = siteRecord ? { ...defaults, ...siteRecord } : defaults;
+  const site = siteRecord
+    ? {
+        ...defaults,
+        ...siteRecord,
+        show_schedule: siteRecord.show_schedule ?? true,
+        show_gallery: siteRecord.show_gallery ?? true,
+        show_purpose: siteRecord.show_purpose ?? true,
+        show_costs: siteRecord.show_costs ?? true,
+        show_logistics: siteRecord.show_logistics ?? true,
+        show_committees: siteRecord.show_committees ?? true
+      }
+    : defaults;
 
   const scheduleEntries = parseSchedule(site.schedule_json);
   const extras = parseExtras(site.gallery_json);
+  const sections = normalizeSectionList(sectionRes.data ?? []);
 
-  return { site, tickets, scheduleEntries, extras };
+  return { site, tickets, scheduleEntries, extras, sections };
 }
 
 export default async function HomePage() {
-  const { site, tickets, scheduleEntries, extras } = await getSiteContent();
+  const { site, tickets, scheduleEntries, extras, sections } = await getSiteContent();
   const galleryItems = extras.gallery;
   const purposePoints = extras.purpose;
   const costOutline = extras.costs;
   const logisticsNotes = extras.logistics;
   const committees = extras.committees;
+
+  const showSchedule = site.show_schedule && scheduleEntries.length > 0;
+  const showGallery = site.show_gallery && galleryItems.length > 0;
+  const showPurpose = site.show_purpose && purposePoints.length > 0;
+  const showCosts = site.show_costs && costOutline.length > 0;
+  const showLogistics = site.show_logistics && logisticsNotes.length > 0;
+  const showCommittees = site.show_committees && committees.length > 0;
+  const aboutGridCols = showGallery ? 'md:grid-cols-[3fr,2fr]' : 'md:grid-cols-1';
 
   return (
     <div>
@@ -83,12 +117,14 @@ export default async function HomePage() {
                   Kākau ʻOhana
                 </span>
               </Link>
-              <a
-                href="#schedule"
-                className="inline-flex items-center text-sm font-semibold text-ocean-600 hover:text-ocean-700"
-              >
-                ʻIke i ka Papa Kau
-              </a>
+              {showSchedule ? (
+                <a
+                  href="#schedule"
+                  className="inline-flex items-center text-sm font-semibold text-ocean-600 hover:text-ocean-700"
+                >
+                  ʻIke i ka Papa Kau
+                </a>
+              ) : null}
             </div>
           </div>
           <div className="md:w-2/5">
@@ -118,117 +154,133 @@ export default async function HomePage() {
       </section>
 
       <section id="about" className="mx-auto max-w-5xl px-6 py-20">
-        <div className="grid gap-12 md:grid-cols-[3fr,2fr] md:items-start">
+        <div className={`grid gap-12 ${aboutGridCols} md:items-start`}>
           <div className="space-y-8">
             <article
               className="prose prose-lg prose-slate max-w-none text-slate-700"
               dangerouslySetInnerHTML={{ __html: site.about_html ?? '' }}
             />
-            <div>
-              <h3 className="text-sm uppercase tracking-[0.35em] text-fern-600">Nā Kuleana Nui</h3>
-              <ul className="mt-4 space-y-2 rounded-3xl border border-fern-100 bg-white/80 p-6 text-sm text-slate-700 shadow-sm">
-                {purposePoints.map((point) => (
-                  <li key={point} className="flex items-start gap-3">
-                    <span className="mt-1 inline-flex h-2 w-2 flex-none rounded-full bg-fern-400" />
-                    <span>{point}</span>
-                  </li>
-                ))}
-              </ul>
+            {showPurpose ? (
+              <div>
+                <h3 className="text-sm uppercase tracking-[0.35em] text-fern-600">Nā Kuleana Nui</h3>
+                <ul className="mt-4 space-y-2 rounded-3xl border border-fern-100 bg-white/80 p-6 text-sm text-slate-700 shadow-sm">
+                  {purposePoints.map((point) => (
+                    <li key={point} className="flex items-start gap-3">
+                      <span className="mt-1 inline-flex h-2 w-2 flex-none rounded-full bg-fern-400" />
+                      <span>{point}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+          {showGallery ? (
+            <div className="grid gap-4">
+              {galleryItems.slice(0, 3).map((item, idx) => (
+                <div key={idx} className="relative overflow-hidden rounded-3xl border border-white/50 bg-white/70 shadow-lg">
+                  <img src={item.src} alt={item.alt ?? 'Reunion photo'} className="h-48 w-full object-cover" />
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </section>
+
+      {showSchedule ? (
+        <section id="schedule" className="bg-white/70 py-20">
+          <div className="mx-auto max-w-5xl px-6">
+            <div className="mb-12 text-center">
+              <span className="text-xs uppercase tracking-[0.3em] text-ocean-600">Weekend Flow</span>
+              <h2 className="mt-3 text-3xl font-semibold text-slate-900">Tentative Schedule</h2>
+              <p className="mt-2 text-sm text-slate-600">
+                Times & locations may shift slightly as we confirm partners.
+              </p>
+            </div>
+            <div className="grid gap-6">
+              {scheduleEntries.map((entry, idx) => {
+                const agenda = Array.isArray(entry.items) && entry.items.length ? entry.items : [];
+                const fallbackDescription = !agenda.length && entry.description ? entry.description : null;
+
+                return (
+                  <div
+                    key={`${entry.time}-${idx}`}
+                    className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                  >
+                    <p className="text-xs uppercase tracking-[0.2em] text-ocean-500">{entry.time}</p>
+                    <h3 className="mt-3 text-xl font-semibold text-slate-900">{entry.title}</h3>
+                    {agenda.length > 0 ? (
+                      <ul className="mt-3 space-y-2 text-sm text-slate-600">
+                        {agenda.map((item) => (
+                          <li key={item} className="flex items-start gap-3">
+                            <span className="mt-1 inline-flex h-1.5 w-1.5 flex-none rounded-full bg-lava-400" />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : fallbackDescription ? (
+                      <p className="mt-2 text-sm text-slate-600">{fallbackDescription}</p>
+                    ) : null}
+                  </div>
+                );
+              })}
             </div>
           </div>
-          <div className="grid gap-4">
-            {galleryItems.slice(0, 3).map((item, idx) => (
-              <div key={idx} className="relative overflow-hidden rounded-3xl border border-white/50 bg-white/70 shadow-lg">
-                <img src={item.src} alt={item.alt ?? 'Reunion photo'} className="h-48 w-full object-cover" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
-      <section id="schedule" className="bg-white/70 py-20">
-        <div className="mx-auto max-w-5xl px-6">
+      {showCosts || showLogistics ? (
+        <section id="logistics" className="mx-auto max-w-5xl px-6 py-20">
           <div className="mb-12 text-center">
-            <span className="text-xs uppercase tracking-[0.3em] text-ocean-600">Weekend Flow</span>
-            <h2 className="mt-3 text-3xl font-semibold text-slate-900">Tentative Schedule</h2>
+            <span className="text-xs uppercase tracking-[0.3em] text-sand-600">Kālena & Kālā</span>
+            <h2 className="mt-3 text-3xl font-semibold text-slate-900">Reunion Logistics</h2>
             <p className="mt-2 text-sm text-slate-600">
-              Times & locations may shift slightly as we confirm partners.
+              We are keeping registrations as affordable as possible. Mahalo for kōkua with supplies, set-up, and hale hospitality.
             </p>
           </div>
-          <div className="grid gap-6">
-            {scheduleEntries.map((entry, idx) => {
-              const agenda = Array.isArray(entry.items) && entry.items.length ? entry.items : [];
-              const fallbackDescription = !agenda.length && entry.description ? entry.description : null;
+          <div className={`grid gap-8 ${showCosts && showLogistics ? 'md:grid-cols-2' : 'md:grid-cols-1'}`}>
+            {showCosts ? (
+              <div className="rounded-3xl border border-white/60 bg-white/90 p-6 shadow">
+                <h3 className="font-serif text-2xl text-lava-600">Investment per ʻOhana</h3>
+                <ul className="mt-4 space-y-3 text-sm text-slate-700">
+                  {costOutline.map((item) => (
+                    <li key={item.label}>
+                      <p className="font-semibold text-slate-900">{item.label}</p>
+                      <p>{item.detail}</p>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-4 text-xs uppercase tracking-[0.25em] text-slate-500">
+                  Additional kōkua and donations welcome for venue rentals & supplies.
+                </p>
+              </div>
+            ) : null}
+            {showLogistics ? (
+              <div className="rounded-3xl border border-fern-100 bg-gradient-to-br from-fern-50/70 to-sand-50/80 p-6 shadow">
+                <h3 className="font-serif text-2xl text-fern-700">Logistics & Kōkua</h3>
+                <ul className="mt-4 space-y-3 text-sm text-slate-700">
+                  {logisticsNotes.map((note) => (
+                    <li key={note} className="flex items-start gap-3">
+                      <span className="mt-1 inline-flex h-2 w-2 flex-none rounded-full bg-fern-500" />
+                      <span>{note}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-4 text-sm text-slate-600">
+                  Need kōkua or have updates before the next planning hui (Sept 20, 2025 @ 10:30am)? Contact Jade directly at{' '}
+                  <a href="mailto:pumehanasilva@mac.com" className="text-ocean-600 underline">
+                    pumehanasilva@mac.com
+                  </a>{' '}
+                  or 808-895-6883.
+                </p>
+              </div>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
 
-              return (
-                <div
-                  key={`${entry.time}-${idx}`}
-                  className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-                >
-                  <p className="text-xs uppercase tracking-[0.2em] text-ocean-500">{entry.time}</p>
-                  <h3 className="mt-3 text-xl font-semibold text-slate-900">{entry.title}</h3>
-                  {agenda.length > 0 ? (
-                    <ul className="mt-3 space-y-2 text-sm text-slate-600">
-                      {agenda.map((item) => (
-                        <li key={item} className="flex items-start gap-3">
-                          <span className="mt-1 inline-flex h-1.5 w-1.5 flex-none rounded-full bg-lava-400" />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : fallbackDescription ? (
-                    <p className="mt-2 text-sm text-slate-600">{fallbackDescription}</p>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section id="logistics" className="mx-auto max-w-5xl px-6 py-20">
-        <div className="mb-12 text-center">
-          <span className="text-xs uppercase tracking-[0.3em] text-sand-600">Kālena & Kālā</span>
-          <h2 className="mt-3 text-3xl font-semibold text-slate-900">Reunion Logistics</h2>
-          <p className="mt-2 text-sm text-slate-600">
-            We are keeping registrations as affordable as possible. Mahalo for kōkua with supplies, set-up, and hale hospitality.
-          </p>
-        </div>
-        <div className="grid gap-8 md:grid-cols-2">
-          <div className="rounded-3xl border border-white/60 bg-white/90 p-6 shadow">
-            <h3 className="font-serif text-2xl text-lava-600">Investment per ʻOhana</h3>
-            <ul className="mt-4 space-y-3 text-sm text-slate-700">
-              {costOutline.map((item) => (
-                <li key={item.label}>
-                  <p className="font-semibold text-slate-900">{item.label}</p>
-                  <p>{item.detail}</p>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-4 text-xs uppercase tracking-[0.25em] text-slate-500">
-              Additional kōkua and donations welcome for venue rentals & supplies.
-            </p>
-          </div>
-          <div className="rounded-3xl border border-fern-100 bg-gradient-to-br from-fern-50/70 to-sand-50/80 p-6 shadow">
-            <h3 className="font-serif text-2xl text-fern-700">Logistics & Kōkua</h3>
-            <ul className="mt-4 space-y-3 text-sm text-slate-700">
-              {logisticsNotes.map((note) => (
-                <li key={note} className="flex items-start gap-3">
-                  <span className="mt-1 inline-flex h-2 w-2 flex-none rounded-full bg-fern-500" />
-                  <span>{note}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-4 text-sm text-slate-600">
-              Need kōkua or have updates before the next planning hui (Sept 20, 2025 @ 10:30am)? Contact Jade directly at{' '}
-              <a href="mailto:pumehanasilva@mac.com" className="text-ocean-600 underline">
-                pumehanasilva@mac.com
-              </a>{' '}
-              or 808-895-6883.
-            </p>
-          </div>
-        </div>
-      </section>
+      {sections.map((section) => (
+        <SectionRenderer key={section.id} section={section} />
+      ))}
 
       <section id="tickets" className="mx-auto max-w-5xl px-6 py-20">
         <div className="mb-12 text-center">
@@ -266,58 +318,29 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section id="committees" className="bg-white/70 py-20">
-        <div className="mx-auto max-w-6xl px-6">
-          <div className="mb-12 text-center">
-            <span className="text-xs uppercase tracking-[0.3em] text-lava-500">Kōmike & Kōkua</span>
-            <h2 className="mt-3 text-3xl font-semibold text-slate-900">Meet the Planning Committees</h2>
-            <p className="mt-2 text-sm text-slate-600">
-              Mahalo to the ʻohana stepping forward. If you feel called to help, reach out to the committee leads.
-            </p>
+      {showCommittees ? (
+        <section id="committees" className="bg-white/70 py-20">
+          <div className="mx-auto max-w-6xl px-6">
+            <div className="mb-12 text-center">
+              <span className="text-xs uppercase tracking-[0.3em] text-lava-500">Kōmike & Kōkua</span>
+              <h2 className="mt-3 text-3xl font-semibold text-slate-900">Meet the Planning Committees</h2>
+              <p className="mt-2 text-sm text-slate-600">
+                Mahalo to the ʻohana stepping forward. If you feel called to help, reach out to the committee leads.
+              </p>
+            </div>
+            <div className="grid gap-6 md:grid-cols-2">
+              {committees.map((committee) => (
+                <div key={committee.name} className="rounded-3xl border border-white/60 bg-gradient-to-br from-white/90 to-fern-50/70 p-6 shadow">
+                  <p className="text-xs uppercase tracking-[0.35em] text-fern-600">{committee.name}</p>
+                  <h3 className="mt-3 text-lg font-semibold text-slate-900">{committee.leads}</h3>
+                  <p className="mt-2 text-sm text-slate-600">{committee.notes}</p>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="grid gap-6 md:grid-cols-2">
-            {committees.map((committee) => (
-              <div key={committee.name} className="rounded-3xl border border-white/60 bg-gradient-to-br from-white/90 to-fern-50/70 p-6 shadow">
-                <p className="text-xs uppercase tracking-[0.35em] text-fern-600">{committee.name}</p>
-                <h3 className="mt-3 text-lg font-semibold text-slate-900">{committee.leads}</h3>
-                <p className="mt-2 text-sm text-slate-600">{committee.notes}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
-      <section id="faq" className="bg-gradient-to-br from-white to-sand-100 py-20">
-        <div className="mx-auto max-w-4xl px-6">
-          <div className="mb-12 text-center">
-            <span className="text-xs uppercase tracking-[0.3em] text-ocean-600">FAQ</span>
-            <h2 className="mt-3 text-3xl font-semibold text-slate-900">Good To Know</h2>
-          </div>
-          <dl className="space-y-6">
-            <div className="rounded-3xl border border-white/80 bg-white/90 p-6 shadow">
-              <dt className="text-lg font-semibold text-slate-900">What should we wear?</dt>
-              <dd className="mt-2 text-sm text-slate-600">
-                Embrace the aloha spirit! Aloha attire for evening events, comfortable shoes, and a light jacket for misty
-                Hilo evenings.
-              </dd>
-            </div>
-            <div className="rounded-3xl border border-white/80 bg-white/90 p-6 shadow">
-              <dt className="text-lg font-semibold text-slate-900">Can we bring guests?</dt>
-              <dd className="mt-2 text-sm text-slate-600">
-                Absolutely. ʻOhana extends to close friends — just make sure every guest is registered so we can prepare
-                enough food and gifts.
-              </dd>
-            </div>
-            <div className="rounded-3xl border border-white/80 bg-white/90 p-6 shadow">
-              <dt className="text-lg font-semibold text-slate-900">Is childcare available?</dt>
-              <dd className="mt-2 text-sm text-slate-600">
-                We have supervised keiki programming throughout the weekend. Add keiki tickets to your order to reserve a
-                spot.
-              </dd>
-            </div>
-          </dl>
-        </div>
-      </section>
     </div>
   );
 }

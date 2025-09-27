@@ -1,7 +1,6 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { z } from 'zod';
 import { supabaseAdmin } from '../supabaseAdmin';
 import { updateSiteSettingsSchema } from '../validators';
 import { parseSchedule, parseExtras, SITE_DEFAULTS, DEFAULT_EXTRAS } from '../siteContent';
@@ -25,6 +24,8 @@ export async function updateSiteSettings(formData: FormData) {
     console.warn('Failed to parse gallery_json – using defaults', error);
   }
 
+  const toBoolean = (value: FormDataEntryValue | undefined) => value === 'on' || value === 'true' || value === '1';
+
   const payload = {
     hero_title: json.hero_title,
     hero_subtitle: json.hero_subtitle || null,
@@ -32,7 +33,13 @@ export async function updateSiteSettings(formData: FormData) {
     location: json.location || null,
     about_html: json.about_html || null,
     schedule_json: schedulePayload,
-    gallery_json: extrasPayload
+    gallery_json: extrasPayload,
+    show_schedule: toBoolean(json.show_schedule as FormDataEntryValue | undefined),
+    show_gallery: toBoolean(json.show_gallery as FormDataEntryValue | undefined),
+    show_purpose: toBoolean(json.show_purpose as FormDataEntryValue | undefined),
+    show_costs: toBoolean(json.show_costs as FormDataEntryValue | undefined),
+    show_logistics: toBoolean(json.show_logistics as FormDataEntryValue | undefined),
+    show_committees: toBoolean(json.show_committees as FormDataEntryValue | undefined)
   };
 
   const parsed = updateSiteSettingsSchema.safeParse(payload);

@@ -29,6 +29,12 @@ interface ContentFormProps {
     about_html: string | null;
     schedule_json: unknown;
     gallery_json: unknown;
+    show_schedule: boolean;
+    show_gallery: boolean;
+    show_purpose: boolean;
+    show_costs: boolean;
+    show_logistics: boolean;
+    show_committees: boolean;
   };
   action: (formData: FormData) => Promise<void>;
 }
@@ -243,6 +249,36 @@ export default function ContentForm({ site, action }: ContentFormProps) {
       <input type="hidden" name="schedule_json" value={schedulePayload} />
       <input type="hidden" name="gallery_json" value={extrasPayload} />
       <input type="hidden" name="about_html" value={aboutHtml} />
+
+      <section className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <SectionTitle title="Homepage Sections" description="Toggle default sections on or off. Use the Sections tab for custom layouts." />
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+            <input type="checkbox" name="show_schedule" defaultChecked={site.show_schedule} className="h-4 w-4 rounded border-slate-300" />
+            Show weekend schedule
+          </label>
+          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+            <input type="checkbox" name="show_gallery" defaultChecked={site.show_gallery} className="h-4 w-4 rounded border-slate-300" />
+            Show photo gallery
+          </label>
+          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+            <input type="checkbox" name="show_purpose" defaultChecked={site.show_purpose} className="h-4 w-4 rounded border-slate-300" />
+            Show reunion purpose highlights
+          </label>
+          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+            <input type="checkbox" name="show_costs" defaultChecked={site.show_costs} className="h-4 w-4 rounded border-slate-300" />
+            Show cost outline
+          </label>
+          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+            <input type="checkbox" name="show_logistics" defaultChecked={site.show_logistics} className="h-4 w-4 rounded border-slate-300" />
+            Show logistics notes
+          </label>
+          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+            <input type="checkbox" name="show_committees" defaultChecked={site.show_committees} className="h-4 w-4 rounded border-slate-300" />
+            Show committee roster
+          </label>
+        </div>
+      </section>
 
       <section className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <SectionTitle title="Hero Details" description="This content appears at the top of the public page." />

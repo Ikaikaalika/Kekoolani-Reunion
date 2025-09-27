@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import AdminNav from '@/components/admin/AdminNav';
+import LogoutButton from '@/components/admin/LogoutButton';
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
@@ -11,12 +12,15 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Admin</p>
             <h1 className="text-2xl font-semibold text-slate-900">Kekoʻolani Reunion Coordination Center</h1>
           </div>
-          <Link
-            href="/"
-            className="rounded-full bg-ocean-500 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-ocean-600"
-          >
-            View Site
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              className="rounded-full bg-ocean-500 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-ocean-600"
+            >
+              View Site
+            </Link>
+            <LogoutButton />
+          </div>
         </div>
       </div>
       <div className="-mt-10 pb-16">

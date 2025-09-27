@@ -21,6 +21,12 @@ export interface Database {
           gallery_json: Json | null;
           created_at: string;
           updated_at: string;
+          show_schedule: boolean;
+          show_gallery: boolean;
+          show_purpose: boolean;
+          show_costs: boolean;
+          show_logistics: boolean;
+          show_committees: boolean;
         };
         Insert: {
           id?: string;
@@ -33,8 +39,37 @@ export interface Database {
           gallery_json?: Json | null;
           created_at?: string;
           updated_at?: string;
+          show_schedule?: boolean;
+          show_gallery?: boolean;
+          show_purpose?: boolean;
+          show_costs?: boolean;
+          show_logistics?: boolean;
+          show_committees?: boolean;
         };
         Update: Database['public']['Tables']['site_settings']['Insert'];
+      };
+      content_sections: {
+        Row: {
+          id: string;
+          type: string;
+          title: string | null;
+          content: Json;
+          position: number;
+          published: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          type: string;
+          title?: string | null;
+          content?: Json;
+          position?: number;
+          published?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Database['public']['Tables']['content_sections']['Insert'];
       };
       registration_questions: {
         Row: {
