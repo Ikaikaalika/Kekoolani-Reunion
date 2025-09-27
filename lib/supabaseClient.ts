@@ -14,8 +14,7 @@ export const createSupabaseServerClient = () => {
 
   return createServerClient<Database>(supabaseUrl, supabaseKey, {
     cookies: {
-      getAll: () => cookieStore.getAll(),
-      setAll: () => {}
+      getAll: () => cookieStore.getAll().map((cookie) => ({ name: cookie.name, value: cookie.value }))
     }
   });
 };
