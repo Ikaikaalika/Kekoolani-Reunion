@@ -18,8 +18,8 @@ export default async function AdminQuestionsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-white">Registration Questions</h2>
-        <p className="text-sm text-white/70">Customize the form fields family members see during registration.</p>
+        <h2 className="text-2xl font-semibold text-slate-900">Registration Questions</h2>
+        <p className="text-sm text-slate-600">Customize the form fields family members see during registration.</p>
       </div>
       <QuestionsManager questions={questions} upsertAction={upsertQuestion} deleteAction={deleteQuestion} />
     </div>

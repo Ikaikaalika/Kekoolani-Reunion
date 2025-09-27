@@ -39,7 +39,7 @@ export default async function AdminOverviewPage() {
             <CardDescription>Paid orders captured via Stripe</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-semibold text-white">{formatCurrency(totalRevenue)}</p>
+            <p className="text-3xl font-semibold text-slate-900">{formatCurrency(totalRevenue)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -48,7 +48,7 @@ export default async function AdminOverviewPage() {
             <CardDescription>Visible on the public registration page</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-semibold text-white">{ticketCount}</p>
+            <p className="text-3xl font-semibold text-slate-900">{ticketCount}</p>
           </CardContent>
         </Card>
         <Card>
@@ -57,7 +57,7 @@ export default async function AdminOverviewPage() {
             <CardDescription>Last five registrations</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-semibold text-white">{latestOrders.length}</p>
+            <p className="text-3xl font-semibold text-slate-900">{latestOrders.length}</p>
           </CardContent>
         </Card>
       </div>
@@ -69,9 +69,9 @@ export default async function AdminOverviewPage() {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
+            <table className="min-w-full text-left text-sm text-slate-700">
               <thead>
-                <tr className="text-xs uppercase tracking-[0.2em] text-white/60">
+                <tr className="text-xs uppercase tracking-[0.2em] text-slate-500">
                   <th className="py-3 pr-6">Order</th>
                   <th className="py-3 pr-6">Purchaser</th>
                   <th className="py-3 pr-6">Status</th>
@@ -79,19 +79,19 @@ export default async function AdminOverviewPage() {
                   <th className="py-3">Date</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/10">
+              <tbody className="divide-y divide-slate-200">
                 {latestOrders.map((order) => (
-                  <tr key={order.id} className="text-white/80">
-                    <td className="py-3 pr-6 font-mono text-xs">{order.id.slice(0, 8)}...</td>
+                  <tr key={order.id} className="text-slate-700">
+                    <td className="py-3 pr-6 font-mono text-xs text-slate-500">{order.id.slice(0, 8)}...</td>
                     <td className="py-3 pr-6">{order.purchaser_name}</td>
                     <td className="py-3 pr-6">
                       <span
                         className={`rounded-full px-3 py-1 text-xs font-semibold ${
                           order.status === 'paid'
-                            ? 'bg-fern-500/20 text-fern-200'
+                            ? 'bg-fern-100 text-fern-700'
                             : order.status === 'pending'
-                            ? 'bg-sand-400/20 text-sand-200'
-                            : 'bg-lava-500/20 text-lava-200'
+                            ? 'bg-sand-100 text-sand-700'
+                            : 'bg-lava-100 text-lava-700'
                         }`}
                       >
                         {order.status.toUpperCase()}
@@ -103,7 +103,7 @@ export default async function AdminOverviewPage() {
                 ))}
                 {!latestOrders.length && (
                   <tr>
-                    <td colSpan={5} className="py-6 text-center text-white/50">
+                    <td colSpan={5} className="py-6 text-center text-slate-500">
                       No orders yet. Once family registers, you’ll see them here.
                     </td>
                   </tr>

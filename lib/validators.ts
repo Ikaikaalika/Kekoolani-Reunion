@@ -11,18 +11,42 @@ export const updateSiteSettingsSchema = z.object({
       z.object({
         time: z.string(),
         title: z.string(),
-        description: z.string().optional()
+        items: z.array(z.string()).optional(),
+        description: z.string().optional().nullable()
       })
     )
     .optional()
     .nullable(),
   gallery_json: z
-    .array(
-      z.object({
-        src: z.string(),
-        alt: z.string().optional()
-      })
-    )
+    .object({
+      gallery: z
+        .array(
+          z.object({
+            src: z.string(),
+            alt: z.string().optional().nullable()
+          })
+        )
+        .optional(),
+      purpose: z.array(z.string()).optional(),
+      costs: z
+        .array(
+          z.object({
+            label: z.string(),
+            detail: z.string()
+          })
+        )
+        .optional(),
+      logistics: z.array(z.string()).optional(),
+      committees: z
+        .array(
+          z.object({
+            name: z.string(),
+            leads: z.string(),
+            notes: z.string().optional().nullable()
+          })
+        )
+        .optional()
+    })
     .optional()
     .nullable()
 });

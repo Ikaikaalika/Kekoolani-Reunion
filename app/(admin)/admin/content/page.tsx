@@ -1,20 +1,21 @@
 import ContentForm from '@/components/admin/ContentForm';
-import GalleryUploader from '@/components/admin/GalleryUploader';
 import { createSupabaseServerClient } from '@/lib/supabaseClient';
 import { updateSiteSettings } from '@/lib/actions/siteSettings';
+import { SITE_DEFAULTS, DEFAULT_EXTRAS } from '@/lib/siteContent';
 
 async function getSite() {
   const supabase = createSupabaseServerClient();
   const { data } = await supabase.from('site_settings').select('*').eq('id', 'singleton').maybeSingle();
   return (
     data ?? {
-      hero_title: "Hilo Ho'olaule'a 2025",
-      hero_subtitle: "Join the Keko'olani 'ohana for a weekend of stories, food, and aloha in beautiful Hilo, Hawai'i.",
-      event_dates: 'July 25 – 28, 2025',
-      location: "Coconut Island & 'Imiloa Astronomy Center",
+      hero_title: 'E Ola Mau ka ʻOhana Kekoʻolani',
+      hero_subtitle:
+        'Honoring our kūpuna, celebrating our moʻopuna. Gather in Hilo to strengthen pilina, share moʻolelo, and rejoice in the legacy of Nawailiʻiliʻi and Emily.',
+      event_dates: 'July 10 – 12, 2026',
+      location: 'Jade & Meleʻs Home · Waipiʻo Valley · The Arc of Hilo',
       about_html: '',
-      schedule_json: [],
-      gallery_json: []
+      schedule_json: SITE_DEFAULTS.schedule,
+      gallery_json: DEFAULT_EXTRAS
     }
   );
 }
@@ -25,10 +26,9 @@ export default async function AdminContentPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-white">Landing Page Content</h2>
-        <p className="text-sm text-white/70">Update the hero, about, schedule, and gallery sections for the public site.</p>
+        <h2 className="text-2xl font-semibold text-slate-900">Landing Page Content</h2>
+        <p className="text-sm text-slate-600">Update the hero, schedule, gallery, and planning info shown on the public site.</p>
       </div>
-      <GalleryUploader />
       <ContentForm site={site} action={updateSiteSettings} />
     </div>
   );

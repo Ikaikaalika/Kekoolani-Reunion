@@ -12,7 +12,11 @@ interface UploadedItem {
   size: number;
 }
 
-export default function GalleryUploader() {
+interface GalleryUploaderProps {
+  onUploaded?: (item: UploadedItem) => void;
+}
+
+export default function GalleryUploader({ onUploaded }: GalleryUploaderProps) {
   const [uploads, setUploads] = useState<UploadedItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -33,6 +37,7 @@ export default function GalleryUploader() {
       }
       setError(null);
       setUploads((prev) => [...prev, result]);
+      onUploaded?.(result);
     });
   };
 
@@ -46,15 +51,15 @@ export default function GalleryUploader() {
   };
 
   return (
-    <div className="space-y-4 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
+    <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
       <div>
-        <h3 className="text-lg font-semibold text-white">Upload to Gallery</h3>
-        <p className="text-sm text-white/70">
-          Upload images to Vercel Blob storage. Copy the generated snippet and paste it into the gallery JSON field.
+        <h3 className="text-lg font-semibold text-slate-900">Upload to Gallery</h3>
+        <p className="text-sm text-slate-600">
+          Upload images to Vercel Blob storage. Uploaded URLs are automatically added to your gallery list below.
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <label className="inline-flex cursor-pointer items-center justify-center rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white shadow transition hover:bg-white/25">
+        <label className="inline-flex cursor-pointer items-center justify-center rounded-full bg-ocean-50 px-4 py-2 text-sm font-medium text-ocean-700 shadow-sm transition hover:bg-ocean-100">
           <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
           Choose Image
         </label>
@@ -62,20 +67,20 @@ export default function GalleryUploader() {
           {isPending ? 'Uploading…' : '8MB max per image'}
         </Button>
       </div>
-      {error && <p className="text-sm text-lava-400">{error}</p>}
+      {error && <p className="text-sm text-lava-500">{error}</p>}
       {uploads.length > 0 && (
         <div className="space-y-3">
           {uploads.map((item) => (
-            <div key={item.pathname} className="rounded-2xl border border-white/10 bg-white/10 p-3 text-sm text-white/80">
+            <div key={item.pathname} className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
               <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 <div className="break-all">
-                  <p className="font-mono text-xs text-white/60">{item.pathname}</p>
-                  <a href={item.url} className="text-ocean-200 hover:text-ocean-100" target="_blank" rel="noreferrer">
+                  <p className="font-mono text-xs text-slate-500">{item.pathname}</p>
+                  <a href={item.url} className="text-ocean-600 hover:text-ocean-700" target="_blank" rel="noreferrer">
                     {item.url}
                   </a>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-white/60">{(item.size / 1024).toFixed(1)} KB</span>
+                  <span className="text-xs text-slate-500">{(item.size / 1024).toFixed(1)} KB</span>
                   <Button type="button" size="sm" variant="secondary" onClick={() => copySnippet(item.url)}>
                     Copy JSON
                   </Button>

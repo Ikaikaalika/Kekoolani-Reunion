@@ -14,8 +14,8 @@ export default async function AdminTicketsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-white">Ticket Types</h2>
-        <p className="text-sm text-white/70">Manage pricing, visibility, and inventory for each reunion pass.</p>
+        <h2 className="text-2xl font-semibold text-slate-900">Ticket Types</h2>
+        <p className="text-sm text-slate-600">Manage pricing, visibility, and inventory for each reunion pass.</p>
       </div>
       <TicketsManager tickets={tickets} upsertAction={upsertTicket} deleteAction={deleteTicket} />
     </div>
