@@ -13,7 +13,8 @@ interface SectionsManagerProps {
   sections: DynamicSection[];
 }
 
-type SectionDraft<T extends SectionType = SectionType> = DynamicSection<T> & {
+type SectionDraft<T extends SectionType = SectionType> = Omit<DynamicSection<T>, 'id'> & {
+  id?: string;
   localId: string;
   isNew?: boolean;
 };
@@ -81,36 +82,48 @@ function defaultContentForType<T extends SectionType>(type: T): SectionContentSt
   }
 }
 
-function toContentState(section: DynamicSection): SectionContentState[SectionType] {
+function toContentState(section: SectionDraft): SectionContentState[SectionType] {
   switch (section.type) {
     case 'text':
-      return { body: section.content.body };
+      return { body: (section.content as SectionContentMap['text']).body };
     case 'photo_gallery':
       return {
-        images: section.content.images.map((item) => ({ id: createId(), ...item }))
+        images: (section.content as SectionContentMap['photo_gallery']).images.map((item) => ({
+          id: createId(),
+          ...item
+        }))
       };
     case 'agenda':
       return {
-        items: section.content.items.map((item) => ({ id: createId(), ...item }))
+        items: (section.content as SectionContentMap['agenda']).items.map((item) => ({
+          id: createId(),
+          ...item
+        }))
       };
     case 'contact':
       return {
-        contacts: section.content.contacts.map((contact) => ({ id: createId(), ...contact })),
-        note: section.content.note ?? ''
+        contacts: (section.content as SectionContentMap['contact']).contacts.map((contact) => ({
+          id: createId(),
+          ...contact
+        })),
+        note: (section.content as SectionContentMap['contact']).note ?? ''
       };
     case 'faq':
       return {
-        faqs: section.content.faqs.map((faq) => ({ id: createId(), ...faq }))
+        faqs: (section.content as SectionContentMap['faq']).faqs.map((faq) => ({
+          id: createId(),
+          ...faq
+        }))
       };
     case 'cta':
       return {
-        body: section.content.body,
-        buttonText: section.content.buttonText ?? '',
-        buttonHref: section.content.buttonHref ?? ''
+        body: (section.content as SectionContentMap['cta']).body,
+        buttonText: (section.content as SectionContentMap['cta']).buttonText ?? '',
+        buttonHref: (section.content as SectionContentMap['cta']).buttonHref ?? ''
       };
     case 'custom_html':
       return {
-        html: section.content.html
+        html: (section.content as SectionContentMap['custom_html']).html
       };
     default:
       return { body: '' };
@@ -130,7 +143,7 @@ function useSectionState(initial: SectionDraft) {
     const serializedContent = (() => {
       switch (type) {
         case 'text':
-          return { body: (content as SectionContentState['text']).body.trim() };
+          return { body: ((content as SectionContentState['text']).body ?? '').trim() };
         case 'photo_gallery': {
           const { images } = content as SectionContentState['photo_gallery'];
           return {
