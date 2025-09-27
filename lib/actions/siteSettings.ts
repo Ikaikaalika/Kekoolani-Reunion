@@ -4,11 +4,26 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { supabaseAdmin } from '../supabaseAdmin';
 import { updateSiteSettingsSchema } from '../validators';
+import { parseSchedule, parseExtras, SITE_DEFAULTS, DEFAULT_EXTRAS } from '../siteContent';
 
 export async function updateSiteSettings(formData: FormData) {
   const json = Object.fromEntries(formData.entries());
-  const schedule = json.schedule_json ? JSON.parse((json.schedule_json as string) || '[]') : null;
-  const extras = json.gallery_json ? JSON.parse((json.gallery_json as string) || '{}') : null;
+  let schedulePayload = SITE_DEFAULTS.schedule;
+  let extrasPayload = DEFAULT_EXTRAS;
+
+  try {
+    const rawSchedule = json.schedule_json ? JSON.parse((json.schedule_json as string) || '[]') : SITE_DEFAULTS.schedule;
+    schedulePayload = parseSchedule(rawSchedule);
+  } catch (error) {
+    console.warn('Failed to parse schedule_json – using defaults', error);
+  }
+
+  try {
+    const rawExtras = json.gallery_json ? JSON.parse((json.gallery_json as string) || '{}') : DEFAULT_EXTRAS;
+    extrasPayload = parseExtras(rawExtras);
+  } catch (error) {
+    console.warn('Failed to parse gallery_json – using defaults', error);
+  }
 
   const payload = {
     hero_title: json.hero_title,
@@ -16,8 +31,8 @@ export async function updateSiteSettings(formData: FormData) {
     event_dates: json.event_dates || null,
     location: json.location || null,
     about_html: json.about_html || null,
-    schedule_json: schedule,
-    gallery_json: extras
+    schedule_json: schedulePayload,
+    gallery_json: extrasPayload
   };
 
   const parsed = updateSiteSettingsSchema.safeParse(payload);
