@@ -148,7 +148,7 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-slate-900">Tickets</h2>
+        <h2 className="text-lg font-semibold text-slate-900">Nā Pākeke Kākau</h2>
         <div className="space-y-4">
           {tickets.length ? (
             tickets.map((ticket, index) => (
@@ -184,7 +184,7 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
 
       {questions.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-slate-900">Additional Details</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Nā Moʻomanaʻo Hoʻopuka</h2>
           <div className="grid gap-5">
             {questions.map((question) => {
               const fieldName = `question_${question.id}`;
@@ -228,7 +228,7 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
       )}
 
       <div className="flex items-center justify-between rounded-2xl bg-slate-900 px-6 py-4 text-white">
-        <p className="text-sm uppercase tracking-[0.3em] text-white/70">Total</p>
+        <p className="text-sm uppercase tracking-[0.3em] text-white/70">Huina</p>
         <p className="text-2xl font-semibold">{formatCurrency(totalCents)}</p>
       </div>
 

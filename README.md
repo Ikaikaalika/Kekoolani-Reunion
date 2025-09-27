@@ -6,6 +6,7 @@ Modern family reunion platform for the Keko'olani 'ohana in Hilo, Hawai'i. Built
 - Dynamic registration flow with configurable questions and ticket types
 - Stripe Checkout integration with webhook fulfillment
 - Optional Vercel Blob uploads for gallery assets via the admin console
+- Meeting-driven defaults pulled from the 23 ʻAukake 2025 planning hui (see `docs/Kekoʻolani Reunion Planning Meeting.md`)
 - Admin control center for landing content, registration questions, tickets, and order monitoring
 
 ## Getting Started

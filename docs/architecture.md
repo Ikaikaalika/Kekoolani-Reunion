@@ -5,9 +5,16 @@ The reunion platform is a Next.js 14 (App Router) application deployed on Vercel
 - **Guest experience**: marketing landing page + registration & ticket purchase flow.
 - **Admin console**: authenticated dashboard to manage landing page content, registration questions, ticket pricing/inventory, and monitor orders.
 
+### 23 ʻAukake 2025 Planning Hui Highlights
+- Reunion weekend confirmed for **July 10 – 12, 2026** throughout Jade & Meleʻs home (Keaukaha), Waipiʻo Valley, and The Arc of Hilo.
+- ʻOhana purpose reaffirmed: *Honoring our kūpuna, Celebrating our Future. E ola mau ka ʻohana Kekoʻolani.*
+- Committees formed for registration, hale prep, lūʻau program, genealogy archives, meals, huakaʻi logistics, and media storytelling.
+- Baseline costs (subject to refinement): three lunches (~$30 per person), Sunday lūʻau ($25 per person), reunion shirts ($20–$26). Donations offset venue rentals and kūpuna transport.
+- Next planning hui: **September 20, 2025 at 10:30am** (Jade Pumehana Silva).
+
 ## Core Technologies
 - **Framework**: Next.js 14 with TypeScript, App Router, React Server Components, Server Actions.
-- **Styling**: Tailwind CSS with a custom tropical palette inspired by Hilo, Hawai'i.
+- **Styling**: Tailwind CSS with a kapa-inspired palette and Hawaiian typography cues.
 - **Database**: Supabase (Postgres) accessed via Supabase JS client & service-role for privileged server actions.
 - **Auth**: Supabase Auth (email/password) with admin role gating via RLS & checked in middleware.
 - **Payments**: Stripe Checkout + webhook to reconcile orders & attendees.

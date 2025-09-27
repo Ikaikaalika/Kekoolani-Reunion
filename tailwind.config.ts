@@ -58,6 +58,17 @@ const config: Config = {
           900: '#5F3300'
         }
       }
+      ,
+      fontFamily: {
+        sans: ['var(--font-inter)', 'ui-sans-serif', 'system-ui'],
+        serif: ['var(--font-noto-serif)', 'Georgia', 'serif']
+      },
+      backgroundImage: {
+        kapa: "linear-gradient(135deg, rgba(255,255,255,0.45) 25%, transparent 25%), linear-gradient(225deg, rgba(255,255,255,0.25) 25%, transparent 25%), linear-gradient(45deg, rgba(255,255,255,0.25) 25%, transparent 25%), linear-gradient(315deg, rgba(255,255,255,0.25) 25%, transparent 25%)"
+      },
+      backgroundSize: {
+        kapa: '40px 40px'
+      }
     }
   },
   plugins: []

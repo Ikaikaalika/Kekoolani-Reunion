@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Noto_Serif } from 'next/font/google';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const notoSerif = Noto_Serif({ subsets: ['latin'], variable: '--font-noto-serif' });
 
 export const metadata: Metadata = {
   title: 'Keko\'olani Family Reunion',
@@ -11,8 +12,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={inter.className}>
-      <body>{children}</body>
+    <html lang="en" className={`${inter.variable} ${notoSerif.variable}`}>
+      <body className="font-sans">{children}</body>
     </html>
   );
 }
