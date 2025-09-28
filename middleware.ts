@@ -35,7 +35,13 @@ export async function middleware(req: NextRequest) {
   const isAdmin = session?.user.app_metadata?.role === 'admin';
 
   if (!session || !isAdmin) {
-    const redirectUrl = new URL('/?unauthorized=1', req.nextUrl.origin);
+    const redirectUrl = new URL('/admin-login', req.nextUrl.origin);
+    redirectUrl.searchParams.set('redirect', req.nextUrl.pathname + req.nextUrl.search);
+    if (!session) {
+      redirectUrl.searchParams.set('reason', 'signin');
+    } else if (!isAdmin) {
+      redirectUrl.searchParams.set('reason', 'unauthorized');
+    }
     return NextResponse.redirect(redirectUrl);
   }
 
