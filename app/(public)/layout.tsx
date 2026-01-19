@@ -20,7 +20,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
               K
             </span>
             <div>
-              <p className="text-xs uppercase tracking-[0.4em] text-ocean-700">Keko'olani Family</p>
+              <p className="text-xs uppercase tracking-[0.4em] text-ocean-700">Keko&apos;olani Family</p>
               <p className="text-lg font-semibold text-slate-900">Family Reunion 2026 - Hilo, Hawaii</p>
             </div>
           </div>
@@ -43,7 +43,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
       <footer className="mt-16 bg-white/70">
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-10 text-sm text-slate-600 md:flex-row md:items-center md:justify-between">
           <p>
-            Copyright {new Date().getFullYear()} Keko'olani Family - Reunion in Hilo, Hawaii.
+            Copyright {new Date().getFullYear()} Keko&apos;olani Family - Reunion in Hilo, Hawaii.
           </p>
           <div className="flex gap-4">
             <a href="mailto:ohana@kekoolani.com" className="hover:text-ocean-600">

@@ -136,11 +136,11 @@ export default async function HomePage() {
                   <dd>Gather by Hilo Bay with live music and family trivia.</dd>
                 </div>
                 <div>
-                  <dt className="font-semibold text-slate-800">Elders' Stories</dt>
+                  <dt className="font-semibold text-slate-800">Elders&apos; Stories</dt>
                   <dd>Document family histories and add to our shared genealogy.</dd>
                 </div>
                 <div>
-                  <dt className="font-semibold text-slate-800">Kids' Adventure</dt>
+                  <dt className="font-semibold text-slate-800">Kids&apos; Adventure</dt>
                   <dd>Kids scavenger hunt across Coconut Island.</dd>
                 </div>
               </dl>

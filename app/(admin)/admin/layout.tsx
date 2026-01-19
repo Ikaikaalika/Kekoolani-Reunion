@@ -10,7 +10,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-8">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Admin</p>
-            <h1 className="text-2xl font-semibold text-slate-900">Keko'olani Reunion Coordination Center</h1>
+            <h1 className="text-2xl font-semibold text-slate-900">Keko&apos;olani Reunion Coordination Center</h1>
           </div>
           <div className="flex items-center gap-3">
             <Link

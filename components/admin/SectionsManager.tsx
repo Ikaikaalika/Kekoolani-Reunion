@@ -723,7 +723,7 @@ export default function SectionsManager({ sections }: SectionsManagerProps) {
         ))}
         {!drafts.length && (
           <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-            No custom sections yet. Use "Add section" to create your first block.
+            No custom sections yet. Use Add section to create your first block.
           </div>
         )}
       </div>
