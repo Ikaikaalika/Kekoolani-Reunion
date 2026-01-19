@@ -83,7 +83,7 @@ export default async function AdminOrdersPage() {
           <tbody className="divide-y divide-slate-200">
             {orders.map((order) => {
               const ticketSummary = (order.order_items ?? [])
-                .map((item) => `${item.quantity} × ${item.ticket_types?.name ?? item.ticket_type_id}`)
+                .map((item) => `${item.quantity} x ${item.ticket_types?.name ?? item.ticket_type_id}`)
                 .join(', ');
               const orderCurrency = order.order_items?.[0]?.ticket_types?.currency ?? 'usd';
               const answerRecord =
@@ -115,11 +115,11 @@ export default async function AdminOrdersPage() {
                   <td className="py-3 pr-6 font-semibold text-slate-900">
                     {formatCurrency(order.total_cents, orderCurrency ?? 'usd')}
                   </td>
-                  <td className="py-3 pr-6 text-xs text-slate-600">{ticketSummary || '—'}</td>
+                  <td className="py-3 pr-6 text-xs text-slate-600">{ticketSummary || '-'}</td>
                   <td className="py-3 pr-6 text-xs text-slate-600">{order.attendees?.length ?? 0}</td>
                   {questions.map((question) => (
                     <td key={`${order.id}-${question.id}`} className="py-3 pr-6 text-xs text-slate-600">
-                      {normalizeAnswer(answerRecord[question.id]) || '—'}
+                      {normalizeAnswer(answerRecord[question.id]) || '-'}
                     </td>
                   ))}
                 </tr>

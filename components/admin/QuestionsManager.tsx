@@ -212,7 +212,7 @@ function NewQuestionForm({ upsertAction }: { upsertAction: Props['upsertAction']
   return (
     <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-6 shadow-sm">
       <h3 className="text-lg font-semibold text-slate-900">Add Question</h3>
-      <p className="text-sm text-slate-600">Collect the details you need from ʻohana during registration.</p>
+      <p className="text-sm text-slate-600">Collect the details you need from families during registration.</p>
       <form action={upsertAction} className="mt-4 space-y-4">
         <input type="hidden" name="options" value={optionsJson} />
         <div className="space-y-2">

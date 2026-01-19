@@ -32,105 +32,105 @@ export type SiteExtras = {
 };
 
 const DEFAULT_PURPOSE = [
-  'Mahalo our kūpuna for anchoring us in faith, service, and aloha ʻohana.',
-  'Strengthen pilina among cousins by sharing moʻolelo, genealogy, and kuleana.',
-  'Hānai the next generation so they know their kūpuna, ʻāina, and where they belong.',
-  'Celebrate the talents within our ʻohana through mele, hula, and mea ʻai. '
+  'Thank our elders for anchoring us in faith, service, and family love.',
+  'Strengthen bonds among cousins by sharing stories, genealogy, and responsibility.',
+  'Nurture the next generation so they know their elders, our home, and where they belong.',
+  'Celebrate the talents within our family through music, dance, and shared meals.'
 ];
 
 const DEFAULT_COSTS: CostItem[] = [
-  { label: 'Three lunches (Fri–Sun)', detail: '$30 per person · prepared by ʻohana volunteers' },
-  { label: 'Sunday evening lūʻau', detail: '$25 per person at The Arc of Hilo' },
-  { label: 'Reunion shirts', detail: '$20–$26 (cotton or active wear options by Stanson/Nawai)' }
+  { label: 'Three lunches (Fri-Sun)', detail: '$30 per person; prepared by family volunteers' },
+  { label: 'Sunday evening luau', detail: '$25 per person at The Arc of Hilo' },
+  { label: 'Reunion shirts', detail: '$20-$26 (cotton or active wear options by Stanson/Nawai)' }
 ];
 
 const DEFAULT_LOGISTICS = [
-  'Off-island ʻohana to arrange airfare, lodging, and transportation; host-home kōkua forthcoming.',
-  'Set-up at Jade & Meleʻs hale on Thursday (July 9) and break-down on Monday (July 13).',
-  'Kukuihaele pavilion reservation and Waipiʻo transportation coordinated by the Nawailiʻiliʻi ʻohana.'
+  'Out-of-town families should arrange airfare, lodging, and transportation; host-home help forthcoming.',
+  "Set up at Jade & Mele's home on Thursday (July 9) and break down on Monday (July 13).",
+  "Kukuihaele pavilion reservation and Waipio transportation coordinated by the Nawaili'ili'i family."
 ];
 
 const DEFAULT_COMMITTEES: CommitteeItem[] = [
   {
-    name: 'Kākau Inoa / Registration',
+    name: 'Registration',
     leads: 'Jade & Alika Gee',
     notes: 'Campaign emails, online form, shirt orders, and payment flow.'
   },
   {
-    name: 'Hale Prep & Breakdown',
-    leads: 'Kahealani Silva, Silva ʻohana, Makana Chartrand ʻohana, Amy Girl/Brown ʻohana',
-    notes: 'Tents, tables, chairs, and porta potties (set-up Thu 7/9, break-down Mon 7/13).'
+    name: 'Site Setup & Breakdown',
+    leads: 'Kahealani Silva, Silva family, Makana Chartrand family, Amy Girl/Brown family',
+    notes: 'Tents, tables, chairs, and restrooms (setup Thu 7/9, breakdown Mon 7/13).'
   },
   {
-    name: 'Lūʻau Decorations',
+    name: 'Luau Decorations',
     leads: 'Naia & Kahealani',
-    notes: 'Simple centerpieces and lāʻau décor for The Arc.'
+    notes: 'Simple centerpieces and greenery decor for The Arc.'
   },
   {
     name: 'Meals & Drinks',
-    leads: 'Kelsye (Fri lunch), Bento crew (Sat), Sandwich crew (Sun), Hina (lūʻau)',
+    leads: 'Kelsye (Fri lunch), Bento crew (Sat), Sandwich crew (Sun), Hina (luau)',
     notes: 'Amy Girl assisting with paper goods and kitchen needs.'
   },
   {
     name: 'Genealogy & Storytelling',
     leads: 'Jade, Kanani, Tete, Stallone, Rachel',
-    notes: 'Digital genealogy file, fillable PDFs, talk-story facilitation.'
+    notes: 'Digital genealogy file, fillable PDFs, story-sharing facilitation.'
   },
   {
-    name: 'Waipiʻo & Graves Huakaʻi',
-    leads: 'Amy Girl, Nawailiʻiliʻi, Kaʻai',
-    notes: 'Coordinate valley access, kupuna transport, and work days beforehand.'
+    name: 'Waipio Valley & Graves Visit',
+    leads: "Amy Girl, Nawaili'ili'i, Kaai",
+    notes: 'Coordinate valley access, elder transport, and work days beforehand.'
   },
   {
-    name: 'Activities & Hoʻike',
-    leads: 'Silva ʻohana, Stallone, Makana, Mele',
-    notes: 'Lei making, makahiki games, hula workshops, ʻohana sharing and MC.'
+    name: 'Activities & Showcase',
+    leads: 'Silva family, Stallone, Makana, Mele',
+    notes: 'Lei making, traditional games, hula workshops, family sharing, and MC.'
   },
   {
-    name: 'Media & Kōkua',
+    name: 'Media & Support',
     leads: 'Family representatives, Kahealani/Cedric',
-    notes: 'Collect 3–5 minute digital ʻohana stories and archive photos.'
+    notes: 'Collect 3-5 minute digital family stories and archive photos.'
   }
 ];
 
 const DEFAULT_GALLERY: GalleryItem[] = [
-  { src: 'https://images.unsplash.com/photo-1583274606759-5a4f18c16ca2?auto=format&fit=crop&w=900&q=80', alt: 'Waipiʻo Valley lookout' },
-  { src: 'https://images.unsplash.com/photo-1529400971008-f566de0e6dfc?auto=format&fit=crop&w=900&q=80', alt: 'ʻOhana lei making activity' },
-  { src: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80', alt: 'Evening gathering under pāʻina lights' }
+  { src: 'https://images.unsplash.com/photo-1583274606759-5a4f18c16ca2?auto=format&fit=crop&w=900&q=80', alt: 'Waipio Valley lookout' },
+  { src: 'https://images.unsplash.com/photo-1529400971008-f566de0e6dfc?auto=format&fit=crop&w=900&q=80', alt: 'Family lei-making activity' },
+  { src: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80', alt: 'Evening gathering under string lights' }
 ];
 
 const DEFAULT_SCHEDULE: ScheduleEntry[] = [
   {
-    time: 'Friday · July 10, 2026',
-    title: 'Hoʻolauna & ʻOhana Genealogy',
+    time: 'Friday - July 10, 2026',
+    title: 'Welcome & Family Genealogy',
     items: [
-      '10:00a Hoʻolauna · Jade & Meleʻs Home (Keaukaha)',
-      '10:30a Genealogy sharing & keiki activities',
+      "10:00a Welcome - Jade & Mele's Home (Keaukaha)",
+      '10:30a Genealogy sharing & kids activities',
       '12:00p Lunch provided by Kelsye (sushi, sashimi, poke)',
-      '1:00p ʻOhana activities & games',
-      '3:00p Pau for the day'
+      '1:00p Family activities & games',
+      '3:00p Wrap for the day'
     ]
   },
   {
-    time: 'Saturday · July 11, 2026',
-    title: 'Waipiʻo Valley Huakaʻi & Kalopa Graves',
+    time: 'Saturday - July 11, 2026',
+    title: 'Waipio Valley Excursion & Kalopa Graves',
     items: [
-      '8:00a Gather at Waipiʻo lookout · Pule / Oli',
-      '9:00a Enter valley to visit loʻi, ʻohana kīpuka, and beach',
-      '12:00p Depart valley · 12:30p Lunch at Kukuihaele Park',
-      '1:30p Kalopa cemetery visit · optional ʻAlae graves visit',
+      '8:00a Gather at Waipio lookout - prayer / chant',
+      '9:00a Enter valley to visit taro fields, family sites, and the beach',
+      '12:00p Depart valley - 12:30p Lunch at Kukuihaele Park',
+      '1:30p Kalopa cemetery visit - optional Alae graves visit',
       'Alternate in-town activities (Coconut Island) under discussion'
     ]
   },
   {
-    time: 'Sunday · July 12, 2026',
-    title: 'ʻOhana Lūʻau & Hoʻike Evening',
+    time: 'Sunday - July 12, 2026',
+    title: 'Family Luau & Showcase Evening',
     items: [
-      '10:00a Activities & talk story at Jade & Meleʻs home',
-      '12:00p Lunch then prepare for evening lūʻau',
-      '2:00p Decor crew at The Arc · 3:00p ʻOhana arrival and pūpū',
-      '6:00p Lūʻau dinner · 7:00p ʻOhana sharing & performances',
-      '9:00p Closing circle · A hui hou'
+      "10:00a Activities & story sharing at Jade & Mele's home",
+      '12:00p Lunch then prepare for evening luau',
+      '2:00p Decor crew at The Arc - 3:00p Family arrival and appetizers',
+      '6:00p Luau dinner - 7:00p Family sharing & performances',
+      '9:00p Closing circle - until we meet again'
     ]
   }
 ];

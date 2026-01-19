@@ -16,7 +16,7 @@ body {
   margin: 0;
   min-height: 100vh;
   font-family: var(--font-inter), ui-sans-serif, system-ui;
-  background: linear-gradient(180deg, rgba(244, 247, 250, 0.9), rgba(227, 236, 241, 0.8)), radial-gradient(circle at top left, rgba(255, 234, 208, 0.45), transparent 45%), radial-gradient(circle at bottom right, rgba(190, 230, 210, 0.5), transparent 50%);
+  background: linear-gradient(180deg, rgba(232, 248, 255, 0.9), rgba(213, 243, 255, 0.85)), radial-gradient(circle at top left, rgba(190, 255, 220, 0.45), transparent 45%), radial-gradient(circle at bottom right, rgba(140, 225, 255, 0.5), transparent 50%);
   background-blend-mode: screen;
 }
 

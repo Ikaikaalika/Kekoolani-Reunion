@@ -298,7 +298,7 @@ function SectionEditor({ draft, onRemoveLocal }: { draft: SectionDraft; onRemove
                         )
                       }));
                     }}
-                    placeholder="ʻOhana photo description"
+                    placeholder="Family photo description"
                   />
                 </div>
                 <div className="md:col-span-2">
@@ -349,7 +349,7 @@ function SectionEditor({ draft, onRemoveLocal }: { draft: SectionDraft; onRemove
                         )
                       }));
                     }}
-                    placeholder="Friday · July 10, 2026"
+                    placeholder="Friday - July 10, 2026"
                   />
                 </div>
                 <div className="space-y-2">
@@ -364,7 +364,7 @@ function SectionEditor({ draft, onRemoveLocal }: { draft: SectionDraft; onRemove
                         )
                       }));
                     }}
-                    placeholder="Hoʻolauna & genealogy sharing"
+                    placeholder="Welcome & genealogy sharing"
                   />
                 </div>
                 <div className="md:col-span-2">
@@ -723,7 +723,7 @@ export default function SectionsManager({ sections }: SectionsManagerProps) {
         ))}
         {!drafts.length && (
           <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-            No custom sections yet. Use “Add section” to create your first block.
+            No custom sections yet. Use "Add section" to create your first block.
           </div>
         )}
       </div>

@@ -65,7 +65,7 @@ export default function GalleryUploader({ onUploaded }: GalleryUploaderProps) {
           Choose Image
         </label>
         <Button type="button" variant="ghost" disabled>
-          {isPending ? 'Uploading…' : '8MB max per image'}
+          {isPending ? 'Uploading...' : '8MB max per image'}
         </Button>
       </div>
       {error && <p className="text-sm text-lava-500">{error}</p>}

@@ -31,11 +31,11 @@ async function getSite(): Promise<AdminSiteSettings> {
     .maybeSingle<SiteSettingsRow>();
 
   const fallback: AdminSiteSettings = {
-    hero_title: 'E Ola Mau ka ʻOhana Kekoʻolani',
+    hero_title: "Keko'olani Family Reunion",
     hero_subtitle:
-      'Honoring our kūpuna, celebrating our moʻopuna. Gather in Hilo to strengthen pilina, share moʻolelo, and rejoice in the legacy of Nawailiʻiliʻi and Emily.',
-    event_dates: 'July 10 – 12, 2026',
-    location: 'Jade & Meleʻs Home · Waipiʻo Valley · The Arc of Hilo',
+      "Honoring our elders, celebrating future generations. Gather in Hilo to strengthen family bonds, share stories, and celebrate the legacy of Nawaili'ili'i and Emily.",
+    event_dates: 'July 10-12, 2026',
+    location: "Jade & Mele's Home - Waipio Valley - The Arc of Hilo",
     about_html: '',
     schedule_json: SITE_DEFAULTS.schedule,
     gallery_json: DEFAULT_EXTRAS,

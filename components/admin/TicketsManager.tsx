@@ -101,7 +101,7 @@ export default function TicketsManager({ tickets, upsertAction, deleteAction }: 
           </div>
           <div className="space-y-2">
             <Label htmlFor="new-description">Description</Label>
-            <Textarea id="new-description" name="description" rows={3} placeholder="Includes access to all events and luʻau." />
+            <Textarea id="new-description" name="description" rows={3} placeholder="Includes access to all events and the luau." />
           </div>
           <label className="flex items-center gap-3 text-sm text-slate-600">
             <input type="checkbox" name="active" defaultChecked className="h-4 w-4 rounded border-slate-300" />

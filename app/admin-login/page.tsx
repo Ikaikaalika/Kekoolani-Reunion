@@ -11,7 +11,7 @@ export default function AdminLoginPage() {
           Only authorized members can edit the site and view registrations.
         </p>
         <div className="mt-8">
-          <Suspense fallback={<p className="text-sm text-white/80">Loading…</p>}>
+          <Suspense fallback={<p className="text-sm text-white/80">Loading...</p>}>
             <AdminLoginForm />
           </Suspense>
         </div>

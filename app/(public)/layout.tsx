@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react';
 
 const navLinks = [
-  { href: '#about', label: 'Moʻolelo' },
-  { href: '#schedule', label: 'Papa Kau' },
-  { href: '#logistics', label: 'Kālena & Kālā' },
-  { href: '#committees', label: 'Kōmike' },
-  { href: '#faq', label: 'Nīnau' }
+  { href: '#about', label: 'About' },
+  { href: '#schedule', label: 'Schedule' },
+  { href: '#logistics', label: 'Logistics' },
+  { href: '#committees', label: 'Committees' },
+  { href: '#faq', label: 'FAQ' }
 ];
 
 export default function PublicLayout({ children }: { children: ReactNode }) {
@@ -20,8 +20,8 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
               K
             </span>
             <div>
-              <p className="text-xs uppercase tracking-[0.4em] text-ocean-700">Kekoʻolani ʻOhana</p>
-              <p className="text-lg font-semibold text-slate-900">ʻAha ʻOhana 2026 · Hilo</p>
+              <p className="text-xs uppercase tracking-[0.4em] text-ocean-700">Keko'olani Family</p>
+              <p className="text-lg font-semibold text-slate-900">Family Reunion 2026 - Hilo, Hawaii</p>
             </div>
           </div>
           <nav className="flex flex-wrap items-center gap-4 text-sm font-medium text-slate-800 md:gap-6">
@@ -34,7 +34,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
               href="/register"
               className="rounded-full bg-lava-500 px-4 py-2 text-white shadow-md transition hover:bg-lava-600"
             >
-              Kākau Ināianei
+              Register Now
             </a>
           </nav>
         </div>
@@ -43,7 +43,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
       <footer className="mt-16 bg-white/70">
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-10 text-sm text-slate-600 md:flex-row md:items-center md:justify-between">
           <p>
-            © {new Date().getFullYear()} Kekoʻolani ʻOhana — Hālāwai ʻOhana i Hilo, Hawaiʻi.
+            Copyright {new Date().getFullYear()} Keko'olani Family - Reunion in Hilo, Hawaii.
           </p>
           <div className="flex gap-4">
             <a href="mailto:ohana@kekoolani.com" className="hover:text-ocean-600">

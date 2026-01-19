@@ -307,7 +307,7 @@ export default function ContentForm({ site, action }: ContentFormProps) {
             rows={6}
             value={aboutText}
             onChange={(event) => setAboutText(event.target.value)}
-            placeholder="Share the purpose, history, and goals for this ʻohana gathering. Use blank lines to create new paragraphs."
+            placeholder="Share the purpose, history, and goals for this family gathering. Use blank lines to create new paragraphs."
           />
           <p className="text-xs text-slate-500">Paragraph breaks will be preserved; no HTML required.</p>
         </div>
@@ -316,7 +316,7 @@ export default function ContentForm({ site, action }: ContentFormProps) {
       <section className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <SectionTitle
           title="Weekend Schedule"
-          description="Outline each day’s highlights. Add time blocks and agenda items in the order you want them displayed."
+          description="Outline each day's highlights. Add time blocks and agenda items in the order you want them displayed."
         />
         <div className="space-y-5">
           {schedule.map((entry, index) => (
@@ -330,7 +330,7 @@ export default function ContentForm({ site, action }: ContentFormProps) {
                       onChange={(event) =>
                         updateScheduleEntry(entry.id, (current) => ({ ...current, time: event.target.value }))
                       }
-                      placeholder="Friday · July 10, 2026"
+                      placeholder="Friday - July 10, 2026"
                     />
                   </div>
                   <div className="space-y-2">
@@ -340,7 +340,7 @@ export default function ContentForm({ site, action }: ContentFormProps) {
                       onChange={(event) =>
                         updateScheduleEntry(entry.id, (current) => ({ ...current, title: event.target.value }))
                       }
-                      placeholder="Hoʻolauna & ʻOhana Genealogy"
+                      placeholder="Welcome & Family Genealogy"
                     />
                   </div>
                 </div>
@@ -356,7 +356,7 @@ export default function ContentForm({ site, action }: ContentFormProps) {
                     <Input
                       value={item}
                       onChange={(event) => updateScheduleItem(entry.id, itemIndex, event.target.value)}
-                      placeholder="10:30a Genealogy sharing & keiki activities"
+                      placeholder="10:30a Genealogy sharing & kids activities"
                     />
                     <Button
                       type="button"
@@ -413,7 +413,7 @@ export default function ContentForm({ site, action }: ContentFormProps) {
                 <Input
                   value={item.alt ?? ''}
                   onChange={(event) => updateGalleryItem(item.id, 'alt', event.target.value)}
-                  placeholder="Waipiʻo Valley lookout"
+                  placeholder="Waipio Valley lookout"
                 />
               </div>
               <div className="flex items-end justify-end">
@@ -434,7 +434,7 @@ export default function ContentForm({ site, action }: ContentFormProps) {
       <section className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <SectionTitle
           title="Purpose & Logistics"
-          description="Keep these lists clear and friendly—what does ʻohana need to know to prepare?"
+          description="Keep these lists clear and friendly. What does the family need to know to prepare?"
         />
         <div className="grid gap-6 md:grid-cols-2">
           <div className="space-y-4">
@@ -445,7 +445,7 @@ export default function ContentForm({ site, action }: ContentFormProps) {
                   <Input
                     value={item.text}
                     onChange={(event) => updatePurposeItem(item.id, event.target.value)}
-                    placeholder="Mahalo our kūpuna for anchoring us in aloha ʻohana."
+                    placeholder="Thank our elders for anchoring us in family love."
                   />
                   <Button type="button" variant="ghost" onClick={() => removePurposeItem(item.id)}>
                     Remove
@@ -465,7 +465,7 @@ export default function ContentForm({ site, action }: ContentFormProps) {
                   <Input
                     value={item.label}
                     onChange={(event) => updateCostItem(item.id, 'label', event.target.value)}
-                    placeholder="Three lunches (Fri–Sun)"
+                    placeholder="Three lunches (Fri-Sun)"
                   />
                   <div className="flex gap-3">
                     <Input
@@ -490,11 +490,11 @@ export default function ContentForm({ site, action }: ContentFormProps) {
           <div className="space-y-3">
             {logistics.map((item) => (
               <div key={item.id} className="flex gap-3">
-                <Input
-                  value={item.text}
-                  onChange={(event) => updateLogisticsItem(item.id, event.target.value)}
-                  placeholder="Off-island ʻohana to arrange airfare and lodging."
-                />
+                  <Input
+                    value={item.text}
+                    onChange={(event) => updateLogisticsItem(item.id, event.target.value)}
+                    placeholder="Out-of-town families to arrange airfare and lodging."
+                  />
                 <Button type="button" variant="ghost" onClick={() => removeLogisticsItem(item.id)}>
                   Remove
                 </Button>
@@ -510,7 +510,7 @@ export default function ContentForm({ site, action }: ContentFormProps) {
       <section className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <SectionTitle
           title="Planning Committees"
-          description="Document who is leading each kōmike so ʻohana know where to kōkua."
+          description="Document who is leading each committee so families know where to help."
         />
         <div className="space-y-4">
           {committees.map((item) => (
@@ -518,7 +518,7 @@ export default function ContentForm({ site, action }: ContentFormProps) {
               <Input
                 value={item.name}
                 onChange={(event) => updateCommitteeItem(item.id, 'name', event.target.value)}
-                placeholder="Kākau Inoa / Registration"
+                placeholder="Registration"
               />
               <Input
                 value={item.leads}

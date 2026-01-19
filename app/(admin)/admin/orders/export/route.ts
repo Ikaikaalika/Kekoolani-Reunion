@@ -84,7 +84,7 @@ export async function GET() {
 
   const rows = orders.map((order) => {
     const items = itemsByOrder.get(order.id) ?? [];
-    const tickets = items.map((item) => `${item.quantity} × ${item.ticket_types?.name ?? item.ticket_type_id}`).join('; ');
+    const tickets = items.map((item) => `${item.quantity} x ${item.ticket_types?.name ?? item.ticket_type_id}`).join('; ');
     const currency = items[0]?.ticket_types?.currency ?? 'usd';
 
     const answers =

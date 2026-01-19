@@ -34,13 +34,13 @@ async function getSiteContent() {
   }));
 
   const defaults = {
-    hero_title: 'E Ola Mau ka ʻOhana Kekoʻolani',
+    hero_title: "Keko'olani Family Reunion",
     hero_subtitle:
-      'Honoring our kūpuna, celebrating our moʻopuna. Gather in Hilo to strengthen pilina, share moʻolelo, and rejoice in the legacy of Nawailiʻiliʻi and Emily.',
-    event_dates: 'July 10 – 12, 2026',
-    location: 'Jade & Meleʻs Home · Waipiʻo Valley · The Arc of Hilo',
+      "Honoring our elders, celebrating future generations. Gather in Hilo to strengthen family bonds, share stories, and celebrate the legacy of Nawaili'ili'i and Emily.",
+    event_dates: 'July 10-12, 2026',
+    location: "Jade & Mele's Home - Waipio Valley - The Arc of Hilo",
     about_html:
-      "<p>At our August 23, 2025 planning meeting we affirmed the purpose of this reunion: to mahalo our parents and grandparents for teaching us aloha ʻohana, to connect the next generation to our roots, and to ensure the Kekoʻolani story continues. ʻHonoring our kūpuna, Celebrating our Future. E ola mau ka ʻohana Kekoʻolani. E hoʻomau i ke aloha o nā kūpuna.ʽ</p><p>The hui confirmed July 10–12, 2026 for our gathering in Hilo with a three-day flow of genealogy talk story, huakaʻi to Waipiʻo and family graves, and a lūʻau evening at The Arc. Committees were formed for registration, hale set-up, hō‘ike program, meals, genealogy archiving, and more. Mahalo nui to everyone who offered kōkua—see the committee roster below for ways to plug in.</p>",
+      "<p>At our August 23, 2025 planning meeting we affirmed the purpose of this reunion: to thank our parents and grandparents for teaching us family love, to connect the next generation to our roots, and to ensure the Keko'olani story continues. 'Honoring our elders, celebrating our future.'</p><p>The group confirmed July 10-12, 2026 for our gathering in Hilo with a three-day flow of genealogy story sharing, an excursion to Waipio and family graves, and a luau evening at The Arc. Committees were formed for registration, setup, program, meals, genealogy archiving, and more. Thank you to everyone who offered help; see the committee roster below for ways to plug in.</p>",
     schedule_json: SITE_DEFAULTS.schedule,
     gallery_json: DEFAULT_EXTRAS,
     show_schedule: true,
@@ -95,7 +95,7 @@ export default async function HomePage() {
         <div className="relative mx-auto flex max-w-6xl flex-col gap-12 px-6 py-24 md:flex-row md:items-center">
           <div className="space-y-6 md:w-3/5">
             <span className="inline-flex rounded-full bg-white/80 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-ocean-700 shadow">
-              Hilo, Hawaiʻi
+              Hilo, Hawaii
             </span>
             <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
               {site.hero_title}
@@ -114,7 +114,7 @@ export default async function HomePage() {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <Link href="/register" className="w-full sm:w-auto">
                 <span className="inline-flex w-full items-center justify-center rounded-full bg-lava-500 px-6 py-3 text-base font-semibold text-white shadow-lg transition hover:bg-lava-600">
-                  Kākau ʻOhana
+                  Register
                 </span>
               </Link>
               {showSchedule ? (
@@ -122,7 +122,7 @@ export default async function HomePage() {
                   href="#schedule"
                   className="inline-flex items-center text-sm font-semibold text-ocean-600 hover:text-ocean-700"
                 >
-                  ʻIke i ka Papa Kau
+                  View Schedule
                 </a>
               ) : null}
             </div>
@@ -132,16 +132,16 @@ export default async function HomePage() {
               <h2 className="text-xl font-semibold text-slate-900">Weekend Snapshot</h2>
               <dl className="mt-6 space-y-4 text-sm text-slate-600">
                 <div>
-                  <dt className="font-semibold text-slate-800">E Komo Mai Mixer</dt>
-                  <dd>Gather by Hilo Bay with live mele & family trivia.</dd>
+                  <dt className="font-semibold text-slate-800">Welcome Mixer</dt>
+                  <dd>Gather by Hilo Bay with live music and family trivia.</dd>
                 </div>
                 <div>
-                  <dt className="font-semibold text-slate-800">Kupuna Stories</dt>
-                  <dd>Document family histories & add to our shared genealogy.</dd>
+                  <dt className="font-semibold text-slate-800">Elders' Stories</dt>
+                  <dd>Document family histories and add to our shared genealogy.</dd>
                 </div>
                 <div>
-                  <dt className="font-semibold text-slate-800">Aloha Keiki</dt>
-                  <dd>Keiki scavenger hunt across Coconut Island.</dd>
+                  <dt className="font-semibold text-slate-800">Kids' Adventure</dt>
+                  <dd>Kids scavenger hunt across Coconut Island.</dd>
                 </div>
               </dl>
               <div className="mt-6 rounded-2xl bg-gradient-to-r from-fern-400 to-ocean-400 p-4 text-white shadow">
@@ -162,7 +162,7 @@ export default async function HomePage() {
             />
             {showPurpose ? (
               <div>
-                <h3 className="text-sm uppercase tracking-[0.35em] text-fern-600">Nā Kuleana Nui</h3>
+                <h3 className="text-sm uppercase tracking-[0.35em] text-fern-600">Purpose Highlights</h3>
                 <ul className="mt-4 space-y-2 rounded-3xl border border-fern-100 bg-white/80 p-6 text-sm text-slate-700 shadow-sm">
                   {purposePoints.map((point) => (
                     <li key={point} className="flex items-start gap-3">
@@ -231,16 +231,16 @@ export default async function HomePage() {
       {showCosts || showLogistics ? (
         <section id="logistics" className="mx-auto max-w-5xl px-6 py-20">
           <div className="mb-12 text-center">
-            <span className="text-xs uppercase tracking-[0.3em] text-sand-600">Kālena & Kālā</span>
+            <span className="text-xs uppercase tracking-[0.3em] text-sand-600">Costs & Planning</span>
             <h2 className="mt-3 text-3xl font-semibold text-slate-900">Reunion Logistics</h2>
             <p className="mt-2 text-sm text-slate-600">
-              We are keeping registrations as affordable as possible. Mahalo for kōkua with supplies, set-up, and hale hospitality.
+              We are keeping registrations as affordable as possible. Thanks for helping with supplies, setup, and hosting.
             </p>
           </div>
           <div className={`grid gap-8 ${showCosts && showLogistics ? 'md:grid-cols-2' : 'md:grid-cols-1'}`}>
             {showCosts ? (
               <div className="rounded-3xl border border-white/60 bg-white/90 p-6 shadow">
-                <h3 className="font-serif text-2xl text-lava-600">Investment per ʻOhana</h3>
+                <h3 className="font-serif text-2xl text-lava-600">Cost per Family</h3>
                 <ul className="mt-4 space-y-3 text-sm text-slate-700">
                   {costOutline.map((item) => (
                     <li key={item.label}>
@@ -250,13 +250,13 @@ export default async function HomePage() {
                   ))}
                 </ul>
                 <p className="mt-4 text-xs uppercase tracking-[0.25em] text-slate-500">
-                  Additional kōkua and donations welcome for venue rentals & supplies.
+                  Additional help and donations welcome for venue rentals and supplies.
                 </p>
               </div>
             ) : null}
             {showLogistics ? (
               <div className="rounded-3xl border border-fern-100 bg-gradient-to-br from-fern-50/70 to-sand-50/80 p-6 shadow">
-                <h3 className="font-serif text-2xl text-fern-700">Logistics & Kōkua</h3>
+                <h3 className="font-serif text-2xl text-fern-700">Logistics & Support</h3>
                 <ul className="mt-4 space-y-3 text-sm text-slate-700">
                   {logisticsNotes.map((note) => (
                     <li key={note} className="flex items-start gap-3">
@@ -266,7 +266,7 @@ export default async function HomePage() {
                   ))}
                 </ul>
                 <p className="mt-4 text-sm text-slate-600">
-                  Need kōkua or have updates before the next planning hui (Sept 20, 2025 @ 10:30am)? Contact Jade directly at{' '}
+                  Need help or have updates before the next planning meeting (Sept 20, 2025 @ 10:30am)? Contact Jade directly at{' '}
                   <a href="mailto:pumehanasilva@mac.com" className="text-ocean-600 underline">
                     pumehanasilva@mac.com
                   </a>{' '}
@@ -322,10 +322,10 @@ export default async function HomePage() {
         <section id="committees" className="bg-white/70 py-20">
           <div className="mx-auto max-w-6xl px-6">
             <div className="mb-12 text-center">
-              <span className="text-xs uppercase tracking-[0.3em] text-lava-500">Kōmike & Kōkua</span>
+              <span className="text-xs uppercase tracking-[0.3em] text-lava-500">Committees & Volunteers</span>
               <h2 className="mt-3 text-3xl font-semibold text-slate-900">Meet the Planning Committees</h2>
               <p className="mt-2 text-sm text-slate-600">
-                Mahalo to the ʻohana stepping forward. If you feel called to help, reach out to the committee leads.
+                Thank you to the families stepping forward. If you feel called to help, reach out to the committee leads.
               </p>
             </div>
             <div className="grid gap-6 md:grid-cols-2">

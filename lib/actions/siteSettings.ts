@@ -14,14 +14,14 @@ export async function updateSiteSettings(formData: FormData) {
     const rawSchedule = json.schedule_json ? JSON.parse((json.schedule_json as string) || '[]') : SITE_DEFAULTS.schedule;
     schedulePayload = parseSchedule(rawSchedule);
   } catch (error) {
-    console.warn('Failed to parse schedule_json – using defaults', error);
+    console.warn('Failed to parse schedule_json - using defaults', error);
   }
 
   try {
     const rawExtras = json.gallery_json ? JSON.parse((json.gallery_json as string) || '{}') : DEFAULT_EXTRAS;
     extrasPayload = parseExtras(rawExtras);
   } catch (error) {
-    console.warn('Failed to parse gallery_json – using defaults', error);
+    console.warn('Failed to parse gallery_json - using defaults', error);
   }
 
   const toBoolean = (value: FormDataEntryValue | undefined) => value === 'on' || value === 'true' || value === '1';

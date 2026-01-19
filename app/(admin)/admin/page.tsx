@@ -104,7 +104,7 @@ export default async function AdminOverviewPage() {
                 {!latestOrders.length && (
                   <tr>
                     <td colSpan={5} className="py-6 text-center text-slate-500">
-                      No orders yet. Once family registers, you’ll see them here.
+                      No orders yet. Once family registers, you'll see them here.
                     </td>
                   </tr>
                 )}
