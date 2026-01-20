@@ -61,18 +61,8 @@ async function getSiteContent() {
 <p>Our moʻokūʻauhau (genealogy) allows us to know who we are, where we come from, and who we are related to. It connects us to place, events, and moʻolelo that has or may impact our ʻohana. Our dear Aunty Amy, Uncle Henry, and cousin Dean have worked hard to provide records of our past.</p>
 <p>We invite everyone to participate in sharing your genealogy information so we can update our family records to include the last few generations. We will be emailing a PDF fillable form for you to complete, save, and email to Jade Silva (daughter of Winifred). We will also include a letter asking for your authorization to share your information with the rest of the family. Please submit genealogy information by the end of April 2026.</p>
 <h3>Registration</h3>
-<ol>
-  <li>Participant name (Last, First, Middle)</li>
-  <li>Parent, grandparent, great grandparent (dropdown with all siblings: Nawai, Katherine, Amy, etc.)</li>
-  <li>Contact information (phone, address, email)</li>
-  <li>Select days of participation</li>
-  <li>T-shirt size and quantity</li>
-  <li>All participants: name (first and last), age, relationship</li>
-  <li>Select days of participation for each participant</li>
-  <li>T-shirt size and quantity for each participant</li>
-  <li>Total cost</li>
-  <li>Donation note near payment for those who want to give more to the reunion fund; any funds not used will be deposited to the Kekoʻolani Trust fund (used for Waipiʻo land taxes and/or land maintenance).</li>
-</ol>
+<p>Registration is required for all attendees. Please use the <a href="/register">online form</a> to share participant details, attendance days, and T-shirt sizes so we can plan meals and activities.</p>
+<p>Need help? Contact Jade Silva for registration support or to request mailed materials.</p>
 <p><strong>Payment options:</strong></p>
 <ul>
   <li>Online (account number and routing number will be provided)</li>
@@ -147,6 +137,44 @@ function splitScheduleItem(item: string) {
   return { time, detail: match[2].trim() };
 }
 
+type AboutSection = {
+  title: string;
+  html: string;
+};
+
+function splitAboutSections(html: string | null) {
+  const cleaned = (html ?? '').trim();
+  if (!cleaned) {
+    return { intro: null as string | null, sections: [] as AboutSection[] };
+  }
+
+  const matches = Array.from(cleaned.matchAll(/<h3[^>]*>(.*?)<\/h3>/gi));
+  if (!matches.length) {
+    return { intro: cleaned, sections: [] };
+  }
+
+  const intro = matches[0].index ? cleaned.slice(0, matches[0].index).trim() : '';
+  const sections = matches
+    .map((match, index) => {
+      if (match.index === undefined) return null;
+      const title = match[1].replace(/<[^>]+>/g, '').trim();
+      const start = match.index + match[0].length;
+      const end = index + 1 < matches.length && matches[index + 1].index !== undefined ? matches[index + 1].index : cleaned.length;
+      let sectionHtml = cleaned.slice(start, end).trim();
+      if (title.toLowerCase() === 'registration') {
+        sectionHtml = sectionHtml.replace(/<ol[\s\S]*?<\/ol>/gi, '').trim();
+      }
+      if (!title || !sectionHtml) return null;
+      return { title, html: sectionHtml };
+    })
+    .filter((section): section is AboutSection => Boolean(section));
+
+  return {
+    intro: intro || null,
+    sections
+  };
+}
+
 export default async function HomePage() {
   const { site, tickets, scheduleEntries, extras, sections } = await getSiteContent();
   const galleryItems = extras.gallery;
@@ -162,6 +190,7 @@ export default async function HomePage() {
   const showLogistics = site.show_logistics && logisticsNotes.length > 0;
   const showCommittees = site.show_committees && committees.length > 0;
   const aboutGridCols = showGallery ? 'md:grid-cols-[3fr,2fr]' : 'md:grid-cols-1';
+  const aboutContent = splitAboutSections(site.about_html);
 
   return (
     <div>
@@ -221,10 +250,25 @@ export default async function HomePage() {
       <section id="about" className="section">
         <div className={`container grid gap-12 ${aboutGridCols} md:items-start`}>
           <div className="space-y-8">
-            <article
-              className="prose prose-lg prose-slate max-w-none text-sand-700"
-              dangerouslySetInnerHTML={{ __html: site.about_html ?? '' }}
-            />
+            {aboutContent.intro ? (
+              <div
+                className="prose prose-lg prose-slate max-w-none text-sand-700"
+                dangerouslySetInnerHTML={{ __html: aboutContent.intro }}
+              />
+            ) : null}
+            {aboutContent.sections.length ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {aboutContent.sections.map((section) => (
+                  <div key={section.title} className="card shadow-soft p-5">
+                    <h3 className="text-lg font-semibold text-sand-900">{section.title}</h3>
+                    <div
+                      className="prose prose-sm prose-slate mt-2 max-w-none text-sand-700"
+                      dangerouslySetInnerHTML={{ __html: section.html }}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : null}
             {showPurpose ? (
               <div>
                 <h3 className="section-title">Purpose Highlights</h3>

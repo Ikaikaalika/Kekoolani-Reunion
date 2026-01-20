@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabaseClient';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { REGISTRATION_FORM_FIELDS } from '@/lib/registrationGuidelines';
 import type { Database } from '@/types/supabase';
 
 const CSV_SEPARATOR = ',';
@@ -56,6 +57,7 @@ export async function GET() {
   const orderItems = (itemsRes.data ?? []) as OrderItemRow[];
   const attendees = (attendeesRes.data ?? []) as AttendeeRow[];
   const questions = (questionsRes.data ?? []) as QuestionRow[];
+  const staticFields = REGISTRATION_FORM_FIELDS;
 
   const itemsByOrder = new Map<string, OrderItemRow[]>();
   orderItems.forEach((item) => {
@@ -80,7 +82,9 @@ export async function GET() {
     'Stripe Session ID',
     'Ticket Summary',
     'Attendee Count'
-  ].concat(questions.map((question) => question.prompt));
+  ]
+    .concat(staticFields.map((field) => field.label))
+    .concat(questions.map((question) => question.prompt));
 
   const rows = orders.map((order) => {
     const items = itemsByOrder.get(order.id) ?? [];
@@ -92,6 +96,7 @@ export async function GET() {
         ? (order.form_answers as Record<string, unknown>)
         : {};
 
+    const staticColumns = staticFields.map((field) => normalizeAnswer(answers[field.key]));
     const answerColumns = questions.map((question) => normalizeAnswer(answers[question.id]));
 
     const baseColumns = [
@@ -109,7 +114,7 @@ export async function GET() {
       String(attendeeCount[order.id] ?? 0)
     ];
 
-    return baseColumns.concat(answerColumns).map((value) => escapeCsvValue(value));
+    return baseColumns.concat(staticColumns, answerColumns).map((value) => escapeCsvValue(value));
   });
 
   const csv = [headers.map(escapeCsvValue).join(CSV_SEPARATOR)]

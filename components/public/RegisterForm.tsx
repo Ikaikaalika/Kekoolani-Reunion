@@ -18,7 +18,18 @@ const formSchema = checkoutSchema.omit({ answers: true }).extend({
       quantity: z.coerce.number().int().min(0)
     })
   ),
-  answers: z.record(z.any()).optional()
+  answers: z.record(z.any()).optional(),
+  contact_phone: z.string().min(1, 'Phone number is required'),
+  contact_address: z.string().min(1, 'Mailing address is required'),
+  lineage: z.string().min(1, 'Select a lineage'),
+  lineage_other: z.string().optional(),
+  attendance_days: z.array(z.string()).min(1, 'Select at least one day'),
+  tshirt_size: z.string().min(1, 'Select a T-shirt size'),
+  tshirt_quantity: z.coerce.number().int().min(1, 'Enter a quantity'),
+  additional_participants: z.string().optional(),
+  participant_days: z.string().optional(),
+  participant_shirts: z.string().optional(),
+  donation_note: z.string().optional()
 });
 
 type FormSchema = z.infer<typeof formSchema>;
@@ -40,6 +51,16 @@ type Question = {
   options: any;
   required: boolean;
 };
+
+const LINEAGE_OPTIONS = ['Nawai', 'Katherine', 'Amy', 'Other / Not listed'];
+
+const PARTICIPATION_DAYS = [
+  { value: 'Friday', label: 'Friday (July 10)' },
+  { value: 'Saturday', label: 'Saturday (July 11)' },
+  { value: 'Sunday', label: 'Sunday (July 12)' }
+];
+
+const TSHIRT_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
 
 interface RegisterFormProps {
   tickets: Ticket[];
@@ -70,6 +91,17 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
     defaultValues: {
       purchaser_name: '',
       purchaser_email: '',
+      contact_phone: '',
+      contact_address: '',
+      lineage: '',
+      lineage_other: '',
+      attendance_days: [],
+      tshirt_size: '',
+      tshirt_quantity: 1,
+      additional_participants: '',
+      participant_days: '',
+      participant_shirts: '',
+      donation_note: '',
       tickets: defaultTickets
     }
   });
@@ -86,16 +118,31 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
     setError(null);
     setLoading(true);
     try {
-      const answers = questions.reduce<Record<string, unknown>>((acc, question) => {
-        const fieldName = `question_${question.id}`;
-        const raw = (data as any)[fieldName];
-        let value: unknown = raw;
-        if (question.field_type === 'checkbox') {
-          value = raw === true || raw === 'true' || raw === 'on';
+      const answers = questions.reduce<Record<string, unknown>>(
+        (acc, question) => {
+          const fieldName = `question_${question.id}`;
+          const raw = (data as any)[fieldName];
+          let value: unknown = raw;
+          if (question.field_type === 'checkbox') {
+            value = raw === true || raw === 'true' || raw === 'on';
+          }
+          acc[question.id] = value ?? null;
+          return acc;
+        },
+        {
+          contact_phone: data.contact_phone,
+          contact_address: data.contact_address,
+          lineage: data.lineage,
+          lineage_other: data.lineage_other || null,
+          attendance_days: data.attendance_days ?? [],
+          tshirt_size: data.tshirt_size,
+          tshirt_quantity: data.tshirt_quantity,
+          additional_participants: data.additional_participants || null,
+          participant_days: data.participant_days || null,
+          participant_shirts: data.participant_shirts || null,
+          donation_note: data.donation_note || null
         }
-        acc[question.id] = value ?? null;
-        return acc;
-      }, {});
+      );
 
       const payload = {
         purchaser_name: data.purchaser_name,
@@ -130,20 +177,133 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
 
   return (
     <form onSubmit={onSubmit} className="card shadow-soft backdrop-soft space-y-8 p-8">
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="purchaser_name">Full Name</Label>
-          <Input id="purchaser_name" placeholder="First & last name" {...register('purchaser_name')} />
-          {errors.purchaser_name && (
-            <p className="text-xs text-red-500">{errors.purchaser_name.message}</p>
-          )}
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold text-black">Primary Contact</h2>
+        <div className="grid gap-6 md:grid-cols-3">
+          <div className="space-y-2 md:col-span-1">
+            <Label htmlFor="purchaser_name">Full Name (Last, First, Middle)</Label>
+            <Input id="purchaser_name" placeholder="Last, First Middle" {...register('purchaser_name')} />
+            {errors.purchaser_name && (
+              <p className="text-xs text-red-500">{errors.purchaser_name.message}</p>
+            )}
+          </div>
+          <div className="space-y-2 md:col-span-1">
+            <Label htmlFor="purchaser_email">Email</Label>
+            <Input id="purchaser_email" type="email" placeholder="ohana@kekoolani.com" {...register('purchaser_email')} />
+            {errors.purchaser_email && (
+              <p className="text-xs text-red-500">{errors.purchaser_email.message}</p>
+            )}
+          </div>
+          <div className="space-y-2 md:col-span-1">
+            <Label htmlFor="contact_phone">Phone</Label>
+            <Input id="contact_phone" placeholder="808-555-1234" {...register('contact_phone')} />
+            {errors.contact_phone && (
+              <p className="text-xs text-red-500">{errors.contact_phone.message}</p>
+            )}
+          </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="purchaser_email">Email</Label>
-          <Input id="purchaser_email" type="email" placeholder="ohana@kekoolani.com" {...register('purchaser_email')} />
-          {errors.purchaser_email && (
-            <p className="text-xs text-red-500">{errors.purchaser_email.message}</p>
+          <Label htmlFor="contact_address">Mailing Address</Label>
+          <Textarea id="contact_address" rows={3} placeholder="Street, City, State, Zip" {...register('contact_address')} />
+          {errors.contact_address && (
+            <p className="text-xs text-red-500">{errors.contact_address.message}</p>
           )}
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold text-black">Lineage & Attendance</h2>
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="lineage">Lineage (Parent/Grandparent Line)</Label>
+            <select
+              id="lineage"
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brandBlue focus:outline-none focus:ring-2 focus:ring-brandBlueLight/40"
+              {...register('lineage')}
+            >
+              <option value="">Select a lineage</option>
+              {LINEAGE_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            {errors.lineage && <p className="text-xs text-red-500">{errors.lineage.message}</p>}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="lineage_other">Lineage (if Other)</Label>
+            <Input id="lineage_other" placeholder="Share your lineage details" {...register('lineage_other')} />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label>Days of Participation</Label>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {PARTICIPATION_DAYS.map((day) => (
+              <label key={day.value} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                <input type="checkbox" value={day.value} className="h-4 w-4" {...register('attendance_days')} />
+                <span>{day.label}</span>
+              </label>
+            ))}
+          </div>
+          {errors.attendance_days && <p className="text-xs text-red-500">{errors.attendance_days.message}</p>}
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold text-black">Primary T-shirt Order</h2>
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="tshirt_size">T-shirt Size</Label>
+            <select
+              id="tshirt_size"
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brandBlue focus:outline-none focus:ring-2 focus:ring-brandBlueLight/40"
+              {...register('tshirt_size')}
+            >
+              <option value="">Select a size</option>
+              {TSHIRT_SIZES.map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+            {errors.tshirt_size && <p className="text-xs text-red-500">{errors.tshirt_size.message}</p>}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="tshirt_quantity">Quantity</Label>
+            <Input id="tshirt_quantity" type="number" min={1} {...register('tshirt_quantity')} />
+            {errors.tshirt_quantity && <p className="text-xs text-red-500">{errors.tshirt_quantity.message}</p>}
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold text-black">Additional Participants</h2>
+        <div className="space-y-2">
+          <Label htmlFor="additional_participants">Names, Ages, Relationships</Label>
+          <Textarea
+            id="additional_participants"
+            rows={4}
+            placeholder="List each participant: Name, age, relationship"
+            {...register('additional_participants')}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="participant_days">Participation Days by Participant</Label>
+          <Textarea
+            id="participant_days"
+            rows={3}
+            placeholder="Example: Keoni (Fri/Sat), Leilani (Sat/Sun)"
+            {...register('participant_days')}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="participant_shirts">T-shirt Sizes & Quantities by Participant</Label>
+          <Textarea
+            id="participant_shirts"
+            rows={3}
+            placeholder="Example: Keoni (L x1), Leilani (S x1)"
+            {...register('participant_shirts')}
+          />
         </div>
       </div>
 
@@ -228,6 +388,19 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
           </div>
         </div>
       )}
+
+      <div className="space-y-2">
+        <Label htmlFor="donation_note">Donation Note (Optional)</Label>
+        <Textarea
+          id="donation_note"
+          rows={3}
+          placeholder="Share any additional contribution details for the reunion fund."
+          {...register('donation_note')}
+        />
+        <p className="text-xs text-koa">
+          Additional funds support reunion expenses and the Kekoʻolani Trust fund for Waipiʻo land stewardship.
+        </p>
+      </div>
 
       <div className="flex items-center justify-between rounded-2xl bg-deep px-6 py-4 text-white">
         <p className="text-sm uppercase tracking-[0.3em] text-white/70">Total</p>

@@ -1,4 +1,5 @@
 import RegisterForm from '@/components/public/RegisterForm';
+import { REGISTRATION_GUIDELINES } from '@/lib/registrationGuidelines';
 import { createSupabaseServerClient } from '@/lib/supabaseClient';
 import { formatCurrency } from '@/lib/utils';
 import { parseExtras } from '@/lib/siteContent';
@@ -53,6 +54,23 @@ export default async function RegisterPage({ searchParams }: { searchParams: { t
             Payment canceled. Your spot is not reserved until payment is completed.
           </div>
         )}
+        <section className="mb-10">
+          <div className="mb-6 text-center">
+            <span className="section-title">Registration Outline</span>
+            <h2 className="h3 mt-3">What we will ask for</h2>
+            <p className="mt-2 text-sm text-koa">
+              Use this checklist to gather details before starting your registration.
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {REGISTRATION_GUIDELINES.map((item) => (
+              <div key={item.key} className="card shadow-soft p-5">
+                <p className="mono text-xs uppercase tracking-[0.3em] text-sand-600">{item.label}</p>
+                <p className="mt-2 text-sm text-koa">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
         <aside className="card shadow-soft mb-10 p-6">
           <h2 className="text-lg font-semibold text-black">What registration covers</h2>
           <ul className="mt-3 space-y-2 text-sm text-koa">

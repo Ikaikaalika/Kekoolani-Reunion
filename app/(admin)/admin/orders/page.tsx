@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { createSupabaseServerClient } from '@/lib/supabaseClient';
 import { formatCurrency } from '@/lib/utils';
+import { REGISTRATION_FORM_FIELDS } from '@/lib/registrationGuidelines';
 import type { Database } from '@/types/supabase';
 
 type OrderWithRelations = Database['public']['Tables']['orders']['Row'] & {
@@ -45,6 +46,7 @@ function normalizeAnswer(value: unknown): string {
 
 export default async function AdminOrdersPage() {
   const { orders, questions } = await getOrders();
+  const staticFields = REGISTRATION_FORM_FIELDS;
 
   return (
     <div className="space-y-6">
@@ -73,6 +75,11 @@ export default async function AdminOrdersPage() {
               <th className="py-3 pr-6">Total</th>
               <th className="py-3 pr-6">Tickets</th>
               <th className="py-3 pr-6">Attendees</th>
+              {staticFields.map((field) => (
+                <th key={field.key} className="py-3 pr-6">
+                  {field.label}
+                </th>
+              ))}
               {questions.map((question) => (
                 <th key={question.id} className="py-3 pr-6">
                   {question.prompt}
@@ -117,6 +124,11 @@ export default async function AdminOrdersPage() {
                   </td>
                   <td className="py-3 pr-6 text-xs text-slate-600">{ticketSummary || '-'}</td>
                   <td className="py-3 pr-6 text-xs text-slate-600">{order.attendees?.length ?? 0}</td>
+                  {staticFields.map((field) => (
+                    <td key={`${order.id}-${field.key}`} className="py-3 pr-6 text-xs text-slate-600">
+                      {normalizeAnswer(answerRecord[field.key]) || '-'}
+                    </td>
+                  ))}
                   {questions.map((question) => (
                     <td key={`${order.id}-${question.id}`} className="py-3 pr-6 text-xs text-slate-600">
                       {normalizeAnswer(answerRecord[question.id]) || '-'}
@@ -127,7 +139,7 @@ export default async function AdminOrdersPage() {
             })}
             {!orders.length && (
               <tr>
-                <td colSpan={8 + questions.length} className="py-8 text-center text-slate-500">
+                <td colSpan={8 + staticFields.length + questions.length} className="py-8 text-center text-slate-500">
                   No orders yet.
                 </td>
               </tr>
