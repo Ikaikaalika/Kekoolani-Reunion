@@ -113,6 +113,40 @@ async function getSiteContent() {
   return { site, tickets, scheduleEntries, extras, sections };
 }
 
+const scheduleItemPattern =
+  /^(\d{1,2}(?::\d{2})?(?:\s*(?:a\.?m\.?|p\.?m\.?|a|p))?(?:\s*[-\u2013\u2014]\s*\d{1,2}(?::\d{2})?(?:\s*(?:a\.?m\.?|p\.?m\.?|a|p))?)?)\s+(.+)$/i;
+
+function isLikelyTimePrefix(value: string) {
+  const hasMinutes = /:\d{2}/.test(value);
+  const hasMeridiem = /[ap](?:\.?m\.?)?/i.test(value);
+  const hasRange = /[-\u2013\u2014]/.test(value);
+  if (!hasMinutes && !hasMeridiem && !hasRange) {
+    return false;
+  }
+
+  const hours = Array.from(value.matchAll(/\b(\d{1,2})(?::\d{2})?/g)).map((match) => Number(match[1]));
+  if (!hours.length) {
+    return false;
+  }
+
+  return hours.every((hour) => hour >= 1 && hour <= 12);
+}
+
+function splitScheduleItem(item: string) {
+  const trimmed = item.trim();
+  const match = trimmed.match(scheduleItemPattern);
+  if (!match) {
+    return { time: null, detail: trimmed };
+  }
+
+  const time = match[1].trim();
+  if (!isLikelyTimePrefix(time)) {
+    return { time: null, detail: trimmed };
+  }
+
+  return { time, detail: match[2].trim() };
+}
+
 export default async function HomePage() {
   const { site, tickets, scheduleEntries, extras, sections } = await getSiteContent();
   const galleryItems = extras.gallery;
@@ -241,6 +275,8 @@ export default async function HomePage() {
               {scheduleEntries.map((entry, idx) => {
                 const agenda = Array.isArray(entry.items) && entry.items.length ? entry.items : [];
                 const fallbackDescription = !agenda.length && entry.description ? entry.description : null;
+                const parsedAgenda = agenda.map((item) => splitScheduleItem(item));
+                const hasTimes = parsedAgenda.some((item) => item.time);
 
                 return (
                   <div
@@ -250,14 +286,24 @@ export default async function HomePage() {
                     <p className="text-xs uppercase tracking-[0.2em] text-ocean-500">{entry.time}</p>
                     <h3 className="mt-3 text-xl font-semibold text-slate-900">{entry.title}</h3>
                     {agenda.length > 0 ? (
-                      <ul className="mt-3 space-y-2 text-sm text-slate-600">
-                        {agenda.map((item) => (
-                          <li key={item} className="flex items-start gap-3">
-                            <span className="mt-1 inline-flex h-1.5 w-1.5 flex-none rounded-full bg-lava-400" />
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
+                      <div className="mt-4 space-y-3 text-sm text-slate-600">
+                        {parsedAgenda.map((item, itemIdx) =>
+                          hasTimes ? (
+                            <div key={`${entry.time}-item-${itemIdx}`} className="grid gap-2 sm:grid-cols-[120px_1fr]">
+                              <span
+                                className={`text-xs font-semibold uppercase tracking-[0.2em] ${
+                                  item.time ? 'text-slate-500' : 'text-slate-300'
+                                }`}
+                              >
+                                {item.time ?? 'TBD'}
+                              </span>
+                              <span>{item.detail}</span>
+                            </div>
+                          ) : (
+                            <p key={`${entry.time}-item-${itemIdx}`}>{item.detail}</p>
+                          )
+                        )}
+                      </div>
                     ) : fallbackDescription ? (
                       <p className="mt-2 text-sm text-slate-600">{fallbackDescription}</p>
                     ) : null}
