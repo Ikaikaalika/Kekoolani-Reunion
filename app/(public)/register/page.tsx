@@ -39,36 +39,42 @@ export default async function RegisterPage({ searchParams }: { searchParams: { t
   const costSummary = extras.costs;
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-16">
-      <div className="mb-12 text-center">
-        <span className="text-xs uppercase tracking-[0.3em] text-ocean-500">Reserve your spot</span>
-        <h1 className="mt-3 text-3xl font-semibold text-slate-900">Family Registration - July 10-12, 2026</h1>
-        <p className="mt-2 text-sm text-slate-600">
-          Secure your seats at the reunion, let us know your family details, and select the experiences that fit your crew.
-        </p>
-      </div>
-      {canceled && (
-        <div className="mb-8 rounded-3xl border border-lava-200 bg-lava-50 px-6 py-4 text-sm text-lava-700">
-          Payment canceled. Your spot is not reserved until payment is completed.
+    <div className="section">
+      <div className="container max-w-3xl">
+        <div className="mb-12 text-center">
+          <span className="mono text-xs uppercase tracking-[0.3em] text-koa">Reserve your spot</span>
+          <h1 className="h2 mt-3">Family Registration - July 10-12, 2026</h1>
+          <p className="mt-2 text-sm text-koa">
+            Secure your seats at the reunion, let us know your family details, and select the experiences that fit your crew.
+          </p>
         </div>
-      )}
-      <aside className="mb-10 rounded-3xl border border-white/70 bg-white/85 p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900">What registration covers</h2>
-        <ul className="mt-3 space-y-2 text-sm text-slate-600">
-          {costSummary.map((item) => (
-            <li key={`${item.label}-${item.detail}`} className="flex items-start gap-3">
-              <span className="mt-1 inline-flex h-1.5 w-1.5 flex-none rounded-full bg-fern-500" />
-              <span>
-                <strong className="text-slate-900">{item.label}.</strong> {item.detail}
-              </span>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-4 text-xs uppercase tracking-[0.25em] text-slate-500">
-          Have questions or need help? Email <a href="mailto:ohana@kekoolani.com" className="text-ocean-600 underline">ohana@kekoolani.com</a>.
-        </p>
-      </aside>
-      <RegisterForm tickets={tickets} questions={questions} presetTicket={presetTicket} />
+        {canceled && (
+          <div className="mb-8 rounded-2xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-700">
+            Payment canceled. Your spot is not reserved until payment is completed.
+          </div>
+        )}
+        <aside className="card shadow-soft mb-10 p-6">
+          <h2 className="text-lg font-semibold text-black">What registration covers</h2>
+          <ul className="mt-3 space-y-2 text-sm text-koa">
+            {costSummary.map((item) => (
+              <li key={`${item.label}-${item.detail}`} className="flex items-start gap-3">
+                <span className="mt-1 inline-flex h-1.5 w-1.5 flex-none rounded-full bg-brandGreen" />
+                <span>
+                  <strong className="text-black">{item.label}.</strong> {item.detail}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="mono mt-4 text-xs uppercase tracking-[0.25em] text-koa">
+            Have questions or need help? Email{' '}
+            <a href="mailto:ohana@kekoolani.com" className="text-brandBlue underline">
+              ohana@kekoolani.com
+            </a>
+            .
+          </p>
+        </aside>
+        <RegisterForm tickets={tickets} questions={questions} presetTicket={presetTicket} />
+      </div>
     </div>
   );
 }

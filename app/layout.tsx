@@ -1,9 +1,17 @@
 import type { Metadata } from 'next';
-import { Inter, Noto_Serif } from 'next/font/google';
+import { JetBrains_Mono, Space_Grotesk } from 'next/font/google';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
-const notoSerif = Noto_Serif({ subsets: ['latin'], variable: '--font-noto-serif' });
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-space-grotesk',
+  weight: ['300', '400', '500', '600', '700']
+});
+const jetBrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-jetbrains-mono',
+  weight: ['400', '500', '600']
+});
 
 export const metadata: Metadata = {
   title: 'Kekoʻolani Family Reunion',
@@ -12,8 +20,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${notoSerif.variable}`}>
-      <body className="font-sans">{children}</body>
+    <html lang="en" className={`${spaceGrotesk.variable} ${jetBrainsMono.variable}`}>
+      <body className="font-sans noise">{children}</body>
     </html>
   );
 }

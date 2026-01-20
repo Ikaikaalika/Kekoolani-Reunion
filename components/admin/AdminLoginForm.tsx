@@ -51,7 +51,7 @@ export default function AdminLoginForm() {
         </p>
       )}
       {reason === 'unauthorized' && (
-        <p className="rounded-2xl border border-lava-200 bg-lava-50 px-4 py-3 text-xs text-lava-600">
+        <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-600">
           Your account does not have admin access. Try another login or contact the site owner.
         </p>
       )}
@@ -63,7 +63,7 @@ export default function AdminLoginForm() {
         <Label htmlFor="password">Password</Label>
         <Input id="password" name="password" type="password" required />
       </div>
-      {error && <p className="text-sm text-lava-400">{error}</p>}
+      {error && <p className="text-sm text-red-500">{error}</p>}
       <Button type="submit" loading={loading} className="w-full">
         Sign In
       </Button>

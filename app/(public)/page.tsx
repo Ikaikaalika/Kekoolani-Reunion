@@ -165,62 +165,52 @@ export default async function HomePage() {
 
   return (
     <div>
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 -z-10 bg-gradient-to-br from-ocean-200 via-sand-100 to-fern-100" />
-        <div className="relative mx-auto flex max-w-6xl flex-col gap-12 px-6 py-24 md:flex-row md:items-center">
-          <div className="space-y-6 md:w-3/5">
-            <span className="inline-flex rounded-full bg-white/80 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-ocean-700 shadow">
-              Hilo, Hawaiʻi
-            </span>
-            <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
-              {site.hero_title}
-            </h1>
-            <p className="max-w-xl text-lg leading-7 text-slate-700">{site.hero_subtitle}</p>
-            <div className="flex flex-col gap-2 text-sm text-slate-600 sm:flex-row sm:items-center sm:gap-6">
+      <section className="section">
+        <div className="container grid gap-12 lg:grid-cols-[3fr,2fr] lg:items-center">
+          <div className="space-y-6">
+            <span className="mono text-xs uppercase tracking-[0.3em] text-koa">Hilo, Hawaiʻi</span>
+            <h1 className="h1 text-balance">{site.hero_title}</h1>
+            <p className="max-w-xl text-lg text-koa">{site.hero_subtitle}</p>
+            <div className="flex flex-col gap-3 text-sm text-koa sm:flex-row sm:items-center sm:gap-6">
               <div className="flex items-center gap-2">
-                <i className="h-2 w-2 rounded-full bg-lava-400" />
+                <i className="h-2 w-2 rounded-full bg-brandGreen" />
                 <span>{site.event_dates}</span>
               </div>
               <div className="flex items-center gap-2">
-                <i className="h-2 w-2 rounded-full bg-fern-400" />
+                <i className="h-2 w-2 rounded-full bg-brandBlue" />
                 <span>{site.location}</span>
               </div>
             </div>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-              <Link href="/register" className="w-full sm:w-auto">
-                <span className="inline-flex w-full items-center justify-center rounded-full bg-lava-500 px-6 py-3 text-base font-semibold text-white shadow-lg transition hover:bg-lava-600">
-                  Register
-                </span>
+              <Link href="/register" className="btn btn-large w-full sm:w-auto">
+                Register
               </Link>
               {showSchedule ? (
-                <a
-                  href="#schedule"
-                  className="inline-flex items-center text-sm font-semibold text-ocean-600 hover:text-ocean-700"
-                >
+                <a href="#schedule" className="btn btn-secondary w-full sm:w-auto">
                   View Schedule
                 </a>
               ) : null}
             </div>
           </div>
-          <div className="md:w-2/5">
-            <div className="relative overflow-hidden rounded-3xl border border-white/40 bg-white/70 p-6 shadow-xl backdrop-blur">
-              <h2 className="text-xl font-semibold text-slate-900">Weekend Snapshot</h2>
-              <dl className="mt-6 space-y-4 text-sm text-slate-600">
+          <div>
+            <div className="card shadow-soft backdrop-soft p-6">
+              <h2 className="h3">Weekend Snapshot</h2>
+              <dl className="mt-6 space-y-4 text-sm text-koa">
                 <div>
-                  <dt className="font-semibold text-slate-800">Hoʻolauna</dt>
+                  <dt className="font-semibold text-black">Hoʻolauna</dt>
                   <dd>Meet and greet, genealogy session, and keiki activities.</dd>
                 </div>
                 <div>
-                  <dt className="font-semibold text-slate-800">Huakaʻi to Waipiʻo</dt>
+                  <dt className="font-semibold text-black">Huakaʻi to Waipiʻo</dt>
                   <dd>Visit Waipiʻo valley and Kalopa family graves.</dd>
                 </div>
                 <div>
-                  <dt className="font-semibold text-slate-800">Family lūʻau</dt>
+                  <dt className="font-semibold text-black">Family lūʻau</dt>
                   <dd>Evening lūʻau with dinner, entertainment, and family sharing.</dd>
                 </div>
               </dl>
-              <div className="mt-6 rounded-2xl bg-gradient-to-r from-fern-400 to-ocean-400 p-4 text-white shadow">
-                <p className="text-sm uppercase tracking-[0.3em] text-white/80">Countdown</p>
+              <div className="mt-6 rounded-2xl bg-gradient-to-r from-brandGreen to-brandBlue p-4 text-white shadow-soft">
+                <p className="mono text-xs uppercase tracking-[0.3em] text-white/80">Countdown</p>
                 <p className="text-2xl font-semibold">{site.event_dates}</p>
               </div>
             </div>
@@ -228,20 +218,20 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section id="about" className="mx-auto max-w-5xl px-6 py-20">
-        <div className={`grid gap-12 ${aboutGridCols} md:items-start`}>
+      <section id="about" className="section">
+        <div className={`container grid gap-12 ${aboutGridCols} md:items-start`}>
           <div className="space-y-8">
             <article
-              className="prose prose-lg prose-slate max-w-none text-slate-700"
+              className="prose prose-lg prose-slate max-w-none text-koa"
               dangerouslySetInnerHTML={{ __html: site.about_html ?? '' }}
             />
             {showPurpose ? (
               <div>
-                <h3 className="text-sm uppercase tracking-[0.35em] text-fern-600">Purpose Highlights</h3>
-                <ul className="mt-4 space-y-2 rounded-3xl border border-fern-100 bg-white/80 p-6 text-sm text-slate-700 shadow-sm">
+                <h3 className="mono text-xs uppercase tracking-[0.35em] text-koa">Purpose Highlights</h3>
+                <ul className="card mt-4 space-y-2 p-6 text-sm text-koa shadow-soft">
                   {purposePoints.map((point) => (
                     <li key={point} className="flex items-start gap-3">
-                      <span className="mt-1 inline-flex h-2 w-2 flex-none rounded-full bg-fern-400" />
+                      <span className="mt-1 inline-flex h-2 w-2 flex-none rounded-full bg-brandGreen" />
                       <span>{point}</span>
                     </li>
                   ))}
@@ -252,7 +242,7 @@ export default async function HomePage() {
           {showGallery ? (
             <div className="grid gap-4">
               {galleryItems.slice(0, 3).map((item, idx) => (
-                <div key={idx} className="relative overflow-hidden rounded-3xl border border-white/50 bg-white/70 shadow-lg">
+                <div key={idx} className="card shadow-soft overflow-hidden">
                   <img src={item.src} alt={item.alt ?? 'Reunion photo'} className="h-48 w-full object-cover" />
                 </div>
               ))}
@@ -262,12 +252,12 @@ export default async function HomePage() {
       </section>
 
       {showSchedule ? (
-        <section id="schedule" className="bg-white/70 py-20">
-          <div className="mx-auto max-w-5xl px-6">
+        <section id="schedule" className="section bg-sand-50">
+          <div className="container max-w-5xl">
             <div className="mb-12 text-center">
-              <span className="text-xs uppercase tracking-[0.3em] text-ocean-600">Weekend Flow</span>
-              <h2 className="mt-3 text-3xl font-semibold text-slate-900">Tentative Schedule</h2>
-              <p className="mt-2 text-sm text-slate-600">
+              <span className="mono text-xs uppercase tracking-[0.3em] text-koa">Weekend Flow</span>
+              <h2 className="h2 mt-3">Tentative Schedule</h2>
+              <p className="mt-2 text-sm text-koa">
                 Times & locations may shift slightly as we confirm partners.
               </p>
             </div>
@@ -281,18 +271,18 @@ export default async function HomePage() {
                 return (
                   <div
                     key={`${entry.time}-${idx}`}
-                    className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                    className="card shadow-soft p-6 transition hover:-translate-y-1"
                   >
-                    <p className="text-xs uppercase tracking-[0.2em] text-ocean-500">{entry.time}</p>
-                    <h3 className="mt-3 text-xl font-semibold text-slate-900">{entry.title}</h3>
+                    <p className="mono text-xs uppercase tracking-[0.3em] text-koa">{entry.time}</p>
+                    <h3 className="mt-3 text-xl font-semibold text-black">{entry.title}</h3>
                     {agenda.length > 0 ? (
-                      <div className="mt-4 space-y-3 text-sm text-slate-600">
+                      <div className="mt-4 space-y-3 text-sm text-koa">
                         {parsedAgenda.map((item, itemIdx) =>
                           hasTimes ? (
                             <div key={`${entry.time}-item-${itemIdx}`} className="grid gap-2 sm:grid-cols-[120px_1fr]">
                               <span
-                                className={`text-xs font-semibold uppercase tracking-[0.2em] ${
-                                  item.time ? 'text-slate-500' : 'text-slate-300'
+                                className={`mono text-xs font-semibold uppercase tracking-[0.2em] ${
+                                  item.time ? 'text-koa' : 'text-slate-300'
                                 }`}
                               >
                                 {item.time ?? 'TBD'}
@@ -305,7 +295,7 @@ export default async function HomePage() {
                         )}
                       </div>
                     ) : fallbackDescription ? (
-                      <p className="mt-2 text-sm text-slate-600">{fallbackDescription}</p>
+                      <p className="mt-2 text-sm text-koa">{fallbackDescription}</p>
                     ) : null}
                   </div>
                 );
@@ -316,51 +306,53 @@ export default async function HomePage() {
       ) : null}
 
       {showCosts || showLogistics ? (
-        <section id="logistics" className="mx-auto max-w-5xl px-6 py-20">
-          <div className="mb-12 text-center">
-            <span className="text-xs uppercase tracking-[0.3em] text-sand-600">Costs & Planning</span>
-            <h2 className="mt-3 text-3xl font-semibold text-slate-900">Reunion Logistics</h2>
-            <p className="mt-2 text-sm text-slate-600">
-              We are keeping registrations as affordable as possible. Thanks for helping with supplies, setup, and hosting.
-            </p>
-          </div>
-          <div className={`grid gap-8 ${showCosts && showLogistics ? 'md:grid-cols-2' : 'md:grid-cols-1'}`}>
-            {showCosts ? (
-              <div className="rounded-3xl border border-white/60 bg-white/90 p-6 shadow">
-                <h3 className="font-serif text-2xl text-lava-600">Cost per Person</h3>
-                <ul className="mt-4 space-y-3 text-sm text-slate-700">
-                  {costOutline.map((item) => (
-                    <li key={item.label}>
-                      <p className="font-semibold text-slate-900">{item.label}</p>
-                      <p>{item.detail}</p>
-                    </li>
-                  ))}
-                </ul>
-                <p className="mt-4 text-xs uppercase tracking-[0.25em] text-slate-500">
-                  Additional help and donations welcome for venue rentals and supplies.
-                </p>
-              </div>
-            ) : null}
-            {showLogistics ? (
-              <div className="rounded-3xl border border-fern-100 bg-gradient-to-br from-fern-50/70 to-sand-50/80 p-6 shadow">
-                <h3 className="font-serif text-2xl text-fern-700">Logistics & Support</h3>
-                <ul className="mt-4 space-y-3 text-sm text-slate-700">
-                  {logisticsNotes.map((note) => (
-                    <li key={note} className="flex items-start gap-3">
-                      <span className="mt-1 inline-flex h-2 w-2 flex-none rounded-full bg-fern-500" />
-                      <span>{note}</span>
-                    </li>
-                  ))}
-                </ul>
-                <p className="mt-4 text-sm text-slate-600">
-                  Need help or have updates? Contact Jade Silva at{' '}
-                  <a href="mailto:pumehanasilva@mac.com" className="text-ocean-600 underline">
-                    pumehanasilva@mac.com
-                  </a>{' '}
-                  or 808-895-6883 (Hawaiʻi time). Mailing: PO Box 10124, Hilo, HI 96721.
-                </p>
-              </div>
-            ) : null}
+        <section id="logistics" className="section">
+          <div className="container max-w-5xl">
+            <div className="mb-12 text-center">
+              <span className="mono text-xs uppercase tracking-[0.3em] text-koa">Costs & Planning</span>
+              <h2 className="h2 mt-3">Reunion Logistics</h2>
+              <p className="mt-2 text-sm text-koa">
+                We are keeping registrations as affordable as possible. Thanks for helping with supplies, setup, and hosting.
+              </p>
+            </div>
+            <div className={`grid gap-8 ${showCosts && showLogistics ? 'md:grid-cols-2' : 'md:grid-cols-1'}`}>
+              {showCosts ? (
+                <div className="card shadow-soft p-6">
+                  <h3 className="text-2xl font-semibold text-black">Cost per Person</h3>
+                  <ul className="mt-4 space-y-3 text-sm text-koa">
+                    {costOutline.map((item) => (
+                      <li key={item.label}>
+                        <p className="font-semibold text-black">{item.label}</p>
+                        <p>{item.detail}</p>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mono mt-4 text-xs uppercase tracking-[0.25em] text-koa">
+                    Additional help and donations welcome for venue rentals and supplies.
+                  </p>
+                </div>
+              ) : null}
+              {showLogistics ? (
+                <div className="card shadow-soft bg-sand-50 p-6">
+                  <h3 className="text-2xl font-semibold text-black">Logistics & Support</h3>
+                  <ul className="mt-4 space-y-3 text-sm text-koa">
+                    {logisticsNotes.map((note) => (
+                      <li key={note} className="flex items-start gap-3">
+                        <span className="mt-1 inline-flex h-2 w-2 flex-none rounded-full bg-brandGreen" />
+                        <span>{note}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-4 text-sm text-koa">
+                    Need help or have updates? Contact Jade Silva at{' '}
+                    <a href="mailto:pumehanasilva@mac.com" className="text-brandBlue underline">
+                      pumehanasilva@mac.com
+                    </a>{' '}
+                    or 808-895-6883 (Hawaiʻi time). Mailing: PO Box 10124, Hilo, HI 96721.
+                  </p>
+                </div>
+              ) : null}
+            </div>
           </div>
         </section>
       ) : null}
@@ -369,58 +361,57 @@ export default async function HomePage() {
         <SectionRenderer key={section.id} section={section} />
       ))}
 
-      <section id="tickets" className="mx-auto max-w-5xl px-6 py-20">
-        <div className="mb-12 text-center">
-          <span className="text-xs uppercase tracking-[0.3em] text-fern-600">Tickets</span>
-          <h2 className="mt-3 text-3xl font-semibold text-slate-900">Choose Your Pass</h2>
-          <p className="mt-2 text-sm text-slate-600">
-            Secure your spot early. Every ticket helps cover venue, meals, and keepsakes.
-          </p>
-        </div>
-        <div className="grid gap-8 md:grid-cols-3">
-          {tickets.length ? (
-            tickets.map((ticket) => (
-              <div key={ticket.id} className="flex h-full flex-col rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-                <span className="text-xs uppercase tracking-[0.3em] text-ocean-500">{ticket.name}</span>
-                <p className="mt-4 text-3xl font-semibold text-slate-900">{ticket.priceFormatted}</p>
-                <p className="mt-2 text-sm text-slate-600">{ticket.description}</p>
-                {typeof ticket.inventory === 'number' && (
-                  <p className="mt-4 text-xs font-semibold uppercase tracking-[0.3em] text-lava-500">
-                    {ticket.inventory} spots left
-                  </p>
-                )}
-                <Link
-                  href={{ pathname: '/register', query: { ticket: ticket.id } }}
-                  className="mt-auto inline-flex items-center justify-center rounded-full bg-fern-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-fern-600"
-                >
-                  Select Ticket
-                </Link>
+      <section id="tickets" className="section">
+        <div className="container max-w-5xl">
+          <div className="mb-12 text-center">
+            <span className="mono text-xs uppercase tracking-[0.3em] text-koa">Tickets</span>
+            <h2 className="h2 mt-3">Choose Your Pass</h2>
+            <p className="mt-2 text-sm text-koa">
+              Secure your spot early. Every ticket helps cover venue, meals, and keepsakes.
+            </p>
+          </div>
+          <div className="grid gap-8 md:grid-cols-3">
+            {tickets.length ? (
+              tickets.map((ticket) => (
+                <div key={ticket.id} className="card shadow-soft flex h-full flex-col p-6">
+                  <span className="mono text-xs uppercase tracking-[0.3em] text-koa">{ticket.name}</span>
+                  <p className="mt-4 text-3xl font-semibold text-black">{ticket.priceFormatted}</p>
+                  <p className="mt-2 text-sm text-koa">{ticket.description}</p>
+                  {typeof ticket.inventory === 'number' && (
+                    <p className="mono mt-4 text-xs uppercase tracking-[0.3em] text-brandBlue">
+                      {ticket.inventory} spots left
+                    </p>
+                  )}
+                  <Link href={{ pathname: '/register', query: { ticket: ticket.id } }} className="btn mt-auto">
+                    Select Ticket
+                  </Link>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-3 rounded-2xl border border-dashed border-slate-300 bg-sand-50 p-12 text-center text-koa">
+                Ticketing will open soon. Check back shortly!
               </div>
-            ))
-          ) : (
-            <div className="col-span-3 rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-12 text-center text-slate-500">
-              Ticketing will open soon. Check back shortly!
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </section>
 
       {showCommittees ? (
-        <section id="committees" className="bg-white/70 py-20">
-          <div className="mx-auto max-w-6xl px-6">
+        <section id="committees" className="section bg-sand-50">
+          <div className="container max-w-6xl">
             <div className="mb-12 text-center">
-              <span className="text-xs uppercase tracking-[0.3em] text-lava-500">Committees & Volunteers</span>
-              <h2 className="mt-3 text-3xl font-semibold text-slate-900">Meet the Planning Committees</h2>
-              <p className="mt-2 text-sm text-slate-600">
+              <span className="mono text-xs uppercase tracking-[0.3em] text-koa">Committees & Volunteers</span>
+              <h2 className="h2 mt-3">Meet the Planning Committees</h2>
+              <p className="mt-2 text-sm text-koa">
                 Thank you to the families stepping forward. If you feel called to help, reach out to the committee leads.
               </p>
             </div>
             <div className="grid gap-6 md:grid-cols-2">
               {committees.map((committee) => (
-                <div key={committee.name} className="rounded-3xl border border-white/60 bg-gradient-to-br from-white/90 to-fern-50/70 p-6 shadow">
-                  <p className="text-xs uppercase tracking-[0.35em] text-fern-600">{committee.name}</p>
-                  <h3 className="mt-3 text-lg font-semibold text-slate-900">{committee.leads}</h3>
-                  <p className="mt-2 text-sm text-slate-600">{committee.notes}</p>
+                <div key={committee.name} className="card shadow-soft p-6">
+                  <p className="mono text-xs uppercase tracking-[0.35em] text-koa">{committee.name}</p>
+                  <h3 className="mt-3 text-lg font-semibold text-black">{committee.leads}</h3>
+                  <p className="mt-2 text-sm text-koa">{committee.notes}</p>
                 </div>
               ))}
             </div>

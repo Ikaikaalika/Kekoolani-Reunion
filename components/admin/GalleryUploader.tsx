@@ -68,7 +68,7 @@ export default function GalleryUploader({ onUploaded }: GalleryUploaderProps) {
           {isPending ? 'Uploading...' : '8MB max per image'}
         </Button>
       </div>
-      {error && <p className="text-sm text-lava-500">{error}</p>}
+      {error && <p className="text-sm text-red-500">{error}</p>}
       {uploads.length > 0 && (
         <div className="space-y-3">
           {uploads.map((item) => (
