@@ -4,6 +4,21 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '2mb'
     }
+  },
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'kekoolanireunion.com'
+          }
+        ],
+        destination: 'https://www.kekoolanireunion.com/:path*',
+        permanent: true
+      }
+    ];
   }
 };
 
