@@ -23,6 +23,11 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# local backups and archives
+*.backup
+*.zip
+docs/admin-page-builder-roadmap.md
+
 # prisma
 prisma/migrations
 
