@@ -165,19 +165,19 @@ export default async function HomePage() {
 
   return (
     <div>
-      <section className="section">
-        <div className="container grid gap-12 lg:grid-cols-[3fr,2fr] lg:items-center">
+      <section className="section hero">
+        <div className="container relative z-10 grid gap-12 lg:grid-cols-[3fr,2fr] lg:items-center">
           <div className="space-y-6">
-            <span className="mono text-xs uppercase tracking-[0.3em] text-koa">Hilo, Hawaiʻi</span>
-            <h1 className="h1 text-balance">{site.hero_title}</h1>
-            <p className="max-w-xl text-lg text-koa">{site.hero_subtitle}</p>
-            <div className="flex flex-col gap-3 text-sm text-koa sm:flex-row sm:items-center sm:gap-6">
+            <span className="hero-tag">Waipiʻo Valley · Hilo, Hawaiʻi</span>
+            <h1 className="h1 text-balance text-white">{site.hero_title}</h1>
+            <p className="max-w-xl text-lg text-white/85">{site.hero_subtitle}</p>
+            <div className="flex flex-col gap-3 text-sm text-white/80 sm:flex-row sm:items-center sm:gap-6">
               <div className="flex items-center gap-2">
-                <i className="h-2 w-2 rounded-full bg-brandGreen" />
+                <i className="h-2 w-2 rounded-full bg-emerald-300" />
                 <span>{site.event_dates}</span>
               </div>
               <div className="flex items-center gap-2">
-                <i className="h-2 w-2 rounded-full bg-brandBlue" />
+                <i className="h-2 w-2 rounded-full bg-amber-200" />
                 <span>{site.location}</span>
               </div>
             </div>
@@ -193,25 +193,25 @@ export default async function HomePage() {
             </div>
           </div>
           <div>
-            <div className="card shadow-soft backdrop-soft p-6">
-              <h2 className="h3">Weekend Snapshot</h2>
-              <dl className="mt-6 space-y-4 text-sm text-koa">
+            <div className="hero-panel">
+              <h2 className="h3 text-white">Weekend Snapshot</h2>
+              <dl className="mt-6 space-y-4 text-sm text-white/80">
                 <div>
-                  <dt className="font-semibold text-black">Hoʻolauna</dt>
+                  <dt className="font-semibold text-white">Hoʻolauna</dt>
                   <dd>Meet and greet, genealogy session, and keiki activities.</dd>
                 </div>
                 <div>
-                  <dt className="font-semibold text-black">Huakaʻi to Waipiʻo</dt>
+                  <dt className="font-semibold text-white">Huakaʻi to Waipiʻo</dt>
                   <dd>Visit Waipiʻo valley and Kalopa family graves.</dd>
                 </div>
                 <div>
-                  <dt className="font-semibold text-black">Family lūʻau</dt>
+                  <dt className="font-semibold text-white">Family lūʻau</dt>
                   <dd>Evening lūʻau with dinner, entertainment, and family sharing.</dd>
                 </div>
               </dl>
-              <div className="mt-6 rounded-2xl bg-gradient-to-r from-brandGreen to-brandBlue p-4 text-white shadow-soft">
-                <p className="mono text-xs uppercase tracking-[0.3em] text-white/80">Countdown</p>
-                <p className="text-2xl font-semibold">{site.event_dates}</p>
+              <div className="mt-6 rounded-2xl bg-white/15 p-4 text-white shadow-soft">
+                <p className="mono text-xs uppercase tracking-[0.3em] text-white/70">Countdown</p>
+                <p className="text-2xl font-semibold text-white">{site.event_dates}</p>
               </div>
             </div>
           </div>
@@ -222,16 +222,16 @@ export default async function HomePage() {
         <div className={`container grid gap-12 ${aboutGridCols} md:items-start`}>
           <div className="space-y-8">
             <article
-              className="prose prose-lg prose-slate max-w-none text-koa"
+              className="prose prose-lg prose-slate max-w-none text-sand-700"
               dangerouslySetInnerHTML={{ __html: site.about_html ?? '' }}
             />
             {showPurpose ? (
               <div>
-                <h3 className="mono text-xs uppercase tracking-[0.35em] text-koa">Purpose Highlights</h3>
-                <ul className="card mt-4 space-y-2 p-6 text-sm text-koa shadow-soft">
+                <h3 className="section-title">Purpose Highlights</h3>
+                <ul className="card mt-4 space-y-2 p-6 text-sm text-sand-700 shadow-soft">
                   {purposePoints.map((point) => (
                     <li key={point} className="flex items-start gap-3">
-                      <span className="mt-1 inline-flex h-2 w-2 flex-none rounded-full bg-brandGreen" />
+                      <span className="mt-1 inline-flex h-2 w-2 flex-none rounded-full bg-emerald-500" />
                       <span>{point}</span>
                     </li>
                   ))}
@@ -243,7 +243,7 @@ export default async function HomePage() {
             <div className="grid gap-4">
               {galleryItems.slice(0, 3).map((item, idx) => (
                 <div key={idx} className="card shadow-soft overflow-hidden">
-                  <img src={item.src} alt={item.alt ?? 'Reunion photo'} className="h-48 w-full object-cover" />
+                  <img src={item.src} alt={item.alt ?? 'Reunion photo'} className="h-52 w-full object-cover" />
                 </div>
               ))}
             </div>
@@ -252,12 +252,12 @@ export default async function HomePage() {
       </section>
 
       {showSchedule ? (
-        <section id="schedule" className="section bg-sand-50">
+        <section id="schedule" className="section section-alt">
           <div className="container max-w-5xl">
             <div className="mb-12 text-center">
-              <span className="mono text-xs uppercase tracking-[0.3em] text-koa">Weekend Flow</span>
+              <span className="section-title">Weekend Flow</span>
               <h2 className="h2 mt-3">Tentative Schedule</h2>
-              <p className="mt-2 text-sm text-koa">
+              <p className="mt-2 text-sm text-sand-700">
                 Times & locations may shift slightly as we confirm partners.
               </p>
             </div>
@@ -273,16 +273,16 @@ export default async function HomePage() {
                     key={`${entry.time}-${idx}`}
                     className="card shadow-soft p-6 transition hover:-translate-y-1"
                   >
-                    <p className="mono text-xs uppercase tracking-[0.3em] text-koa">{entry.time}</p>
-                    <h3 className="mt-3 text-xl font-semibold text-black">{entry.title}</h3>
+                    <p className="section-title">{entry.time}</p>
+                    <h3 className="mt-3 text-xl font-semibold text-sand-900">{entry.title}</h3>
                     {agenda.length > 0 ? (
-                      <div className="mt-4 space-y-3 text-sm text-koa">
+                      <div className="mt-4 space-y-3 text-sm text-sand-700">
                         {parsedAgenda.map((item, itemIdx) =>
                           hasTimes ? (
                             <div key={`${entry.time}-item-${itemIdx}`} className="grid gap-2 sm:grid-cols-[120px_1fr]">
                               <span
                                 className={`mono text-xs font-semibold uppercase tracking-[0.2em] ${
-                                  item.time ? 'text-koa' : 'text-slate-300'
+                                  item.time ? 'text-sand-600' : 'text-sand-400'
                                 }`}
                               >
                                 {item.time ?? 'TBD'}
@@ -295,7 +295,7 @@ export default async function HomePage() {
                         )}
                       </div>
                     ) : fallbackDescription ? (
-                      <p className="mt-2 text-sm text-koa">{fallbackDescription}</p>
+                      <p className="mt-2 text-sm text-sand-700">{fallbackDescription}</p>
                     ) : null}
                   </div>
                 );
@@ -309,43 +309,43 @@ export default async function HomePage() {
         <section id="logistics" className="section">
           <div className="container max-w-5xl">
             <div className="mb-12 text-center">
-              <span className="mono text-xs uppercase tracking-[0.3em] text-koa">Costs & Planning</span>
+              <span className="section-title">Costs & Planning</span>
               <h2 className="h2 mt-3">Reunion Logistics</h2>
-              <p className="mt-2 text-sm text-koa">
+              <p className="mt-2 text-sm text-sand-700">
                 We are keeping registrations as affordable as possible. Thanks for helping with supplies, setup, and hosting.
               </p>
             </div>
             <div className={`grid gap-8 ${showCosts && showLogistics ? 'md:grid-cols-2' : 'md:grid-cols-1'}`}>
               {showCosts ? (
                 <div className="card shadow-soft p-6">
-                  <h3 className="text-2xl font-semibold text-black">Cost per Person</h3>
-                  <ul className="mt-4 space-y-3 text-sm text-koa">
+                  <h3 className="text-2xl font-semibold text-sand-900">Cost per Person</h3>
+                  <ul className="mt-4 space-y-3 text-sm text-sand-700">
                     {costOutline.map((item) => (
                       <li key={item.label}>
-                        <p className="font-semibold text-black">{item.label}</p>
+                        <p className="font-semibold text-sand-900">{item.label}</p>
                         <p>{item.detail}</p>
                       </li>
                     ))}
                   </ul>
-                  <p className="mono mt-4 text-xs uppercase tracking-[0.25em] text-koa">
+                  <p className="mono mt-4 text-xs uppercase tracking-[0.25em] text-sand-500">
                     Additional help and donations welcome for venue rentals and supplies.
                   </p>
                 </div>
               ) : null}
               {showLogistics ? (
-                <div className="card shadow-soft bg-sand-50 p-6">
-                  <h3 className="text-2xl font-semibold text-black">Logistics & Support</h3>
-                  <ul className="mt-4 space-y-3 text-sm text-koa">
+                <div className="card shadow-soft bg-white/80 p-6">
+                  <h3 className="text-2xl font-semibold text-sand-900">Logistics & Support</h3>
+                  <ul className="mt-4 space-y-3 text-sm text-sand-700">
                     {logisticsNotes.map((note) => (
                       <li key={note} className="flex items-start gap-3">
-                        <span className="mt-1 inline-flex h-2 w-2 flex-none rounded-full bg-brandGreen" />
+                        <span className="mt-1 inline-flex h-2 w-2 flex-none rounded-full bg-emerald-500" />
                         <span>{note}</span>
                       </li>
                     ))}
                   </ul>
-                  <p className="mt-4 text-sm text-koa">
+                  <p className="mt-4 text-sm text-sand-700">
                     Need help or have updates? Contact Jade Silva at{' '}
-                    <a href="mailto:pumehanasilva@mac.com" className="text-brandBlue underline">
+                    <a href="mailto:pumehanasilva@mac.com" className="text-emerald-700 underline">
                       pumehanasilva@mac.com
                     </a>{' '}
                     or 808-895-6883 (Hawaiʻi time). Mailing: PO Box 10124, Hilo, HI 96721.
@@ -364,9 +364,9 @@ export default async function HomePage() {
       <section id="tickets" className="section">
         <div className="container max-w-5xl">
           <div className="mb-12 text-center">
-            <span className="mono text-xs uppercase tracking-[0.3em] text-koa">Tickets</span>
+            <span className="section-title">Tickets</span>
             <h2 className="h2 mt-3">Choose Your Pass</h2>
-            <p className="mt-2 text-sm text-koa">
+            <p className="mt-2 text-sm text-sand-700">
               Secure your spot early. Every ticket helps cover venue, meals, and keepsakes.
             </p>
           </div>
@@ -374,11 +374,11 @@ export default async function HomePage() {
             {tickets.length ? (
               tickets.map((ticket) => (
                 <div key={ticket.id} className="card shadow-soft flex h-full flex-col p-6">
-                  <span className="mono text-xs uppercase tracking-[0.3em] text-koa">{ticket.name}</span>
-                  <p className="mt-4 text-3xl font-semibold text-black">{ticket.priceFormatted}</p>
-                  <p className="mt-2 text-sm text-koa">{ticket.description}</p>
+                  <span className="section-title">{ticket.name}</span>
+                  <p className="mt-4 text-3xl font-semibold text-sand-900">{ticket.priceFormatted}</p>
+                  <p className="mt-2 text-sm text-sand-700">{ticket.description}</p>
                   {typeof ticket.inventory === 'number' && (
-                    <p className="mono mt-4 text-xs uppercase tracking-[0.3em] text-brandBlue">
+                    <p className="mono mt-4 text-xs uppercase tracking-[0.3em] text-emerald-700">
                       {ticket.inventory} spots left
                     </p>
                   )}
@@ -388,7 +388,7 @@ export default async function HomePage() {
                 </div>
               ))
             ) : (
-              <div className="col-span-3 rounded-2xl border border-dashed border-slate-300 bg-sand-50 p-12 text-center text-koa">
+              <div className="col-span-3 rounded-3xl border border-dashed border-sand-300 bg-white/80 p-12 text-center text-sand-700">
                 Ticketing will open soon. Check back shortly!
               </div>
             )}
@@ -397,21 +397,21 @@ export default async function HomePage() {
       </section>
 
       {showCommittees ? (
-        <section id="committees" className="section bg-sand-50">
+        <section id="committees" className="section section-alt">
           <div className="container max-w-6xl">
             <div className="mb-12 text-center">
-              <span className="mono text-xs uppercase tracking-[0.3em] text-koa">Committees & Volunteers</span>
+              <span className="section-title">Committees & Volunteers</span>
               <h2 className="h2 mt-3">Meet the Planning Committees</h2>
-              <p className="mt-2 text-sm text-koa">
+              <p className="mt-2 text-sm text-sand-700">
                 Thank you to the families stepping forward. If you feel called to help, reach out to the committee leads.
               </p>
             </div>
             <div className="grid gap-6 md:grid-cols-2">
               {committees.map((committee) => (
                 <div key={committee.name} className="card shadow-soft p-6">
-                  <p className="mono text-xs uppercase tracking-[0.35em] text-koa">{committee.name}</p>
-                  <h3 className="mt-3 text-lg font-semibold text-black">{committee.leads}</h3>
-                  <p className="mt-2 text-sm text-koa">{committee.notes}</p>
+                  <p className="section-title">{committee.name}</p>
+                  <h3 className="mt-3 text-lg font-semibold text-sand-900">{committee.leads}</h3>
+                  <p className="mt-2 text-sm text-sand-700">{committee.notes}</p>
                 </div>
               ))}
             </div>
