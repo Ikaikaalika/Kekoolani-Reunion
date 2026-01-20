@@ -31,11 +31,11 @@ async function getSite(): Promise<AdminSiteSettings> {
     .maybeSingle<SiteSettingsRow>();
 
   const fallback: AdminSiteSettings = {
-    hero_title: "Keko'olani Family Reunion",
+    hero_title: 'Kekoʻolani Family Reunion 2026',
     hero_subtitle:
-      "Honoring our elders, celebrating future generations. Gather in Hilo to strengthen family bonds, share stories, and celebrate the legacy of Nawaili'ili'i and Emily.",
-    event_dates: 'July 10-12, 2026',
-    location: "Jade & Mele's Home - Waipio Valley - The Arc of Hilo",
+      'E hoʻi i ka piko (Let us return to the source) is our theme as we gather in Hilo to reconnect and strengthen our pilina (closeness). We invite all descendants of Nawai and Emily Kekoʻolani to be part of this reunion.',
+    event_dates: 'July 10 – 12, 2026',
+    location: 'Hilo and Waipiʻo, Hawaiʻi',
     about_html: '',
     schedule_json: SITE_DEFAULTS.schedule,
     gallery_json: DEFAULT_EXTRAS,
@@ -44,7 +44,7 @@ async function getSite(): Promise<AdminSiteSettings> {
     show_purpose: true,
     show_costs: true,
     show_logistics: true,
-    show_committees: true
+    show_committees: false
   };
 
   if (!data) {

@@ -34,13 +34,54 @@ async function getSiteContent() {
   }));
 
   const defaults = {
-    hero_title: "Keko'olani Family Reunion",
+    hero_title: 'Kekoʻolani Family Reunion 2026',
     hero_subtitle:
-      "Honoring our elders, celebrating future generations. Gather in Hilo to strengthen family bonds, share stories, and celebrate the legacy of Nawaili'ili'i and Emily.",
-    event_dates: 'July 10-12, 2026',
-    location: "Jade & Mele's Home - Waipio Valley - The Arc of Hilo",
-    about_html:
-      "<p>At our August 23, 2025 planning meeting we affirmed the purpose of this reunion: to thank our parents and grandparents for teaching us family love, to connect the next generation to our roots, and to ensure the Keko'olani story continues. 'Honoring our elders, celebrating our future.'</p><p>The group confirmed July 10-12, 2026 for our gathering in Hilo with a three-day flow of genealogy story sharing, an excursion to Waipio and family graves, and a luau evening at The Arc. Committees were formed for registration, setup, program, meals, genealogy archiving, and more. Thank you to everyone who offered help; see the committee roster below for ways to plug in.</p>",
+      'E hoʻi i ka piko (Let us return to the source) is our theme as we gather in Hilo to reconnect and strengthen our pilina (closeness). We invite all descendants of Nawai and Emily Kekoʻolani to be part of this reunion.',
+    event_dates: 'July 10 – 12, 2026',
+    location: 'Hilo and Waipiʻo, Hawaiʻi',
+    about_html: `
+<p>Aloha kākou,</p>
+<p><strong>E hoʻi i ka piko</strong> (Let us return to the source) is our theme for our 2026 Kekoʻolani family reunion. Come and join us in the beautiful moku of Hilo as we reconnect and strengthen our pilina (closeness) with one another. We invite all of the descendants of Nawai and Emily Kekoʻolani to be part of this reunion.</p>
+<ul>
+  <li><strong>What:</strong> Kekoʻolani Family Reunion</li>
+  <li><strong>Who:</strong> All descendants of Nawai and Emily Kekoʻolani</li>
+  <li><strong>When:</strong> July 10 – 12, 2026</li>
+  <li><strong>Where:</strong> Hilo and Waipiʻo, Hawaiʻi</li>
+</ul>
+<h3>Lodging</h3>
+<p>Hilo Hawaiian Hotel has offered us a group rate. Please click the links below for details:</p>
+<ul>
+  <li><a href="https://drive.google.com/file/d/1iurqFFQYgSl0XTebyLcYZ9MScL7EAYOx/view?usp=drive_link" target="_blank" rel="noreferrer">Information for Hilo Hawaiian Hotel group rate</a></li>
+  <li><a href="https://drive.google.com/file/d/1_tlRIQ5jtG7uWn1XXmIDfzr59vi-NF-p/view?usp=sharing" target="_blank" rel="noreferrer">Hilo Hawaiian Hotel form with group code</a></li>
+</ul>
+<p>Other Hilo hotels include Grand Naniloa and SCP Hotel (formerly Hilo Seaside). You can also explore vacation rentals across Hawaiʻi Island.</p>
+<h3>Transportation</h3>
+<p>Transportation from the Waipiʻo lookout into the valley will be provided, but all other transportation will be on your own.</p>
+<h3>Genealogy</h3>
+<p>Our moʻokūʻauhau (genealogy) allows us to know who we are, where we come from, and who we are related to. It connects us to place, events, and moʻolelo that has or may impact our ʻohana. Our dear Aunty Amy, Uncle Henry, and cousin Dean have worked hard to provide records of our past.</p>
+<p>We invite everyone to participate in sharing your genealogy information so we can update our family records to include the last few generations. We will be emailing a PDF fillable form for you to complete, save, and email to Jade Silva (daughter of Winifred). We will also include a letter asking for your authorization to share your information with the rest of the family. Please submit genealogy information by the end of April 2026.</p>
+<h3>Registration</h3>
+<ol>
+  <li>Participant name (Last, First, Middle)</li>
+  <li>Parent, grandparent, great grandparent (dropdown with all siblings: Nawai, Katherine, Amy, etc.)</li>
+  <li>Contact information (phone, address, email)</li>
+  <li>Select days of participation</li>
+  <li>T-shirt size and quantity</li>
+  <li>All participants: name (first and last), age, relationship</li>
+  <li>Select days of participation for each participant</li>
+  <li>T-shirt size and quantity for each participant</li>
+  <li>Total cost</li>
+  <li>Donation note near payment for those who want to give more to the reunion fund; any funds not used will be deposited to the Kekoʻolani Trust fund (used for Waipiʻo land taxes and/or land maintenance).</li>
+</ol>
+<p><strong>Payment options:</strong></p>
+<ul>
+  <li>Online (account number and routing number will be provided)</li>
+  <li>Mail check payable to Jade Silva, PO Box 10124, Hilo, HI 96721</li>
+</ul>
+<h3>Coordinator contact information</h3>
+<p>Jade Silva · 808-895-6883 (Hawaiʻi time) · <a href="mailto:pumehanasilva@mac.com">pumehanasilva@mac.com</a></p>
+<p>Mailing: PO Box 10124, Hilo, HI 96721</p>
+`,
     schedule_json: SITE_DEFAULTS.schedule,
     gallery_json: DEFAULT_EXTRAS,
     show_schedule: true,
@@ -48,7 +89,7 @@ async function getSiteContent() {
     show_purpose: true,
     show_costs: true,
     show_logistics: true,
-    show_committees: true
+    show_committees: false
   } as const;
 
   const siteRecord = siteRes.data as SiteSettingsRow | null;
@@ -95,7 +136,7 @@ export default async function HomePage() {
         <div className="relative mx-auto flex max-w-6xl flex-col gap-12 px-6 py-24 md:flex-row md:items-center">
           <div className="space-y-6 md:w-3/5">
             <span className="inline-flex rounded-full bg-white/80 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-ocean-700 shadow">
-              Hilo, Hawaii
+              Hilo, Hawaiʻi
             </span>
             <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
               {site.hero_title}
@@ -132,16 +173,16 @@ export default async function HomePage() {
               <h2 className="text-xl font-semibold text-slate-900">Weekend Snapshot</h2>
               <dl className="mt-6 space-y-4 text-sm text-slate-600">
                 <div>
-                  <dt className="font-semibold text-slate-800">Welcome Mixer</dt>
-                  <dd>Gather by Hilo Bay with live music and family trivia.</dd>
+                  <dt className="font-semibold text-slate-800">Hoʻolauna</dt>
+                  <dd>Meet and greet, genealogy session, and keiki activities.</dd>
                 </div>
                 <div>
-                  <dt className="font-semibold text-slate-800">Elders&apos; Stories</dt>
-                  <dd>Document family histories and add to our shared genealogy.</dd>
+                  <dt className="font-semibold text-slate-800">Huakaʻi to Waipiʻo</dt>
+                  <dd>Visit Waipiʻo valley and Kalopa family graves.</dd>
                 </div>
                 <div>
-                  <dt className="font-semibold text-slate-800">Kids&apos; Adventure</dt>
-                  <dd>Kids scavenger hunt across Coconut Island.</dd>
+                  <dt className="font-semibold text-slate-800">Family lūʻau</dt>
+                  <dd>Evening lūʻau with dinner, entertainment, and family sharing.</dd>
                 </div>
               </dl>
               <div className="mt-6 rounded-2xl bg-gradient-to-r from-fern-400 to-ocean-400 p-4 text-white shadow">
@@ -240,7 +281,7 @@ export default async function HomePage() {
           <div className={`grid gap-8 ${showCosts && showLogistics ? 'md:grid-cols-2' : 'md:grid-cols-1'}`}>
             {showCosts ? (
               <div className="rounded-3xl border border-white/60 bg-white/90 p-6 shadow">
-                <h3 className="font-serif text-2xl text-lava-600">Cost per Family</h3>
+                <h3 className="font-serif text-2xl text-lava-600">Cost per Person</h3>
                 <ul className="mt-4 space-y-3 text-sm text-slate-700">
                   {costOutline.map((item) => (
                     <li key={item.label}>
@@ -266,11 +307,11 @@ export default async function HomePage() {
                   ))}
                 </ul>
                 <p className="mt-4 text-sm text-slate-600">
-                  Need help or have updates before the next planning meeting (Sept 20, 2025 @ 10:30am)? Contact Jade directly at{' '}
+                  Need help or have updates? Contact Jade Silva at{' '}
                   <a href="mailto:pumehanasilva@mac.com" className="text-ocean-600 underline">
                     pumehanasilva@mac.com
                   </a>{' '}
-                  or 808-895-6883.
+                  or 808-895-6883 (Hawaiʻi time). Mailing: PO Box 10124, Hilo, HI 96721.
                 </p>
               </div>
             ) : null}

@@ -32,105 +32,74 @@ export type SiteExtras = {
 };
 
 const DEFAULT_PURPOSE = [
-  'Thank our elders for anchoring us in faith, service, and family love.',
-  'Strengthen bonds among cousins by sharing stories, genealogy, and responsibility.',
-  'Nurture the next generation so they know their elders, our home, and where they belong.',
-  'Celebrate the talents within our family through music, dance, and shared meals.'
+  'E hoʻi i ka piko: return to the source and reconnect as one ʻohana.',
+  'Strengthen our pilina (closeness) across generations in Hilo and Waipiʻo.',
+  'Share moʻolelo and moʻokūʻauhau to honor the legacy of Nawai and Emily Kekoʻolani.',
+  'Celebrate together through hula, kanikapila, and family activities.'
 ];
 
 const DEFAULT_COSTS: CostItem[] = [
-  { label: 'Three lunches (Fri-Sun)', detail: '$30 per person; prepared by family volunteers' },
-  { label: 'Sunday evening luau', detail: '$25 per person at The Arc of Hilo' },
-  { label: 'Reunion shirts', detail: '$20-$26 (cotton or active wear options by Stanson/Nawai)' }
+  {
+    label: 'Meals',
+    detail: '$25.00 (Lunch: Friday, Saturday, Sunday; Dinner: Sunday; all other meals on your own)'
+  },
+  { label: 'General fund', detail: '$10.00' },
+  { label: 'Reunion T-shirt', detail: '$25.00' },
+  { label: 'Total cost per person', detail: '$60.00' }
 ];
 
 const DEFAULT_LOGISTICS = [
-  'Out-of-town families should arrange airfare, lodging, and transportation; host-home help forthcoming.',
-  "Set up at Jade & Mele's home on Thursday (July 9) and break down on Monday (July 13).",
-  "Kukuihaele pavilion reservation and Waipio transportation coordinated by the Nawaili'ili'i family."
+  'Lodging: Hilo Hawaiian Hotel group rate available (links above). Other Hilo options include Grand Naniloa and SCP Hotel (formerly Hilo Seaside), plus vacation rentals.',
+  'Transportation: Waipiʻo lookout transportation into the valley is provided; all other transportation is on your own.',
+  'Genealogy: Fillable PDF form due by end of April 2026 so we can update family records for future generations.',
+  'Registration includes participant details, attendance days, T-shirt sizes, and a donation note for the Kekoʻolani Trust fund.'
 ];
 
-const DEFAULT_COMMITTEES: CommitteeItem[] = [
-  {
-    name: 'Registration',
-    leads: 'Jade & Alika Gee',
-    notes: 'Campaign emails, online form, shirt orders, and payment flow.'
-  },
-  {
-    name: 'Site Setup & Breakdown',
-    leads: 'Kahealani Silva, Silva family, Makana Chartrand family, Amy Girl/Brown family',
-    notes: 'Tents, tables, chairs, and restrooms (setup Thu 7/9, breakdown Mon 7/13).'
-  },
-  {
-    name: 'Luau Decorations',
-    leads: 'Naia & Kahealani',
-    notes: 'Simple centerpieces and greenery decor for The Arc.'
-  },
-  {
-    name: 'Meals & Drinks',
-    leads: 'Kelsye (Fri lunch), Bento crew (Sat), Sandwich crew (Sun), Hina (luau)',
-    notes: 'Amy Girl assisting with paper goods and kitchen needs.'
-  },
-  {
-    name: 'Genealogy & Storytelling',
-    leads: 'Jade, Kanani, Tete, Stallone, Rachel',
-    notes: 'Digital genealogy file, fillable PDFs, story-sharing facilitation.'
-  },
-  {
-    name: 'Waipio Valley & Graves Visit',
-    leads: "Amy Girl, Nawaili'ili'i, Kaai",
-    notes: 'Coordinate valley access, elder transport, and work days beforehand.'
-  },
-  {
-    name: 'Activities & Showcase',
-    leads: 'Silva family, Stallone, Makana, Mele',
-    notes: 'Lei making, traditional games, hula workshops, family sharing, and MC.'
-  },
-  {
-    name: 'Media & Support',
-    leads: 'Family representatives, Kahealani/Cedric',
-    notes: 'Collect 3-5 minute digital family stories and archive photos.'
-  }
-];
+const DEFAULT_COMMITTEES: CommitteeItem[] = [];
 
 const DEFAULT_GALLERY: GalleryItem[] = [
-  { src: 'https://images.unsplash.com/photo-1583274606759-5a4f18c16ca2?auto=format&fit=crop&w=900&q=80', alt: 'Waipio Valley lookout' },
-  { src: 'https://images.unsplash.com/photo-1529400971008-f566de0e6dfc?auto=format&fit=crop&w=900&q=80', alt: 'Family lei-making activity' },
-  { src: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80', alt: 'Evening gathering under string lights' }
+  { src: '/assets/Hilo.jpg', alt: 'Hilo shoreline' },
+  { src: '/assets/LoiKalo1.jpg', alt: 'Loʻi kalo in Waipiʻo' },
+  { src: '/assets/Keiki_LoiKalo.jpg', alt: 'Keiki learning in the loʻi' }
 ];
 
 const DEFAULT_SCHEDULE: ScheduleEntry[] = [
   {
-    time: 'Friday - July 10, 2026',
-    title: 'Welcome & Family Genealogy',
+    time: 'Friday · 7/10/26 · 10:00 am – 3:30 pm',
+    title: 'Jade & Meleʻs home in Kaʻūmana',
     items: [
-      "10:00a Welcome - Jade & Mele's Home (Keaukaha)",
-      '10:30a Genealogy sharing & kids activities',
-      '12:00p Lunch provided by Kelsye (sushi, sashimi, poke)',
-      '1:00p Family activities & games',
-      '3:00p Wrap for the day'
+      'Hoʻolauna (Meet & greet)',
+      'Genealogy session',
+      'Keiki activities',
+      'Lunch',
+      'Moʻolelo with our kūpuna',
+      'Hula workshops',
+      'Kanikapila',
+      'Makahiki games'
     ]
   },
   {
-    time: 'Saturday - July 11, 2026',
-    title: 'Waipio Valley Excursion & Kalopa Graves',
+    time: 'Saturday · 7/11/26 · 8:00 am – 3:00 pm',
+    title: 'Huakaʻi to Waipiʻo',
     items: [
-      '8:00a Gather at Waipio lookout - prayer / chant',
-      '9:00a Enter valley to visit taro fields, family sites, and the beach',
-      '12:00p Depart valley - 12:30p Lunch at Kukuihaele Park',
-      '1:30p Kalopa cemetery visit - optional Alae graves visit',
-      'Alternate in-town activities (Coconut Island) under discussion'
+      'Visit into Waipiʻo valley',
+      'Lunch at Kukuihaele Park',
+      'Visit Kalopa family graves'
     ]
   },
   {
-    time: 'Sunday - July 12, 2026',
-    title: 'Family Luau & Showcase Evening',
+    time: 'Sunday · 7/12/26 · 9:00 am – 1:00 pm and 4:00 pm – 9:00 pm',
+    title: 'Jade & Meleʻs home in Kaʻūmana',
     items: [
-      "10:00a Activities & story sharing at Jade & Mele's home",
-      '12:00p Lunch then prepare for evening luau',
-      '2:00p Decor crew at The Arc - 3:00p Family arrival and appetizers',
-      '6:00p Luau dinner - 7:00p Family sharing & performances',
-      '9:00p Closing circle - until we meet again'
+      'Visit Alae Cemetery',
+      'Hula workshops / Kanikapila',
+      'Family activities',
+      'Lunch',
+      'Family lūʻau',
+      'Dinner',
+      'Entertainment',
+      'Family sharing',
+      'Closing / A hui hou'
     ]
   }
 ];
