@@ -184,8 +184,11 @@ export default async function HomePage() {
   const showCosts = site.show_costs && costOutline.length > 0;
   const showLogistics = site.show_logistics && logisticsNotes.length > 0;
   const showCommittees = site.show_committees && committees.length > 0;
-  const aboutGridCols = showGallery ? 'md:grid-cols-[3fr,2fr]' : 'md:grid-cols-1';
+  const hasFaqSection = sections.some((section) => section.type === 'faq');
+  const hasContactSection = sections.some((section) => section.type === 'contact');
+  const aboutIntroCols = showGallery ? 'lg:grid-cols-[3fr,2fr]' : 'lg:grid-cols-1';
   const aboutContent = splitAboutSections(site.about_html);
+  const showAboutSections = aboutContent.sections.length > 0;
 
   return (
     <div>
@@ -243,46 +246,55 @@ export default async function HomePage() {
       </section>
 
       <section id="about" className="section">
-        <div className={`container grid gap-12 ${aboutGridCols} md:items-start`}>
-          <div className="space-y-8">
-            {aboutContent.intro ? (
-              <div
-                className="prose prose-lg prose-slate max-w-none text-sand-700"
-                dangerouslySetInnerHTML={{ __html: aboutContent.intro }}
-              />
-            ) : null}
-            {aboutContent.sections.length ? (
-              <div className="grid gap-4 sm:grid-cols-2">
-                {aboutContent.sections.map((section) => (
-                  <div key={section.title} className="card shadow-soft p-5">
-                    <h3 className="text-lg font-semibold text-sand-900">{section.title}</h3>
-                    <div
-                      className="prose prose-sm prose-slate mt-2 max-w-none text-sand-700"
-                      dangerouslySetInnerHTML={{ __html: section.html }}
-                    />
+        <div className="container">
+          <div className="mb-12 text-center">
+            <span className="section-title">Overview</span>
+            <h2 className="h2 mt-3">Reunion Details</h2>
+            <p className="mt-2 text-sm text-sand-700">
+              Key details, travel notes, and how we will gather across the weekend.
+            </p>
+          </div>
+          <div className={`grid gap-12 ${aboutIntroCols} lg:items-start`}>
+            <div className="space-y-8">
+              {aboutContent.intro ? (
+                <div
+                  className="prose prose-lg prose-slate max-w-none text-sand-700"
+                  dangerouslySetInnerHTML={{ __html: aboutContent.intro }}
+                />
+              ) : null}
+              {showPurpose ? (
+                <div>
+                  <h3 className="section-title">Purpose Highlights</h3>
+                  <ul className="card mt-4 space-y-2 p-6 text-sm text-sand-700 shadow-soft">
+                    {purposePoints.map((point) => (
+                      <li key={point} className="flex items-start gap-3">
+                        <span className="mt-1 inline-flex h-2 w-2 flex-none rounded-full bg-emerald-500" />
+                        <span>{point}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+            {showGallery ? (
+              <div className="grid gap-4">
+                {galleryItems.slice(0, 3).map((item, idx) => (
+                  <div key={idx} className="card shadow-soft overflow-hidden">
+                    <img src={item.src} alt={item.alt ?? 'Reunion photo'} className="h-52 w-full object-cover" />
                   </div>
                 ))}
               </div>
             ) : null}
-            {showPurpose ? (
-              <div>
-                <h3 className="section-title">Purpose Highlights</h3>
-                <ul className="card mt-4 space-y-2 p-6 text-sm text-sand-700 shadow-soft">
-                  {purposePoints.map((point) => (
-                    <li key={point} className="flex items-start gap-3">
-                      <span className="mt-1 inline-flex h-2 w-2 flex-none rounded-full bg-emerald-500" />
-                      <span>{point}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
           </div>
-          {showGallery ? (
-            <div className="grid gap-4">
-              {galleryItems.slice(0, 3).map((item, idx) => (
-                <div key={idx} className="card shadow-soft overflow-hidden">
-                  <img src={item.src} alt={item.alt ?? 'Reunion photo'} className="h-52 w-full object-cover" />
+          {showAboutSections ? (
+            <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {aboutContent.sections.map((section) => (
+                <div key={section.title} className="card shadow-soft p-5">
+                  <h3 className="text-lg font-semibold text-sand-900">{section.title}</h3>
+                  <div
+                    className="prose prose-sm prose-slate mt-2 max-w-none text-sand-700"
+                    dangerouslySetInnerHTML={{ __html: section.html }}
+                  />
                 </div>
               ))}
             </div>
@@ -382,23 +394,12 @@ export default async function HomePage() {
                       </li>
                     ))}
                   </ul>
-                  <p id="contact" className="mt-4 text-sm text-sand-700">
-                    Need help or have updates? Contact Jade Silva at{' '}
-                    <a href="mailto:pumehanasilva@mac.com" className="text-emerald-700 underline">
-                      pumehanasilva@mac.com
-                    </a>{' '}
-                    or 808-895-6883 (Hawaiʻi time). Mailing: PO Box 10124, Hilo, HI 96721.
-                  </p>
                 </div>
               ) : null}
             </div>
           </div>
         </section>
       ) : null}
-
-      {sections.map((section) => (
-        <SectionRenderer key={section.id} section={section} />
-      ))}
 
       <section id="tickets" className="section">
         <div className="container max-w-5xl">
@@ -453,6 +454,62 @@ export default async function HomePage() {
                   <p className="mt-2 text-sm text-sand-700">{committee.notes}</p>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {sections.map((section) => (
+        <SectionRenderer key={section.id} section={section} />
+      ))}
+
+      {!hasFaqSection ? (
+        <section id="faq" className="section section-alt">
+          <div className="container max-w-5xl">
+            <div className="mb-12 text-center">
+              <span className="section-title">FAQ</span>
+              <h2 className="h2 mt-3">Quick Answers</h2>
+              <p className="mt-2 text-sm text-sand-700">
+                We will share more details soon. Here are the essentials for now.
+              </p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="card shadow-soft p-6">
+                <p className="text-lg font-semibold text-sand-900">When is the reunion?</p>
+                <p className="mt-2 text-sm text-sand-700">{site.event_dates}</p>
+              </div>
+              <div className="card shadow-soft p-6">
+                <p className="text-lg font-semibold text-sand-900">Where will we gather?</p>
+                <p className="mt-2 text-sm text-sand-700">{site.location}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {!hasContactSection ? (
+        <section id="contact" className="section">
+          <div className="container max-w-5xl">
+            <div className="mb-12 text-center">
+              <span className="section-title">Contact</span>
+              <h2 className="h2 mt-3">Registration Support</h2>
+              <p className="mt-2 text-sm text-sand-700">
+                Reach out with questions about registration, lodging, or genealogy updates.
+              </p>
+            </div>
+            <div className="card shadow-soft p-6">
+              <p className="mono text-xs uppercase tracking-[0.3em] text-sand-600">Coordinator</p>
+              <h3 className="mt-3 text-xl font-semibold text-sand-900">Jade Silva</h3>
+              <div className="mt-3 space-y-2 text-sm text-sand-700">
+                <p>
+                  Email:{' '}
+                  <a href="mailto:pumehanasilva@mac.com" className="text-emerald-700 underline">
+                    pumehanasilva@mac.com
+                  </a>
+                </p>
+                <p>Phone: 808-895-6883 (Hawaiʻi time)</p>
+                <p>Mailing: PO Box 10124, Hilo, HI 96721</p>
+              </div>
             </div>
           </div>
         </section>

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 const navLinks = [
-  { href: '/#about', label: 'About' },
+  { href: '/#about', label: 'Overview' },
   { href: '/#schedule', label: 'Schedule' },
   { href: '/#logistics', label: 'Logistics' },
   { href: '/#tickets', label: 'Tickets' },
@@ -97,7 +97,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
               <ul className="space-y-3 text-white/70">
                 <li>
                   <a href="/#about" className="transition-colors hover:text-white">
-                    About
+                    Overview
                   </a>
                 </li>
                 <li>
@@ -116,11 +116,6 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
                   </a>
                 </li>
                 <li>
-                  <a href="/register" className="transition-colors hover:text-white">
-                    Register
-                  </a>
-                </li>
-                <li>
                   <a href="/#faq" className="transition-colors hover:text-white">
                     FAQ
                   </a>
@@ -128,6 +123,11 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
                 <li>
                   <a href="/#contact" className="transition-colors hover:text-white">
                     Contact
+                  </a>
+                </li>
+                <li>
+                  <a href="/register" className="transition-colors hover:text-white">
+                    Register
                   </a>
                 </li>
               </ul>
