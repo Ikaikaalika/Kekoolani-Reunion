@@ -63,11 +63,6 @@ async function getSiteContent() {
 <h3>Registration</h3>
 <p>Registration is required for all attendees. Please use the <a href="/register">online form</a> to share participant details, attendance days, and T-shirt sizes so we can plan meals and activities.</p>
 <p>Need help? Contact Jade Silva for registration support or to request mailed materials.</p>
-<p><strong>Payment options:</strong></p>
-<ul>
-  <li>Online (account number and routing number will be provided)</li>
-  <li>Mail check payable to Jade Silva, PO Box 10124, Hilo, HI 96721</li>
-</ul>
 <h3>Coordinator contact information</h3>
 <p>Jade Silva · 808-895-6883 (Hawaiʻi time) · <a href="mailto:pumehanasilva@mac.com">pumehanasilva@mac.com</a></p>
 <p>Mailing: PO Box 10124, Hilo, HI 96721</p>
@@ -215,7 +210,7 @@ export default async function HomePage() {
                 Register
               </Link>
               {showSchedule ? (
-                <a href="#schedule" className="btn btn-secondary w-full sm:w-auto">
+                <a href="/#schedule" className="btn btn-secondary w-full sm:w-auto">
                   View Schedule
                 </a>
               ) : null}
@@ -387,7 +382,7 @@ export default async function HomePage() {
                       </li>
                     ))}
                   </ul>
-                  <p className="mt-4 text-sm text-sand-700">
+                  <p id="contact" className="mt-4 text-sm text-sand-700">
                     Need help or have updates? Contact Jade Silva at{' '}
                     <a href="mailto:pumehanasilva@mac.com" className="text-emerald-700 underline">
                       pumehanasilva@mac.com

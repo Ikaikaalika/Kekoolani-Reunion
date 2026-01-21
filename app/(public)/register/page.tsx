@@ -56,10 +56,10 @@ export default async function RegisterPage({ searchParams }: { searchParams: { t
         )}
         <section className="mb-10">
           <div className="mb-6 text-center">
-            <span className="section-title">Registration Outline</span>
-            <h2 className="h3 mt-3">What we will ask for</h2>
+            <span className="section-title">Registration Checklist</span>
+            <h2 className="h3 mt-3">What we need from each person</h2>
             <p className="mt-2 text-sm text-koa">
-              Use this checklist to gather details before starting your registration.
+              Use this checklist to gather details for each attendee before starting your registration.
             </p>
           </div>
           <div className="grid gap-4 md:grid-cols-2">

@@ -68,38 +68,40 @@ const DEFAULT_SCHEDULE: ScheduleEntry[] = [
     time: 'Friday · 7/10/26 · 10:00 am – 3:30 pm',
     title: 'Jade & Meleʻs home in Kaʻūmana',
     items: [
-      'Hoʻolauna (Meet & greet)',
-      'Genealogy session',
-      'Keiki activities',
-      'Lunch',
-      'Moʻolelo with our kūpuna',
-      'Hula workshops',
-      'Kanikapila',
-      'Makahiki games'
+      '10:00a Hoʻolauna (Meet & greet)',
+      '10:30a Genealogy session',
+      '11:30a Keiki activities',
+      '12:00p Lunch',
+      '12:45p Moʻolelo with our kūpuna',
+      '1:30p Hula workshops',
+      '2:15p Kanikapila',
+      '2:45p Makahiki games'
     ]
   },
   {
     time: 'Saturday · 7/11/26 · 8:00 am – 3:00 pm',
     title: 'Huakaʻi to Waipiʻo',
     items: [
-      'Visit into Waipiʻo valley',
-      'Lunch at Kukuihaele Park',
-      'Visit Kalopa family graves'
+      '8:00a Depart for Waipiʻo',
+      '9:00a Visit into Waipiʻo valley',
+      '11:30a Lunch at Kukuihaele Park',
+      '1:00p Visit Kalopa family graves',
+      '2:30p Return to Hilo'
     ]
   },
   {
     time: 'Sunday · 7/12/26 · 9:00 am – 1:00 pm and 4:00 pm – 9:00 pm',
     title: 'Jade & Meleʻs home in Kaʻūmana',
     items: [
-      'Visit Alae Cemetery',
-      'Hula workshops / Kanikapila',
-      'Family activities',
-      'Lunch',
-      'Family lūʻau',
-      'Dinner',
-      'Entertainment',
-      'Family sharing',
-      'Closing / A hui hou'
+      '9:00a Visit Alae Cemetery',
+      '10:30a Hula workshops / Kanikapila',
+      '11:30a Family activities',
+      '12:15p Lunch',
+      '4:00p Family lūʻau',
+      '5:30p Dinner',
+      '6:30p Entertainment',
+      '7:30p Family sharing',
+      '8:30p Closing / A hui hou'
     ]
   }
 ];

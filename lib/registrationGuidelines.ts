@@ -6,19 +6,19 @@ export type RegistrationGuideline = {
 
 export const REGISTRATION_GUIDELINES: RegistrationGuideline[] = [
   {
-    key: 'participant_name',
-    label: 'Participant Name',
-    description: 'Primary registrant name in Last, First, Middle format.'
+    key: 'participant_details',
+    label: 'Participant Details',
+    description: 'For each attendee: full name (Last, First, Middle), age, and relationship.'
   },
   {
     key: 'lineage',
     label: 'Lineage',
-    description: 'Parent, grandparent, or great-grandparent line (Nawai, Katherine, Amy, etc.).'
+    description: 'Parent, grandparent, or great-grandparent line for each attendee.'
   },
   {
     key: 'contact_info',
     label: 'Contact Info',
-    description: 'Phone, mailing address, and email for the primary registrant.'
+    description: 'Email, phone, and mailing address for each attendee (or use primary contact info).'
   },
   {
     key: 'attendance_days',
@@ -28,12 +28,7 @@ export const REGISTRATION_GUIDELINES: RegistrationGuideline[] = [
   {
     key: 'tshirt',
     label: 'T-shirt Order',
-    description: 'Sizes and quantities for the primary registrant and each participant.'
-  },
-  {
-    key: 'participants',
-    label: 'All Participants',
-    description: 'List each participant with age and relationship to the family line.'
+    description: 'Sizes and quantities for each attendee.'
   },
   {
     key: 'donation_note',
@@ -43,15 +38,6 @@ export const REGISTRATION_GUIDELINES: RegistrationGuideline[] = [
 ];
 
 export const REGISTRATION_FORM_FIELDS = [
-  { key: 'lineage', label: 'Lineage (parent/grandparent line)' },
-  { key: 'lineage_other', label: 'Lineage (other)' },
-  { key: 'contact_phone', label: 'Contact Phone' },
-  { key: 'contact_address', label: 'Contact Address' },
-  { key: 'attendance_days', label: 'Days of Participation' },
-  { key: 'tshirt_size', label: 'T-shirt Size' },
-  { key: 'tshirt_quantity', label: 'T-shirt Quantity' },
-  { key: 'additional_participants', label: 'Additional Participants (names, ages, relationships)' },
-  { key: 'participant_days', label: 'Participant Days' },
-  { key: 'participant_shirts', label: 'Participant T-shirt Sizes & Quantities' },
+  { key: 'people', label: 'Participants (details)' },
   { key: 'donation_note', label: 'Donation Note' }
 ];

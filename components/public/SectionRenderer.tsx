@@ -1,9 +1,14 @@
 /* eslint-disable @next/next/no-img-element */
-import type { DynamicSection, SectionContentMap } from '@/lib/sections';
+import type { DynamicSection, SectionContentMap, SectionType } from '@/lib/sections';
 
 interface SectionRendererProps {
   section: DynamicSection;
 }
+
+const SECTION_IDS: Partial<Record<SectionType, string>> = {
+  faq: 'faq',
+  contact: 'contact'
+};
 
 function renderBodyCopy(text: string) {
   return text
@@ -22,8 +27,10 @@ function SectionWrapper({
   section: DynamicSection;
   children: React.ReactNode;
 }) {
+  const sectionId = SECTION_IDS[section.type as SectionType];
+
   return (
-    <section className="section">
+    <section id={sectionId} className="section">
       <div className="container max-w-5xl">
         {section.title ? (
           <div className="mb-8 text-center">

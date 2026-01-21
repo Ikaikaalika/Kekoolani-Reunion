@@ -1,12 +1,30 @@
 import type { ReactNode } from 'react';
 
 const navLinks = [
-  { href: '#about', label: 'About' },
-  { href: '#schedule', label: 'Schedule' },
-  { href: '#logistics', label: 'Logistics' },
-  { href: '#tickets', label: 'Tickets' },
-  { href: '#faq', label: 'FAQ' }
+  { href: '/#about', label: 'About' },
+  { href: '/#schedule', label: 'Schedule' },
+  { href: '/#logistics', label: 'Logistics' },
+  { href: '/#tickets', label: 'Tickets' },
+  { href: '/#faq', label: 'FAQ' },
+  { href: '/#contact', label: 'Contact' }
 ];
+
+function TaroLeafIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" className={className} aria-hidden="true">
+      <path
+        d="M32 6C20 6 10 16 10 28c0 13.5 10.7 25 22 30 11.3-5 22-16.5 22-30C54 16 44 6 32 6z"
+        fill="currentColor"
+      />
+      <path
+        d="M32 18c-6 0-10 5-10 10 0 8 6 15 10 17 4-2 10-9 10-17 0-5-4-10-10-10z"
+        fill="white"
+        fillOpacity="0.18"
+      />
+      <path d="M32 20v26" stroke="white" strokeOpacity="0.6" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 export default function PublicLayout({ children }: { children: ReactNode }) {
   return (
@@ -28,8 +46,8 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
         <div className="border-b border-slate-100 bg-white/80 backdrop-blur-xl">
           <div className="container flex items-center justify-between py-4">
             <a className="flex items-center gap-3" href="/">
-              <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-brandBlue text-lg font-semibold text-white shadow-soft">
-                K
+              <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-brandBlue/10 shadow-soft">
+                <TaroLeafIcon className="h-7 w-7 text-brandBlue" />
               </span>
               <div className="flex flex-col">
                 <span className="text-xl font-semibold tracking-tight text-black">Kekoʻolani</span>
@@ -57,8 +75,8 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
             <div className="lg:col-span-2">
               <div className="mb-6 flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brandBlue">
-                  <span className="text-xl font-bold text-white">K</span>
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brandBlue/10">
+                  <TaroLeafIcon className="h-7 w-7 text-brandBlueLight" />
                 </div>
                 <div>
                   <h3 className="text-xl font-bold">Kekoʻolani</h3>
@@ -78,28 +96,38 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
               <h4 className="mb-4 text-lg font-semibold">Quick Links</h4>
               <ul className="space-y-3 text-white/70">
                 <li>
-                  <a href="#about" className="transition-colors hover:text-white">
+                  <a href="/#about" className="transition-colors hover:text-white">
                     About
                   </a>
                 </li>
                 <li>
-                  <a href="#schedule" className="transition-colors hover:text-white">
+                  <a href="/#schedule" className="transition-colors hover:text-white">
                     Schedule
                   </a>
                 </li>
                 <li>
-                  <a href="#logistics" className="transition-colors hover:text-white">
+                  <a href="/#logistics" className="transition-colors hover:text-white">
                     Logistics
                   </a>
                 </li>
                 <li>
-                  <a href="#tickets" className="transition-colors hover:text-white">
+                  <a href="/#tickets" className="transition-colors hover:text-white">
                     Tickets
                   </a>
                 </li>
                 <li>
                   <a href="/register" className="transition-colors hover:text-white">
                     Register
+                  </a>
+                </li>
+                <li>
+                  <a href="/#faq" className="transition-colors hover:text-white">
+                    FAQ
+                  </a>
+                </li>
+                <li>
+                  <a href="/#contact" className="transition-colors hover:text-white">
+                    Contact
                   </a>
                 </li>
               </ul>
