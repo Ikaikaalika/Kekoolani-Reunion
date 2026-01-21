@@ -137,6 +137,16 @@ type AboutSection = {
   html: string;
 };
 
+const overviewListTokens = ['what', 'who', 'when', 'where'];
+
+function stripOverviewList(html: string) {
+  return html.replace(/<ul[^>]*>[\s\S]*?<\/ul>/gi, (list) => {
+    const normalized = list.toLowerCase();
+    const hasTokens = overviewListTokens.every((token) => normalized.includes(`${token}:`));
+    return hasTokens ? '' : list;
+  });
+}
+
 function splitAboutSections(html: string | null) {
   const cleaned = (html ?? '').trim();
   if (!cleaned) {
@@ -165,7 +175,7 @@ function splitAboutSections(html: string | null) {
     .filter((section): section is AboutSection => Boolean(section));
 
   return {
-    intro: intro || null,
+    intro: intro ? stripOverviewList(intro).trim() || null : null,
     sections
   };
 }
@@ -188,14 +198,30 @@ export default async function HomePage() {
   const hasContactSection = sections.some((section) => section.type === 'contact');
   const aboutIntroCols = showGallery ? 'lg:grid-cols-[3fr,2fr]' : 'lg:grid-cols-1';
   const aboutContent = splitAboutSections(site.about_html);
-  const showAboutSections = aboutContent.sections.length > 0;
+  const redundantAboutTitles = new Set([
+    'lodging',
+    'transportation',
+    'genealogy',
+    'registration',
+    'coordinator contact information',
+    'coordinator contact',
+    'contact information'
+  ]);
+  const aboutSections = aboutContent.sections.filter((section) => {
+    const normalizedTitle = section.title.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+    if (!normalizedTitle) return false;
+    if (redundantAboutTitles.has(normalizedTitle)) return false;
+    if (normalizedTitle.startsWith('coordinator contact')) return false;
+    return true;
+  });
+  const showAboutSections = aboutSections.length > 0;
 
   return (
     <div>
       <section className="section hero">
         <div className="container relative z-10 grid gap-12 lg:grid-cols-[3fr,2fr] lg:items-center">
           <div className="space-y-6">
-            <span className="hero-tag">Waipiʻo Valley · Hilo, Hawaiʻi</span>
+            <span className="hero-tag">E hoʻi i ka piko</span>
             <h1 className="h1 text-balance text-white">{site.hero_title}</h1>
             <p className="max-w-xl text-lg text-white/85">{site.hero_subtitle}</p>
             <div className="flex flex-col gap-3 text-sm text-white/80 sm:flex-row sm:items-center sm:gap-6">
@@ -288,7 +314,7 @@ export default async function HomePage() {
           </div>
           {showAboutSections ? (
             <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {aboutContent.sections.map((section) => (
+              {aboutSections.map((section) => (
                 <div key={section.title} className="card shadow-soft p-5">
                   <h3 className="text-lg font-semibold text-sand-900">{section.title}</h3>
                   <div
