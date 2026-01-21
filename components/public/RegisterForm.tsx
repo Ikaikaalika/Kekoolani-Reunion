@@ -38,18 +38,16 @@ const personSchema = z
 
 type PersonForm = z.infer<typeof personSchema>;
 
-const formSchema = z
-  .object({
-    tickets: z.array(
-      z.object({
-        ticket_type_id: z.string(),
-        quantity: z.coerce.number().int().min(0)
-      })
-    ),
-    people: z.array(personSchema).min(1).max(30),
-    donation_note: z.string().optional()
-  })
-  .passthrough();
+const formSchema = z.object({
+  tickets: z.array(
+    z.object({
+      ticket_type_id: z.string(),
+      quantity: z.coerce.number().int().min(0)
+    })
+  ),
+  people: z.array(personSchema).min(1).max(30),
+  donation_note: z.string().optional()
+});
 
 type FormSchema = z.infer<typeof formSchema>;
 
@@ -128,6 +126,7 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
     register,
     handleSubmit,
     watch,
+    getValues,
     setValue,
     formState: { errors, isDirty }
   } = useForm<FormSchema>({
@@ -236,11 +235,12 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
     setError(null);
     setLoading(true);
     try {
+      const rawValues = getValues();
       const primaryContact = data.people[0];
       const answers = questions.reduce<Record<string, unknown>>(
         (acc, question) => {
           const fieldName = `question_${question.id}`;
-          const raw = (data as any)[fieldName];
+          const raw = (rawValues as any)[fieldName];
           let value: unknown = raw;
           if (question.field_type === 'checkbox') {
             value = raw === true || raw === 'true' || raw === 'on';
