@@ -5,6 +5,7 @@ import { formatCurrency } from '@/lib/utils';
 import { parseSchedule, parseExtras, SITE_DEFAULTS, DEFAULT_EXTRAS } from '@/lib/siteContent';
 import { normalizeSectionList } from '@/lib/sections';
 import SectionRenderer from '@/components/public/SectionRenderer';
+import Countdown from '@/components/public/Countdown';
 import type { Database } from '@/types/supabase';
 
 type TicketRow = Database['public']['Tables']['ticket_types']['Row'];
@@ -215,6 +216,7 @@ export default async function HomePage() {
     return true;
   });
   const showAboutSections = aboutSections.length > 0;
+  const countdownTarget = '2026-07-10T09:00:00-10:00';
 
   return (
     <div>
@@ -264,7 +266,9 @@ export default async function HomePage() {
               </dl>
               <div className="mt-6 rounded-2xl bg-white/15 p-4 text-white shadow-soft">
                 <p className="mono text-xs uppercase tracking-[0.3em] text-white/70">Countdown</p>
-                <p className="text-2xl font-semibold text-white">{site.event_dates}</p>
+                <div className="mt-3">
+                  <Countdown targetIso={countdownTarget} fallback={site.event_dates ?? undefined} />
+                </div>
               </div>
             </div>
           </div>
