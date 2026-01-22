@@ -16,7 +16,7 @@ import {
   type ScheduleEntry,
   type GalleryItem,
   type CostItem,
-  type CommitteeItem,
+  type LodgingLink,
   type SiteExtras
 } from '@/lib/siteContent';
 
@@ -45,10 +45,9 @@ function createId() {
 
 type ScheduleFormEntry = ScheduleEntry & { id: string };
 type GalleryFormItem = GalleryItem & { id: string };
-type PurposeItem = { id: string; text: string };
-type LogisticsItem = { id: string; text: string };
-type CostFormItem = CostItem & { id: string };
-type CommitteeFormItem = CommitteeItem & { id: string };
+type TextItem = { id: string; text: string };
+type CostFormItem = CostItem & { id: string; notesText: string };
+type LodgingLinkItem = LodgingLink & { id: string };
 
 function normalizeSchedule(entries: ScheduleEntry[]): ScheduleFormEntry[] {
   const list = entries.length ? entries : SITE_DEFAULTS.schedule;
@@ -62,12 +61,27 @@ function normalizeSchedule(entries: ScheduleEntry[]): ScheduleFormEntry[] {
 }
 
 function normalizeExtras(extras: SiteExtras) {
+  const costs = (extras.costs.length ? extras.costs : DEFAULT_EXTRAS.costs).map((item) => ({
+    ...item,
+    id: createId(),
+    notesText: item.notes?.join('\n') ?? ''
+  }));
+
   return {
     gallery: (extras.gallery.length ? extras.gallery : DEFAULT_EXTRAS.gallery).map((item) => ({ ...item, id: createId() })),
-    purpose: (extras.purpose.length ? extras.purpose : DEFAULT_EXTRAS.purpose).map((text) => ({ id: createId(), text })),
-    costs: (extras.costs.length ? extras.costs : DEFAULT_EXTRAS.costs).map((item) => ({ ...item, id: createId() })),
-    logistics: (extras.logistics.length ? extras.logistics : DEFAULT_EXTRAS.logistics).map((text) => ({ id: createId(), text })),
-    committees: (extras.committees.length ? extras.committees : DEFAULT_EXTRAS.committees).map((item) => ({ ...item, id: createId() }))
+    costs,
+    costIntro: extras.cost_intro ?? DEFAULT_EXTRAS.cost_intro ?? '',
+    costTotal: extras.cost_total ?? DEFAULT_EXTRAS.cost_total ?? '',
+    lodging: (extras.lodging.length ? extras.lodging : DEFAULT_EXTRAS.lodging).map((text) => ({ id: createId(), text })),
+    lodgingLinks: (extras.lodging_links.length ? extras.lodging_links : DEFAULT_EXTRAS.lodging_links).map((item) => ({
+      ...item,
+      id: createId()
+    })),
+    lodgingHotelsHeading: extras.lodging_hotels_heading ?? DEFAULT_EXTRAS.lodging_hotels_heading ?? '',
+    lodgingHotels: (extras.lodging_hotels.length ? extras.lodging_hotels : DEFAULT_EXTRAS.lodging_hotels).map((text) => ({ id: createId(), text })),
+    transportation: (extras.transportation.length ? extras.transportation : DEFAULT_EXTRAS.transportation).map((text) => ({ id: createId(), text })),
+    genealogy: (extras.genealogy.length ? extras.genealogy : DEFAULT_EXTRAS.genealogy).map((text) => ({ id: createId(), text })),
+    genealogyImage: extras.genealogy_image ?? DEFAULT_EXTRAS.genealogy_image ?? { src: '', alt: '' }
   };
 }
 
@@ -84,37 +98,62 @@ function toSchedulePayload(schedule: ScheduleFormEntry[]): ScheduleEntry[] {
 
 function toExtrasPayload(params: {
   gallery: GalleryFormItem[];
-  purpose: PurposeItem[];
   costs: CostFormItem[];
-  logistics: LogisticsItem[];
-  committees: CommitteeFormItem[];
+  costIntro: string;
+  costTotal: string;
+  lodging: TextItem[];
+  lodgingLinks: LodgingLinkItem[];
+  lodgingHotelsHeading: string;
+  lodgingHotels: TextItem[];
+  transportation: TextItem[];
+  genealogy: TextItem[];
+  genealogyImage: GalleryItem;
 }): SiteExtras {
   const gallery = params.gallery
     .map(({ src, alt }) => ({ src: src.trim(), alt: alt?.trim() ?? null }))
     .filter((item) => item.src);
 
-  const purpose = params.purpose.map((item) => item.text.trim()).filter(Boolean);
-
   const costs = params.costs
-    .map(({ label, detail }) => ({ label: label.trim(), detail: detail.trim() }))
+    .map(({ label, detail, notesText }) => {
+      const notes = notesText
+        .split('\n')
+        .map((note) => note.trim())
+        .filter(Boolean);
+      return {
+        label: label.trim(),
+        detail: detail.trim(),
+        notes: notes.length ? notes : undefined
+      };
+    })
     .filter((item) => item.label && item.detail);
 
-  const logistics = params.logistics.map((item) => item.text.trim()).filter(Boolean);
+  const costIntro = params.costIntro.trim();
+  const costTotal = params.costTotal.trim();
 
-  const committees = params.committees
-    .map(({ name, leads, notes }) => ({
-      name: name.trim(),
-      leads: leads.trim(),
-      notes: notes?.trim() ?? undefined
-    }))
-    .filter((item) => item.name && item.leads);
+  const lodging = params.lodging.map((item) => item.text.trim()).filter(Boolean);
+  const lodgingLinks = params.lodgingLinks
+    .map(({ label, href }) => ({ label: label.trim(), href: href.trim() }))
+    .filter((item) => item.label && item.href);
+  const lodgingHotelsHeading = params.lodgingHotelsHeading.trim();
+  const lodgingHotels = params.lodgingHotels.map((item) => item.text.trim()).filter(Boolean);
+  const transportation = params.transportation.map((item) => item.text.trim()).filter(Boolean);
+  const genealogy = params.genealogy.map((item) => item.text.trim()).filter(Boolean);
+  const genealogyImage = params.genealogyImage?.src?.trim()
+    ? { src: params.genealogyImage.src.trim(), alt: params.genealogyImage.alt?.trim() ?? null }
+    : null;
 
   return {
     gallery,
-    purpose,
     costs,
-    logistics,
-    committees
+    cost_intro: costIntro || DEFAULT_EXTRAS.cost_intro,
+    cost_total: costTotal || DEFAULT_EXTRAS.cost_total,
+    lodging,
+    lodging_links: lodgingLinks,
+    lodging_hotels_heading: lodgingHotelsHeading || DEFAULT_EXTRAS.lodging_hotels_heading,
+    lodging_hotels: lodgingHotels,
+    transportation,
+    genealogy,
+    genealogy_image: genealogyImage
   };
 }
 
@@ -135,10 +174,16 @@ export default function ContentForm({ site, action }: ContentFormProps) {
   const [aboutText, setAboutText] = useState(initialAbout);
   const [schedule, setSchedule] = useState<ScheduleFormEntry[]>(initialSchedule);
   const [gallery, setGallery] = useState<GalleryFormItem[]>(initialExtras.gallery);
-  const [purpose, setPurpose] = useState<PurposeItem[]>(initialExtras.purpose);
   const [costs, setCosts] = useState<CostFormItem[]>(initialExtras.costs);
-  const [logistics, setLogistics] = useState<LogisticsItem[]>(initialExtras.logistics);
-  const [committees, setCommittees] = useState<CommitteeFormItem[]>(initialExtras.committees);
+  const [costIntro, setCostIntro] = useState(initialExtras.costIntro);
+  const [costTotal, setCostTotal] = useState(initialExtras.costTotal);
+  const [lodging, setLodging] = useState<TextItem[]>(initialExtras.lodging);
+  const [lodgingLinks, setLodgingLinks] = useState<LodgingLinkItem[]>(initialExtras.lodgingLinks);
+  const [lodgingHotelsHeading, setLodgingHotelsHeading] = useState(initialExtras.lodgingHotelsHeading);
+  const [lodgingHotels, setLodgingHotels] = useState<TextItem[]>(initialExtras.lodgingHotels);
+  const [transportation, setTransportation] = useState<TextItem[]>(initialExtras.transportation);
+  const [genealogy, setGenealogy] = useState<TextItem[]>(initialExtras.genealogy);
+  const [genealogyImage, setGenealogyImage] = useState<GalleryItem>(initialExtras.genealogyImage);
   const [isSubmitting, startTransition] = useTransition();
 
   const schedulePayload = useMemo(() => JSON.stringify(toSchedulePayload(schedule)), [schedule]);
@@ -147,13 +192,19 @@ export default function ContentForm({ site, action }: ContentFormProps) {
       JSON.stringify(
         toExtrasPayload({
           gallery,
-          purpose,
           costs,
-          logistics,
-          committees
+          costIntro,
+          costTotal,
+          lodging,
+          lodgingLinks,
+          lodgingHotelsHeading,
+          lodgingHotels,
+          transportation,
+          genealogy,
+          genealogyImage
         })
       ),
-    [gallery, purpose, costs, logistics, committees]
+    [gallery, costs, costIntro, costTotal, lodging, lodgingLinks, lodgingHotelsHeading, lodgingHotels, transportation, genealogy, genealogyImage]
   );
   const aboutHtml = useMemo(() => textToAboutHtml(aboutText), [aboutText]);
 
@@ -225,24 +276,38 @@ export default function ContentForm({ site, action }: ContentFormProps) {
     setGallery((prev) => (prev.length > 1 ? prev.filter((item) => item.id !== id) : prev));
   };
 
-  const addPurposeItem = () => setPurpose((prev) => [...prev, { id: createId(), text: '' }]);
-  const updatePurposeItem = (id: string, text: string) => setPurpose((prev) => prev.map((item) => (item.id === id ? { ...item, text } : item)));
-  const removePurposeItem = (id: string) => setPurpose((prev) => (prev.length > 1 ? prev.filter((item) => item.id !== id) : prev));
-
-  const addCostItem = () => setCosts((prev) => [...prev, { id: createId(), label: '', detail: '' }]);
-  const updateCostItem = (id: string, key: 'label' | 'detail', value: string) =>
+  const addCostItem = () => setCosts((prev) => [...prev, { id: createId(), label: '', detail: '', notesText: '' }]);
+  const updateCostItem = (id: string, key: 'label' | 'detail' | 'notesText', value: string) =>
     setCosts((prev) => prev.map((item) => (item.id === id ? { ...item, [key]: value } : item)));
   const removeCostItem = (id: string) => setCosts((prev) => (prev.length > 1 ? prev.filter((item) => item.id !== id) : prev));
 
-  const addLogisticsItem = () => setLogistics((prev) => [...prev, { id: createId(), text: '' }]);
-  const updateLogisticsItem = (id: string, text: string) => setLogistics((prev) => prev.map((item) => (item.id === id ? { ...item, text } : item)));
-  const removeLogisticsItem = (id: string) => setLogistics((prev) => (prev.length > 1 ? prev.filter((item) => item.id !== id) : prev));
+  const addLodgingItem = () => setLodging((prev) => [...prev, { id: createId(), text: '' }]);
+  const updateLodgingItem = (id: string, text: string) => setLodging((prev) => prev.map((item) => (item.id === id ? { ...item, text } : item)));
+  const removeLodgingItem = (id: string) => setLodging((prev) => (prev.length > 1 ? prev.filter((item) => item.id !== id) : prev));
 
-  const addCommitteeItem = () =>
-    setCommittees((prev) => [...prev, { id: createId(), name: '', leads: '', notes: '' }]);
-  const updateCommitteeItem = (id: string, key: 'name' | 'leads' | 'notes', value: string) =>
-    setCommittees((prev) => prev.map((item) => (item.id === id ? { ...item, [key]: value } : item)));
-  const removeCommitteeItem = (id: string) => setCommittees((prev) => (prev.length > 1 ? prev.filter((item) => item.id !== id) : prev));
+  const addLodgingLink = () => setLodgingLinks((prev) => [...prev, { id: createId(), label: '', href: '' }]);
+  const updateLodgingLink = (id: string, key: 'label' | 'href', value: string) =>
+    setLodgingLinks((prev) => prev.map((item) => (item.id === id ? { ...item, [key]: value } : item)));
+  const removeLodgingLink = (id: string) =>
+    setLodgingLinks((prev) => (prev.length > 1 ? prev.filter((item) => item.id !== id) : prev));
+
+  const addLodgingHotel = () => setLodgingHotels((prev) => [...prev, { id: createId(), text: '' }]);
+  const updateLodgingHotel = (id: string, text: string) =>
+    setLodgingHotels((prev) => prev.map((item) => (item.id === id ? { ...item, text } : item)));
+  const removeLodgingHotel = (id: string) =>
+    setLodgingHotels((prev) => (prev.length > 1 ? prev.filter((item) => item.id !== id) : prev));
+
+  const addTransportationItem = () => setTransportation((prev) => [...prev, { id: createId(), text: '' }]);
+  const updateTransportationItem = (id: string, text: string) =>
+    setTransportation((prev) => prev.map((item) => (item.id === id ? { ...item, text } : item)));
+  const removeTransportationItem = (id: string) =>
+    setTransportation((prev) => (prev.length > 1 ? prev.filter((item) => item.id !== id) : prev));
+
+  const addGenealogyParagraph = () => setGenealogy((prev) => [...prev, { id: createId(), text: '' }]);
+  const updateGenealogyParagraph = (id: string, text: string) =>
+    setGenealogy((prev) => prev.map((item) => (item.id === id ? { ...item, text } : item)));
+  const removeGenealogyParagraph = (id: string) =>
+    setGenealogy((prev) => (prev.length > 1 ? prev.filter((item) => item.id !== id) : prev));
 
   return (
     <form action={handleSubmit} className="space-y-10">
@@ -255,27 +320,27 @@ export default function ContentForm({ site, action }: ContentFormProps) {
         <div className="grid gap-3 md:grid-cols-2">
           <label className="flex items-center gap-3 rounded-2xl border border-sand-200 bg-sand-50 px-4 py-3 text-sm text-koa">
             <input type="checkbox" name="show_schedule" defaultChecked={site.show_schedule} className="h-4 w-4 rounded border-sand-300" />
-            Show weekend schedule
+            Show schedule section
           </label>
           <label className="flex items-center gap-3 rounded-2xl border border-sand-200 bg-sand-50 px-4 py-3 text-sm text-koa">
             <input type="checkbox" name="show_gallery" defaultChecked={site.show_gallery} className="h-4 w-4 rounded border-sand-300" />
-            Show photo gallery
+            Show welcome carousel
           </label>
           <label className="flex items-center gap-3 rounded-2xl border border-sand-200 bg-sand-50 px-4 py-3 text-sm text-koa">
             <input type="checkbox" name="show_purpose" defaultChecked={site.show_purpose} className="h-4 w-4 rounded border-sand-300" />
-            Show reunion purpose highlights
+            Show genealogy section
           </label>
           <label className="flex items-center gap-3 rounded-2xl border border-sand-200 bg-sand-50 px-4 py-3 text-sm text-koa">
             <input type="checkbox" name="show_costs" defaultChecked={site.show_costs} className="h-4 w-4 rounded border-sand-300" />
-            Show cost outline
+            Show cost block
           </label>
           <label className="flex items-center gap-3 rounded-2xl border border-sand-200 bg-sand-50 px-4 py-3 text-sm text-koa">
             <input type="checkbox" name="show_logistics" defaultChecked={site.show_logistics} className="h-4 w-4 rounded border-sand-300" />
-            Show logistics notes
+            Show lodging + transportation
           </label>
           <label className="flex items-center gap-3 rounded-2xl border border-sand-200 bg-sand-50 px-4 py-3 text-sm text-koa">
             <input type="checkbox" name="show_committees" defaultChecked={site.show_committees} className="h-4 w-4 rounded border-sand-300" />
-            Show committee roster
+            Show registration call-to-action
           </label>
         </div>
       </section>
@@ -301,13 +366,13 @@ export default function ContentForm({ site, action }: ContentFormProps) {
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="aboutText">About This Reunion</Label>
+          <Label htmlFor="aboutText">Welcome Message</Label>
           <Textarea
             id="aboutText"
             rows={6}
             value={aboutText}
             onChange={(event) => setAboutText(event.target.value)}
-            placeholder="Share the purpose, history, and goals for this family gathering. Use blank lines to create new paragraphs."
+            placeholder="Share the welcome message and overview details. Use blank lines to create new paragraphs."
           />
           <p className="text-xs text-koa">Paragraph breaks will be preserved; no HTML required.</p>
         </div>
@@ -382,8 +447,8 @@ export default function ContentForm({ site, action }: ContentFormProps) {
 
       <section className="card shadow-soft space-y-6 p-6">
         <SectionTitle
-          title="Gallery & Visual Story"
-          description="Add up to three images to display on the public page. Use the uploader to host new media or paste existing URLs."
+          title="Welcome Carousel"
+          description="Manage the image carousel that sits under the welcome message. Upload new images or paste existing URLs."
         />
         <GalleryUploader
           onUploaded={(item) =>
@@ -427,52 +492,101 @@ export default function ContentForm({ site, action }: ContentFormProps) {
           ))}
         </div>
         <Button type="button" variant="secondary" onClick={() => addGalleryItem()}>
-          Add gallery slot
+          Add carousel image
         </Button>
       </section>
 
       <section className="card shadow-soft space-y-6 p-6">
         <SectionTitle
-          title="Purpose & Logistics"
-          description="Keep these lists clear and friendly. What does the family need to know to prepare?"
+          title="Genealogy"
+          description="Update the genealogy message and the photo placeholder shown on the homepage."
         />
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-4">
-            <h4 className="font-semibold text-sand-900">Purpose statements</h4>
-            <div className="space-y-3">
-              {purpose.map((item) => (
-                <div key={item.id} className="flex gap-3">
-                  <Input
-                    value={item.text}
-                    onChange={(event) => updatePurposeItem(item.id, event.target.value)}
-                    placeholder="Thank our elders for anchoring us in family love."
-                  />
-                  <Button type="button" variant="ghost" onClick={() => removePurposeItem(item.id)}>
-                    Remove
-                  </Button>
-                </div>
-              ))}
-            </div>
-            <Button type="button" variant="secondary" onClick={addPurposeItem}>
-              Add purpose point
-            </Button>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label>Photo URL</Label>
+            <Input
+              value={genealogyImage.src}
+              onChange={(event) => setGenealogyImage((prev) => ({ ...prev, src: event.target.value }))}
+              placeholder="/assets/NawaiandEmily.png"
+            />
           </div>
+          <div className="space-y-2">
+            <Label>Photo Alt Text</Label>
+            <Input
+              value={genealogyImage.alt ?? ''}
+              onChange={(event) => setGenealogyImage((prev) => ({ ...prev, alt: event.target.value }))}
+              placeholder="Nawai and Emily Kekoʻolani"
+            />
+          </div>
+        </div>
+        <div className="space-y-3">
+          {genealogy.map((item) => (
+            <div key={item.id} className="space-y-2">
+              <Textarea
+                rows={3}
+                value={item.text}
+                onChange={(event) => updateGenealogyParagraph(item.id, event.target.value)}
+                placeholder="Share the genealogy story or next steps."
+              />
+              <Button type="button" variant="ghost" onClick={() => removeGenealogyParagraph(item.id)}>
+                Remove
+              </Button>
+            </div>
+          ))}
+        </div>
+        <Button type="button" variant="secondary" onClick={addGenealogyParagraph}>
+          Add paragraph
+        </Button>
+      </section>
+
+      <section className="card shadow-soft space-y-6 p-6">
+        <SectionTitle
+          title="Logistics and Planning"
+          description="Manage cost, lodging, and transportation details shown on the homepage."
+        />
+        <div className="space-y-6">
           <div className="space-y-4">
-            <h4 className="font-semibold text-sand-900">Cost outline</h4>
-            <div className="space-y-3">
+            <h4 className="font-semibold text-sand-900">Cost</h4>
+            <div className="space-y-2">
+              <Label>Intro Text</Label>
+              <Textarea
+                rows={2}
+                value={costIntro}
+                onChange={(event) => setCostIntro(event.target.value)}
+                placeholder="We are trying our best to keep the cost as low as possible."
+              />
+            </div>
+            <div className="space-y-4">
               {costs.map((item) => (
-                <div key={item.id} className="grid gap-3 md:grid-cols-2">
-                  <Input
-                    value={item.label}
-                    onChange={(event) => updateCostItem(item.id, 'label', event.target.value)}
-                    placeholder="Three lunches (Fri-Sun)"
-                  />
-                  <div className="flex gap-3">
-                    <Input
-                      value={item.detail}
-                      onChange={(event) => updateCostItem(item.id, 'detail', event.target.value)}
-                      placeholder="$30 per person"
+                <div key={item.id} className="space-y-3 rounded-2xl border border-sand-200 bg-sand-50 p-4">
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase tracking-[0.25em] text-koa">Label</Label>
+                      <Input
+                        value={item.label}
+                        onChange={(event) => updateCostItem(item.id, 'label', event.target.value)}
+                        placeholder="Meals"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase tracking-[0.25em] text-koa">Detail</Label>
+                      <Input
+                        value={item.detail}
+                        onChange={(event) => updateCostItem(item.id, 'detail', event.target.value)}
+                        placeholder="$25.00"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-[0.25em] text-koa">Notes (one per line)</Label>
+                    <Textarea
+                      rows={3}
+                      value={item.notesText}
+                      onChange={(event) => updateCostItem(item.id, 'notesText', event.target.value)}
+                      placeholder="Lunch: Friday, Saturday, Sunday"
                     />
+                  </div>
+                  <div className="flex justify-end">
                     <Button type="button" variant="ghost" onClick={() => removeCostItem(item.id)}>
                       Remove
                     </Button>
@@ -481,66 +595,113 @@ export default function ContentForm({ site, action }: ContentFormProps) {
               ))}
             </div>
             <Button type="button" variant="secondary" onClick={addCostItem}>
-              Add cost line
+              Add cost item
+            </Button>
+            <div className="space-y-2">
+              <Label>Total Cost Text</Label>
+              <Input
+                value={costTotal}
+                onChange={(event) => setCostTotal(event.target.value)}
+                placeholder="Total cost each person: $60.00"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h4 className="font-semibold text-sand-900">Lodging</h4>
+            <p className="text-sm text-koa">The first paragraph appears above the links; additional paragraphs appear below.</p>
+            <div className="space-y-3">
+              {lodging.map((item) => (
+                <div key={item.id} className="space-y-2">
+                  <Textarea
+                    rows={2}
+                    value={item.text}
+                    onChange={(event) => updateLodgingItem(item.id, event.target.value)}
+                    placeholder="Hotel: Hilo Hawaiian Hotel has offered us a group rate."
+                  />
+                  <Button type="button" variant="ghost" onClick={() => removeLodgingItem(item.id)}>
+                    Remove
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <Button type="button" variant="secondary" onClick={addLodgingItem}>
+              Add lodging paragraph
+            </Button>
+            <div className="space-y-3 rounded-2xl border border-sand-200 bg-sand-50 p-4">
+              <h5 className="font-semibold text-sand-900">Lodging Links</h5>
+              <div className="space-y-3">
+                {lodgingLinks.map((link) => (
+                  <div key={link.id} className="grid gap-3 md:grid-cols-[2fr,2fr,auto]">
+                    <Input
+                      value={link.label}
+                      onChange={(event) => updateLodgingLink(link.id, 'label', event.target.value)}
+                      placeholder="Information for Hilo Hawaiian Hotel group rate"
+                    />
+                    <Input
+                      value={link.href}
+                      onChange={(event) => updateLodgingLink(link.id, 'href', event.target.value)}
+                      placeholder="https://"
+                    />
+                    <Button type="button" variant="ghost" onClick={() => removeLodgingLink(link.id)}>
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <Button type="button" variant="secondary" onClick={addLodgingLink}>
+                Add lodging link
+              </Button>
+            </div>
+            <div className="space-y-3">
+              <Label>Hotel List Heading</Label>
+              <Input
+                value={lodgingHotelsHeading}
+                onChange={(event) => setLodgingHotelsHeading(event.target.value)}
+                placeholder="We also have other hotels in Hilo:"
+              />
+              <div className="space-y-2">
+                {lodgingHotels.map((item) => (
+                  <div key={item.id} className="flex gap-3">
+                    <Input
+                      value={item.text}
+                      onChange={(event) => updateLodgingHotel(item.id, event.target.value)}
+                      placeholder="Grand Nani Loa"
+                    />
+                    <Button type="button" variant="ghost" onClick={() => removeLodgingHotel(item.id)}>
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <Button type="button" variant="secondary" onClick={addLodgingHotel}>
+                Add hotel
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h4 className="font-semibold text-sand-900">Transportation</h4>
+            <div className="space-y-3">
+              {transportation.map((item) => (
+                <div key={item.id} className="space-y-2">
+                  <Textarea
+                    rows={2}
+                    value={item.text}
+                    onChange={(event) => updateTransportationItem(item.id, event.target.value)}
+                    placeholder="Transportation from the Waipiʻo lookout into the valley will be provided."
+                  />
+                  <Button type="button" variant="ghost" onClick={() => removeTransportationItem(item.id)}>
+                    Remove
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <Button type="button" variant="secondary" onClick={addTransportationItem}>
+              Add transportation note
             </Button>
           </div>
         </div>
-        <div className="space-y-4">
-          <h4 className="font-semibold text-sand-900">Logistics notes</h4>
-          <div className="space-y-3">
-            {logistics.map((item) => (
-              <div key={item.id} className="flex gap-3">
-                  <Input
-                    value={item.text}
-                    onChange={(event) => updateLogisticsItem(item.id, event.target.value)}
-                    placeholder="Out-of-town families to arrange airfare and lodging."
-                  />
-                <Button type="button" variant="ghost" onClick={() => removeLogisticsItem(item.id)}>
-                  Remove
-                </Button>
-              </div>
-            ))}
-          </div>
-          <Button type="button" variant="secondary" onClick={addLogisticsItem}>
-            Add logistics note
-          </Button>
-        </div>
-      </section>
-
-      <section className="card shadow-soft space-y-6 p-6">
-        <SectionTitle
-          title="Planning Committees"
-          description="Document who is leading each committee so families know where to help."
-        />
-        <div className="space-y-4">
-          {committees.map((item) => (
-            <div key={item.id} className="grid gap-4 rounded-2xl border border-sand-200 bg-sand-50 p-4 md:grid-cols-[2fr,2fr,2fr,auto]">
-              <Input
-                value={item.name}
-                onChange={(event) => updateCommitteeItem(item.id, 'name', event.target.value)}
-                placeholder="Registration"
-              />
-              <Input
-                value={item.leads}
-                onChange={(event) => updateCommitteeItem(item.id, 'leads', event.target.value)}
-                placeholder="Jade & Alika Gee"
-              />
-              <Input
-                value={item.notes ?? ''}
-                onChange={(event) => updateCommitteeItem(item.id, 'notes', event.target.value)}
-                placeholder="Online form, shirt orders, payment flow"
-              />
-              <div className="flex items-end justify-end">
-                <Button type="button" variant="ghost" onClick={() => removeCommitteeItem(item.id)}>
-                  Remove
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-        <Button type="button" variant="secondary" onClick={addCommitteeItem}>
-          Add committee
-        </Button>
       </section>
 
       <div className="flex justify-end">

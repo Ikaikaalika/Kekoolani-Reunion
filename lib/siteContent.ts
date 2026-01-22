@@ -15,6 +15,7 @@ export type GalleryItem = {
 export type CostItem = {
   label: string;
   detail: string;
+  notes?: string[];
 };
 
 export type CommitteeItem = {
@@ -23,121 +24,172 @@ export type CommitteeItem = {
   notes?: string;
 };
 
-export type SiteExtras = {
-  gallery: GalleryItem[];
-  purpose: string[];
-  costs: CostItem[];
-  logistics: string[];
-  committees: CommitteeItem[];
+export type LodgingLink = {
+  label: string;
+  href: string;
 };
 
-const DEFAULT_PURPOSE = [
-  'E hoʻi i ka piko: return to the source and reconnect as one ʻohana.',
-  'Strengthen our pilina (closeness) across generations in Hilo and Waipiʻo.',
-  'Share moʻolelo and moʻokūʻauhau to honor the legacy of Nawai and Emily Kekoʻolani.',
-  'Celebrate together through hula, kanikapila, and family activities.'
-];
+export type SiteExtras = {
+  gallery: GalleryItem[];
+  costs: CostItem[];
+  cost_intro?: string;
+  cost_total?: string;
+  lodging: string[];
+  lodging_links: LodgingLink[];
+  lodging_hotels_heading?: string;
+  lodging_hotels: string[];
+  transportation: string[];
+  genealogy: string[];
+  genealogy_image?: GalleryItem | null;
+};
+
+const DEFAULT_COST_INTRO = 'We are trying our best to keep the cost as low as possible.';
+const DEFAULT_COST_TOTAL = 'Total cost each person: $60.00';
 
 const DEFAULT_COSTS: CostItem[] = [
   {
     label: 'Meals',
-    detail: '$25.00 (Lunch: Friday, Saturday, Sunday; Dinner: Sunday; all other meals on your own)'
+    detail: '$25.00',
+    notes: ['Lunch: Friday, Saturday, Sunday', 'Dinner: Sunday', 'All other meals are on your own']
   },
   { label: 'General fund', detail: '$10.00' },
-  { label: 'Reunion T-shirt', detail: '$25.00' },
-  { label: 'Total cost per person', detail: '$60.00' }
+  { label: 'Reunion T-Shirt', detail: '$25.00' }
 ];
 
-const DEFAULT_LOGISTICS = [
-  'Lodging: Hilo Hawaiian Hotel group rate available (links above). Other Hilo options include Grand Naniloa and SCP Hotel (formerly Hilo Seaside), plus vacation rentals.',
-  'Transportation: Waipiʻo lookout transportation into the valley is provided; all other transportation is on your own.',
-  'Genealogy: Fillable PDF form due by end of April 2026 so we can update family records for future generations.',
-  'Registration includes participant details, attendance days, T-shirt sizes, and a donation note for the Kekoʻolani Trust fund.'
+const DEFAULT_LODGING_PARAGRAPHS = [
+  'Hotel: Hilo Hawaiian Hotel has offered us a group rate. Please click on the link for more information.',
+  'Please feel free to check out the other vacation rentals available on our beautiful island of Hawaiʻi.'
 ];
 
-const DEFAULT_COMMITTEES: CommitteeItem[] = [];
+const DEFAULT_LODGING_LINKS: LodgingLink[] = [
+  {
+    label: 'Information for Hilo Hawaiian Hotel group rate',
+    href: 'https://drive.google.com/file/d/1iurqFFQYgSl0XTebyLcYZ9MScL7EAYOx/view?usp=drive_link'
+  },
+  {
+    label: 'Hilo Hawaiian Hotel form with group code',
+    href: 'https://drive.google.com/file/d/1_tlRIQ5jtG7uWn1XXmIDfzr59vi-NF-p/view?usp=sharing'
+  }
+];
+
+const DEFAULT_LODGING_HOTELS_HEADING = 'We also have other hotels in Hilo:';
+const DEFAULT_LODGING_HOTELS = ['Grand Nani Loa', 'SPC Hotel (formally Hilo Seaside)'];
+
+const DEFAULT_TRANSPORTATION = [
+  'The transportation from the Waipiʻo lookout into the valley will be provided, but all other transportation will be on your own.'
+];
+
+const DEFAULT_GENEALOGY = [
+  'Our moʻokūʻauhau (genealogy) allows us to know who we are, where we come from, and who we are related to. It also connects us to place, events, and moʻolelo that has or may impact our ʻohana. Our dear Aunty Amy, Uncle Henry, and cousin Dean have worked so hard to provide us records of our past. We invite everyone to participate in sharing your genealogy information so that we can update our family records to include the last few generations. This will provide the youngest and the future generations with an updated record of their loving ʻohana.',
+  'We will be emailing a PDF fillable form for you to complete, save, and email to Jade Silva (daughter of Winifred). We will also include a letter asking for your authorization to share your information with the rest of the family. We are asking for the genealogy information be submitted by the end of April 2026.'
+];
+
+const DEFAULT_GENEALOGY_IMAGE: GalleryItem = {
+  src: '/assets/NawaiandEmily.png',
+  alt: 'Nawai and Emily Kekoʻolani'
+};
 
 const DEFAULT_GALLERY: GalleryItem[] = [
+  { src: '/assets/IMG_0644.JPG', alt: 'Kekoolani family gathering' },
+  { src: '/assets/IMG_0647.JPG', alt: 'Family reunion moment' },
+  { src: '/assets/IMG_0721.JPG', alt: 'Waipiʻo gathering' },
+  { src: '/assets/IMG_2937.JPG', alt: 'Hilo shoreline' },
+  { src: '/assets/IMG_2972.JPG', alt: 'Family photo' },
+  { src: '/assets/Hilo-1.jpg', alt: 'Hilo landscape' },
   { src: '/assets/Hilo.jpg', alt: 'Hilo shoreline' },
+  { src: '/assets/Keiki_LoiKalo.jpg', alt: 'Keiki learning in the loʻi' },
   { src: '/assets/LoiKalo1.jpg', alt: 'Loʻi kalo in Waipiʻo' },
-  { src: '/assets/Keiki_LoiKalo.jpg', alt: 'Keiki learning in the loʻi' }
+  { src: '/assets/LoiKalo2.jpeg', alt: 'Loʻi kalo in Waipiʻo' },
+  { src: '/assets/LoiKalo3.jpg', alt: 'Loʻi kalo in Waipiʻo' },
+  { src: '/assets/MaunaKea.jpg', alt: 'Mauna Kea' }
 ];
+
+const DEFAULT_HERO_TITLE = 'Kekoʻolani Family Reunion 2026';
+const DEFAULT_HERO_SUBTITLE = 'E hoʻi i ka piko (Let us return to the source).';
+const DEFAULT_EVENT_DATES = 'July 10 – 12, 2026';
+const DEFAULT_LOCATION = 'Hilo and Waipiʻo, Hawaiʻi';
+const DEFAULT_ABOUT_TEXT =
+  "Aloha kākou,\n\nE hoʻi i ka piko (Let us return to the source) is our theme for our 2026 Kekoʻolani family reunion. Come and join us in the beautiful moku of Hilo as we reconnect and strengthen our pilina (closeness) with one another. We invite all of the descendants of Nawai and Emily Kekoʻolani to be part of this reunion.";
 
 const DEFAULT_SCHEDULE: ScheduleEntry[] = [
   {
-    time: 'Friday · 7/10/26 · 10:00 am – 3:30 pm',
+    time: 'Friday, 7/10/26 · 10:00 am – 3:30 pm',
     title: 'Jade & Meleʻs home in Kaʻūmana',
     items: [
-      '10:00a Hoʻolauna (Meet & greet)',
-      '10:30a Genealogy session',
-      '11:30a Keiki activities',
-      '12:00p Lunch',
-      '12:45p Moʻolelo with our kūpuna',
-      '1:30p Hula workshops',
-      '2:15p Kanikapila',
-      '2:45p Makahiki games'
+      '10:00 am – 10:30 am Hoʻolauna (Meet & greet)',
+      '10:30 am – 11:15 am Genealogy session',
+      '11:15 am – 12:00 pm Keiki activities',
+      '12:00 pm – 12:45 pm Lunch',
+      '12:45 pm – 1:30 pm Moʻolelo with our kūpuna',
+      '1:30 pm – 2:15 pm Hula workshops',
+      '2:15 pm – 2:45 pm Kanikapila',
+      '2:45 pm – 3:30 pm Makahiki games'
     ]
   },
   {
-    time: 'Saturday · 7/11/26 · 8:00 am – 3:00 pm',
+    time: 'Saturday, 7/11/26 · 8:00 am – 3:00 pm',
     title: 'Huakaʻi to Waipiʻo',
     items: [
-      '8:00a Depart for Waipiʻo',
-      '9:00a Visit into Waipiʻo valley',
-      '11:30a Lunch at Kukuihaele Park',
-      '1:00p Visit Kalopa family graves',
-      '2:30p Return to Hilo'
+      '8:00 am – 10:30 am Visit into Waipiʻo valley',
+      '11:00 am – 12:30 pm Lunch at Kukuihaele Park',
+      '1:00 pm – 2:30 pm Visit Kalopa family graves'
     ]
   },
   {
-    time: 'Sunday · 7/12/26 · 9:00 am – 1:00 pm and 4:00 pm – 9:00 pm',
+    time: 'Sunday, 7/12/26 · 9:00 am – 1:00 pm • 4:00 pm – 9:00 pm',
     title: 'Jade & Meleʻs home in Kaʻūmana',
     items: [
-      '9:00a Visit Alae Cemetery',
-      '10:30a Hula workshops / Kanikapila',
-      '11:30a Family activities',
-      '12:15p Lunch',
-      '4:00p Family lūʻau',
-      '5:30p Dinner',
-      '6:30p Entertainment',
-      '7:30p Family sharing',
-      '8:30p Closing / A hui hou'
+      '9:00 am – 10:00 am Visit Alae Cemetery',
+      '10:15 am – 11:30 am Hula Workshops / Kanikapila',
+      '11:30 am – 12:15 pm Family activities',
+      '12:15 pm – 1:00 pm Lunch',
+      '4:00 pm – 5:00 pm Family lūʻau',
+      '5:30 pm – 6:15 pm Dinner',
+      '6:30 pm – 7:15 pm Entertainment',
+      '7:15 pm – 8:15 pm Family sharing',
+      '8:15 pm – 9:00 pm Closing / A hui hou'
     ]
   }
 ];
 
 export const DEFAULT_EXTRAS: SiteExtras = {
   gallery: DEFAULT_GALLERY,
-  purpose: DEFAULT_PURPOSE,
   costs: DEFAULT_COSTS,
-  logistics: DEFAULT_LOGISTICS,
-  committees: DEFAULT_COMMITTEES
+  cost_intro: DEFAULT_COST_INTRO,
+  cost_total: DEFAULT_COST_TOTAL,
+  lodging: DEFAULT_LODGING_PARAGRAPHS,
+  lodging_links: DEFAULT_LODGING_LINKS,
+  lodging_hotels_heading: DEFAULT_LODGING_HOTELS_HEADING,
+  lodging_hotels: DEFAULT_LODGING_HOTELS,
+  transportation: DEFAULT_TRANSPORTATION,
+  genealogy: DEFAULT_GENEALOGY,
+  genealogy_image: DEFAULT_GENEALOGY_IMAGE
 };
+
+function toGalleryItem(value: unknown): GalleryItem | null {
+  if (typeof value === 'string') {
+    return { src: value, alt: null };
+  }
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    const src = typeof record.src === 'string' ? record.src : undefined;
+    if (!src) return null;
+    return {
+      src,
+      alt: typeof record.alt === 'string' ? record.alt : null
+    };
+  }
+  return null;
+}
 
 function toGalleryItems(value: unknown): GalleryItem[] {
   if (!Array.isArray(value)) {
     return DEFAULT_GALLERY;
   }
 
-  const items = value
-    .map((item) => {
-      if (typeof item === 'string') {
-        return { src: item, alt: null };
-      }
-      if (item && typeof item === 'object') {
-        const record = item as Record<string, unknown>;
-        const src = typeof record.src === 'string' ? record.src : undefined;
-        if (!src) return null;
-        return {
-          src,
-          alt: typeof record.alt === 'string' ? record.alt : null
-        };
-      }
-      return null;
-    })
-    .filter(Boolean) as GalleryItem[];
+  const items = value.map((item) => toGalleryItem(item)).filter(Boolean) as GalleryItem[];
 
-  return items;
+  return items.length ? items : DEFAULT_GALLERY;
 }
 
 export function parseSchedule(value: unknown): ScheduleEntry[] {
@@ -197,9 +249,6 @@ export function parseExtras(raw: unknown): SiteExtras {
   if (typeof raw === 'object') {
     const record = raw as Record<string, unknown>;
     const gallery = 'gallery' in record ? toGalleryItems(record.gallery) : DEFAULT_EXTRAS.gallery;
-    const purpose = Array.isArray(record.purpose)
-      ? record.purpose.filter((item): item is string => typeof item === 'string')
-      : DEFAULT_EXTRAS.purpose;
     const costs = Array.isArray(record.costs)
       ? record.costs
           .map((item) => {
@@ -208,36 +257,61 @@ export function parseExtras(raw: unknown): SiteExtras {
             const label = typeof cost.label === 'string' ? cost.label : null;
             const detail = typeof cost.detail === 'string' ? cost.detail : null;
             if (!label || !detail) return null;
-            return { label, detail };
+            const notes = Array.isArray(cost.notes)
+              ? cost.notes.filter((note): note is string => typeof note === 'string')
+              : undefined;
+            return { label, detail, notes: notes && notes.length ? notes : undefined };
           })
           .filter((item): item is CostItem => Boolean(item))
       : DEFAULT_EXTRAS.costs;
-    const logistics = Array.isArray(record.logistics)
-      ? record.logistics.filter((item): item is string => typeof item === 'string')
-      : DEFAULT_EXTRAS.logistics;
-    const committees = Array.isArray(record.committees)
-      ? record.committees
+    const costIntro = typeof record.cost_intro === 'string' ? record.cost_intro : DEFAULT_EXTRAS.cost_intro;
+    const costTotal = typeof record.cost_total === 'string' ? record.cost_total : DEFAULT_EXTRAS.cost_total;
+
+    const lodging = Array.isArray(record.lodging)
+      ? record.lodging.filter((item): item is string => typeof item === 'string')
+      : DEFAULT_EXTRAS.lodging;
+    const lodgingLinks = Array.isArray(record.lodging_links)
+      ? record.lodging_links
           .map((item) => {
             if (!item || typeof item !== 'object') return null;
-            const committee = item as Record<string, unknown>;
-            const name = typeof committee.name === 'string' ? committee.name : null;
-            const leads = typeof committee.leads === 'string' ? committee.leads : null;
-            if (!name || !leads) return null;
-            return {
-              name,
-              leads,
-              notes: typeof committee.notes === 'string' ? committee.notes : undefined
-            } as CommitteeItem;
+            const link = item as Record<string, unknown>;
+            const label = typeof link.label === 'string' ? link.label : null;
+            const href = typeof link.href === 'string' ? link.href : null;
+            if (!label || !href) return null;
+            return { label, href };
           })
-          .filter((item): item is CommitteeItem => Boolean(item))
-      : DEFAULT_EXTRAS.committees;
+          .filter((item): item is LodgingLink => Boolean(item))
+      : DEFAULT_EXTRAS.lodging_links;
+    const lodgingHotelsHeading =
+      typeof record.lodging_hotels_heading === 'string'
+        ? record.lodging_hotels_heading
+        : DEFAULT_EXTRAS.lodging_hotels_heading;
+    const lodgingHotels = Array.isArray(record.lodging_hotels)
+      ? record.lodging_hotels.filter((item): item is string => typeof item === 'string')
+      : DEFAULT_EXTRAS.lodging_hotels;
+
+    const transportation = Array.isArray(record.transportation)
+      ? record.transportation.filter((item): item is string => typeof item === 'string')
+      : DEFAULT_EXTRAS.transportation;
+
+    const genealogy = Array.isArray(record.genealogy)
+      ? record.genealogy.filter((item): item is string => typeof item === 'string')
+      : DEFAULT_EXTRAS.genealogy;
+
+    const genealogyImage = record.genealogy_image ? toGalleryItem(record.genealogy_image) : DEFAULT_EXTRAS.genealogy_image;
 
     return {
       gallery,
-      purpose: purpose.length ? purpose : DEFAULT_EXTRAS.purpose,
       costs: costs.length ? costs : DEFAULT_EXTRAS.costs,
-      logistics: logistics.length ? logistics : DEFAULT_EXTRAS.logistics,
-      committees: committees.length ? committees : DEFAULT_EXTRAS.committees
+      cost_intro: costIntro ?? DEFAULT_EXTRAS.cost_intro,
+      cost_total: costTotal ?? DEFAULT_EXTRAS.cost_total,
+      lodging: lodging.length ? lodging : DEFAULT_EXTRAS.lodging,
+      lodging_links: lodgingLinks.length ? lodgingLinks : DEFAULT_EXTRAS.lodging_links,
+      lodging_hotels_heading: lodgingHotelsHeading ?? DEFAULT_EXTRAS.lodging_hotels_heading,
+      lodging_hotels: lodgingHotels.length ? lodgingHotels : DEFAULT_EXTRAS.lodging_hotels,
+      transportation: transportation.length ? transportation : DEFAULT_EXTRAS.transportation,
+      genealogy: genealogy.length ? genealogy : DEFAULT_EXTRAS.genealogy,
+      genealogy_image: genealogyImage ?? DEFAULT_EXTRAS.genealogy_image
     };
   }
 
@@ -281,10 +355,21 @@ export function getSiteSchedule(record: SiteSettingsRow | null): ScheduleEntry[]
 }
 
 export const SITE_DEFAULTS = {
-  purpose: DEFAULT_PURPOSE,
+  hero_title: DEFAULT_HERO_TITLE,
+  hero_subtitle: DEFAULT_HERO_SUBTITLE,
+  event_dates: DEFAULT_EVENT_DATES,
+  location: DEFAULT_LOCATION,
+  about_html: textToAboutHtml(DEFAULT_ABOUT_TEXT),
   costs: DEFAULT_COSTS,
-  logistics: DEFAULT_LOGISTICS,
-  committees: DEFAULT_COMMITTEES,
+  cost_intro: DEFAULT_COST_INTRO,
+  cost_total: DEFAULT_COST_TOTAL,
+  lodging: DEFAULT_LODGING_PARAGRAPHS,
+  lodging_links: DEFAULT_LODGING_LINKS,
+  lodging_hotels_heading: DEFAULT_LODGING_HOTELS_HEADING,
+  lodging_hotels: DEFAULT_LODGING_HOTELS,
+  transportation: DEFAULT_TRANSPORTATION,
+  genealogy: DEFAULT_GENEALOGY,
+  genealogy_image: DEFAULT_GENEALOGY_IMAGE,
   gallery: DEFAULT_GALLERY,
   schedule: DEFAULT_SCHEDULE
 };

@@ -53,10 +53,10 @@ export default function GalleryUploader({ onUploaded }: GalleryUploaderProps) {
   return (
     <div className="card shadow-soft space-y-4 p-6">
       <div>
-        <h3 className="text-lg font-semibold text-sand-900">Upload to Gallery</h3>
+        <h3 className="text-lg font-semibold text-sand-900">Upload Images</h3>
         <p className="text-sm text-koa">
-          Upload images to Vercel Blob storage. Uploaded URLs are automatically added to your gallery list below.
-          You can also copy an image URL to reuse elsewhere.
+          Upload images to Vercel Blob storage. Uploaded URLs are automatically added to the list below. You can also
+          copy an image URL to reuse elsewhere.
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-3">

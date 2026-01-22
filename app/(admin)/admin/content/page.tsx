@@ -32,12 +32,11 @@ async function getSite(): Promise<AdminSiteSettings> {
     .maybeSingle<SiteSettingsRow>();
 
   const fallback: AdminSiteSettings = {
-    hero_title: 'Kekoʻolani Family Reunion 2026',
-    hero_subtitle:
-      'E hoʻi i ka piko (Let us return to the source) is our theme as we gather in Hilo to reconnect and strengthen our pilina (closeness). We invite all descendants of Nawai and Emily Kekoʻolani to be part of this reunion.',
-    event_dates: 'July 10 – 12, 2026',
-    location: 'Hilo and Waipiʻo, Hawaiʻi',
-    about_html: '',
+    hero_title: SITE_DEFAULTS.hero_title,
+    hero_subtitle: SITE_DEFAULTS.hero_subtitle,
+    event_dates: SITE_DEFAULTS.event_dates,
+    location: SITE_DEFAULTS.location,
+    about_html: SITE_DEFAULTS.about_html,
     schedule_json: SITE_DEFAULTS.schedule,
     gallery_json: DEFAULT_EXTRAS,
     show_schedule: true,
@@ -45,7 +44,7 @@ async function getSite(): Promise<AdminSiteSettings> {
     show_purpose: true,
     show_costs: true,
     show_logistics: true,
-    show_committees: false
+    show_committees: true
   };
 
   if (!data) {
@@ -77,7 +76,7 @@ export default async function AdminContentPage() {
       <div>
         <p className="section-title">Site Content</p>
         <h2 className="mt-3 text-3xl font-semibold text-sand-900">Landing Page Content</h2>
-        <p className="mt-2 text-sm text-koa">Update the hero, schedule, gallery, and planning info shown on the public site.</p>
+        <p className="mt-2 text-sm text-koa">Update the welcome message, schedule, genealogy, and logistics shown on the public site.</p>
       </div>
       <ContentForm site={site} action={updateSiteSettings} />
     </div>
