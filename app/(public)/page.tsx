@@ -1,103 +1,76 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from 'next/link';
-import { createSupabaseServerClient } from '@/lib/supabaseClient';
-import { formatCurrency } from '@/lib/utils';
-import { parseSchedule, parseExtras, SITE_DEFAULTS, DEFAULT_EXTRAS } from '@/lib/siteContent';
-import { normalizeSectionList } from '@/lib/sections';
-import SectionRenderer from '@/components/public/SectionRenderer';
 import Countdown from '@/components/public/Countdown';
+import HeroCarousel from '@/components/public/HeroCarousel';
+import AttendeeMarquee from '@/components/public/AttendeeMarquee';
+import { createSupabaseServerClient } from '@/lib/supabaseClient';
 import type { Database } from '@/types/supabase';
 
-type TicketRow = Database['public']['Tables']['ticket_types']['Row'];
-type SiteSettingsRow = Database['public']['Tables']['site_settings']['Row'];
+const HERO_IMAGES = [
+  '/assets/Hilo-1.jpg',
+  '/assets/Hilo.jpg',
+  '/assets/Keiki_LoiKalo.jpg',
+  '/assets/LoiKalo1.jpg',
+  '/assets/LoiKalo2.jpeg',
+  '/assets/LoiKalo3.jpg',
+  '/assets/MaunaKea.jpg',
+  '/assets/NawaiandEmily.png'
+];
 
-async function getSiteContent() {
-  const supabase = createSupabaseServerClient();
+const HERO_TITLE = 'Kekoʻolani Family Reunion 2026';
+const HERO_SUBTITLE = 'E hoʻi i ka piko (Let us return to the source).';
+const EVENT_DATES = 'July 10 – 12, 2026';
+const LOCATION = 'Hilo and Waipiʻo, Hawaiʻi';
+const COUNTDOWN_TARGET = '2026-07-10T09:00:00-10:00';
 
-  const [siteRes, ticketRes, sectionRes] = await Promise.all([
-    supabase.from('site_settings').select('*').limit(1).maybeSingle(),
-    supabase
-      .from('ticket_types')
-      .select('*')
-      .eq('active', true)
-      .order('position', { ascending: true }),
-    supabase
-      .from('content_sections')
-      .select('*')
-      .eq('published', true)
-      .order('position', { ascending: true })
-      .order('created_at', { ascending: true })
-  ]);
+const WELCOME_PARAGRAPHS = [
+  'Aloha kākou,',
+  'E hoʻi i ka piko (Let us return to the source) is our theme for our 2026 Kekoʻolani family reunion. Come and join us in the beautiful moku of Hilo as we reconnect and strengthen our pilina (closeness) with one another. We invite all of the descendants of Nawai and Emily Kekoʻolani to be part of this reunion.'
+];
 
-  const tickets = ((ticketRes.data ?? []) as TicketRow[]).map((ticket) => ({
-    ...ticket,
-    priceFormatted: formatCurrency(ticket.price_cents, ticket.currency)
-  }));
+const OVERVIEW_ITEMS = [
+  { label: 'What', value: 'Kekoʻolani Family Reunion' },
+  { label: 'Who', value: 'All descendants of Nawai and Emily Kekoʻolani' },
+  { label: 'When', value: EVENT_DATES },
+  { label: 'Where', value: LOCATION }
+];
 
-  const defaults = {
-    hero_title: 'Kekoʻolani Family Reunion 2026',
-    hero_subtitle:
-      'E hoʻi i ka piko (Let us return to the source) is our theme as we gather in Hilo to reconnect and strengthen our pilina (closeness). We invite all descendants of Nawai and Emily Kekoʻolani to be part of this reunion.',
-    event_dates: 'July 10 – 12, 2026',
-    location: 'Hilo and Waipiʻo, Hawaiʻi',
-    about_html: `
-<p>Aloha kākou,</p>
-<p><strong>E hoʻi i ka piko</strong> (Let us return to the source) is our theme for our 2026 Kekoʻolani family reunion. Come and join us in the beautiful moku of Hilo as we reconnect and strengthen our pilina (closeness) with one another. We invite all of the descendants of Nawai and Emily Kekoʻolani to be part of this reunion.</p>
-<ul>
-  <li><strong>What:</strong> Kekoʻolani Family Reunion</li>
-  <li><strong>Who:</strong> All descendants of Nawai and Emily Kekoʻolani</li>
-  <li><strong>When:</strong> July 10 – 12, 2026</li>
-  <li><strong>Where:</strong> Hilo and Waipiʻo, Hawaiʻi</li>
-</ul>
-<h3>Lodging</h3>
-<p>Hilo Hawaiian Hotel has offered us a group rate. Please click the links below for details:</p>
-<ul>
-  <li><a href="https://drive.google.com/file/d/1iurqFFQYgSl0XTebyLcYZ9MScL7EAYOx/view?usp=drive_link" target="_blank" rel="noreferrer">Information for Hilo Hawaiian Hotel group rate</a></li>
-  <li><a href="https://drive.google.com/file/d/1_tlRIQ5jtG7uWn1XXmIDfzr59vi-NF-p/view?usp=sharing" target="_blank" rel="noreferrer">Hilo Hawaiian Hotel form with group code</a></li>
-</ul>
-<p>Other Hilo hotels include Grand Naniloa and SCP Hotel (formerly Hilo Seaside). You can also explore vacation rentals across Hawaiʻi Island.</p>
-<h3>Transportation</h3>
-<p>Transportation from the Waipiʻo lookout into the valley will be provided, but all other transportation will be on your own.</p>
-<h3>Genealogy</h3>
-<p>Our moʻokūʻauhau (genealogy) allows us to know who we are, where we come from, and who we are related to. It connects us to place, events, and moʻolelo that has or may impact our ʻohana. Our dear Aunty Amy, Uncle Henry, and cousin Dean have worked hard to provide records of our past.</p>
-<p>We invite everyone to participate in sharing your genealogy information so we can update our family records to include the last few generations. We will be emailing a PDF fillable form for you to complete, save, and email to Jade Silva (daughter of Winifred). We will also include a letter asking for your authorization to share your information with the rest of the family. Please submit genealogy information by the end of April 2026.</p>
-<h3>Registration</h3>
-<p>Registration is required for all attendees. Please use the <a href="/register">online form</a> to share participant details, attendance days, and T-shirt sizes so we can plan meals and activities.</p>
-<p>Need help? Contact Jade Silva for registration support or to request mailed materials.</p>
-<h3>Coordinator contact information</h3>
-<p>Jade Silva · 808-895-6883 (Hawaiʻi time) · <a href="mailto:pumehanasilva@mac.com">pumehanasilva@mac.com</a></p>
-<p>Mailing: PO Box 10124, Hilo, HI 96721</p>
-`,
-    schedule_json: SITE_DEFAULTS.schedule,
-    gallery_json: DEFAULT_EXTRAS,
-    show_schedule: true,
-    show_gallery: true,
-    show_purpose: true,
-    show_costs: true,
-    show_logistics: true,
-    show_committees: false
-  } as const;
-
-  const siteRecord = siteRes.data as SiteSettingsRow | null;
-  const site = siteRecord
-    ? {
-        ...defaults,
-        ...siteRecord,
-        show_schedule: siteRecord.show_schedule ?? true,
-        show_gallery: siteRecord.show_gallery ?? true,
-        show_purpose: siteRecord.show_purpose ?? true,
-        show_costs: siteRecord.show_costs ?? true,
-        show_logistics: siteRecord.show_logistics ?? true,
-        show_committees: siteRecord.show_committees ?? true
-      }
-    : defaults;
-
-  const scheduleEntries = parseSchedule(site.schedule_json);
-  const extras = parseExtras(site.gallery_json);
-  const sections = normalizeSectionList(sectionRes.data ?? []);
-
-  return { site, tickets, scheduleEntries, extras, sections };
-}
+const SCHEDULE_ENTRIES = [
+  {
+    time: 'Friday, 7/10/26 · 10:00 am – 3:30 pm',
+    title: 'Jade & Meleʻs home in Kaʻūmana',
+    items: [
+      'Hoʻolauna (Meet & greet)',
+      'Genealogy session',
+      'Keiki activities',
+      'Lunch',
+      'Moʻolelo with our kūpuna',
+      'Hula workshops',
+      'Kanikapila',
+      'Makahiki games'
+    ]
+  },
+  {
+    time: 'Saturday, 7/11/26 · 8:00 am – 3:00 pm',
+    title: 'Huakaʻi to Waipiʻo',
+    items: ['Visit into Waipiʻo valley', 'Lunch at Kukuihaele Park', 'Visit Kalopa family graves']
+  },
+  {
+    time: 'Sunday, 7/12/26 · 9:00 am – 1:00 pm • 4:00 pm – 9:00 pm',
+    title: 'Jade & Meleʻs home in Kaʻūmana',
+    items: [
+      'Visit Alae Cemetery',
+      'Hula Workshops / Kanikapila',
+      'Family activities',
+      'Lunch',
+      'Family lūʻau',
+      'Dinner',
+      'Entertainment',
+      'Family sharing',
+      'Closing / A hui hou'
+    ]
+  }
+];
 
 const scheduleItemPattern =
   /^(\d{1,2}(?::\d{2})?(?:\s*(?:a\.?m\.?|p\.?m\.?|a|p))?(?:\s*[-\u2013\u2014]\s*\d{1,2}(?::\d{2})?(?:\s*(?:a\.?m\.?|p\.?m\.?|a|p))?)?)\s+(.+)$/i;
@@ -133,118 +106,106 @@ function splitScheduleItem(item: string) {
   return { time, detail: match[2].trim() };
 }
 
-type AboutSection = {
-  title: string;
-  html: string;
+const COST_ITEMS = [
+  {
+    label: 'Meals',
+    detail: '$25.00',
+    notes: ['Lunch: Friday, Saturday, Sunday', 'Dinner: Sunday', 'All other meals are on your own']
+  },
+  { label: 'General fund', detail: '$10.00' },
+  { label: 'Reunion T-Shirt', detail: '$25.00' }
+];
+
+const LODGING_LINKS = [
+  {
+    label: 'Information for Hilo Hawaiian Hotel group rate',
+    href: 'https://drive.google.com/file/d/1iurqFFQYgSl0XTebyLcYZ9MScL7EAYOx/view?usp=drive_link'
+  },
+  {
+    label: 'Hilo Hawaiian Hotel form with group code',
+    href: 'https://drive.google.com/file/d/1_tlRIQ5jtG7uWn1XXmIDfzr59vi-NF-p/view?usp=sharing'
+  }
+];
+
+const GENEALOGY_PARAGRAPHS = [
+  'Our moʻokūʻauhau (genealogy) allows us to know who we are, where we come from, and who we are related to. It also connects us to place, events, and moʻolelo that has or may impact our ʻohana. Our dear Aunty Amy, Uncle Henry, and cousin Dean have worked so hard to provide us records of our past. We invite everyone to participate in sharing your genealogy information so that we can update our family records to include the last few generations. This will provide the youngest and the future generations with an updated record of their loving ʻohana.',
+  'We will be emailing a PDF fillable form for you to complete, save, and email to Jade Silva (daughter of Winifred). We will also include a letter asking for your authorization to share your information with the rest of the family. We are asking for the genealogy information be submitted by the end of April 2026.'
+];
+
+type OrderRow = Database['public']['Tables']['orders']['Row'];
+
+type AttendeeHighlight = {
+  name: string;
+  photoUrl?: string | null;
 };
 
-const overviewListTokens = ['what', 'who', 'when', 'where'];
+async function getAttendeeHighlights(): Promise<AttendeeHighlight[]> {
+  const supabase = createSupabaseServerClient();
 
-function stripOverviewList(html: string) {
-  return html.replace(/<ul[^>]*>[\s\S]*?<\/ul>/gi, (list) => {
-    const normalized = list.toLowerCase();
-    const hasTokens = overviewListTokens.every((token) => normalized.includes(`${token}:`));
-    return hasTokens ? '' : list;
-  });
-}
+  const { data, error } = await supabase
+    .from('orders')
+    .select('purchaser_name, form_answers, status, created_at')
+    .eq('status', 'paid')
+    .order('created_at', { ascending: false })
+    .limit(40);
 
-function splitAboutSections(html: string | null) {
-  const cleaned = (html ?? '').trim();
-  if (!cleaned) {
-    return { intro: null as string | null, sections: [] as AboutSection[] };
-  }
+  if (error || !data) return [];
 
-  const matches = Array.from(cleaned.matchAll(/<h3[^>]*>(.*?)<\/h3>/gi));
-  if (!matches.length) {
-    return { intro: cleaned, sections: [] };
-  }
+  const highlights: AttendeeHighlight[] = [];
 
-  const intro = matches[0].index ? cleaned.slice(0, matches[0].index).trim() : '';
-  const sections = matches
-    .map((match, index) => {
-      if (match.index === undefined) return null;
-      const title = match[1].replace(/<[^>]+>/g, '').trim();
-      const start = match.index + match[0].length;
-      const end = index + 1 < matches.length && matches[index + 1].index !== undefined ? matches[index + 1].index : cleaned.length;
-      let sectionHtml = cleaned.slice(start, end).trim();
-      if (title.toLowerCase() === 'registration') {
-        sectionHtml = sectionHtml.replace(/<ol[\s\S]*?<\/ol>/gi, '').trim();
+  for (const row of data as OrderRow[]) {
+    const answers = row.form_answers && typeof row.form_answers === 'object' ? (row.form_answers as Record<string, unknown>) : {};
+    const people = Array.isArray(answers.people) ? answers.people : [];
+    const photos = Array.isArray(answers.photo_urls) ? answers.photo_urls : [];
+
+    if (people.length) {
+      for (let index = 0; index < people.length; index += 1) {
+        const person = people[index];
+        const record = person && typeof person === 'object' ? (person as Record<string, unknown>) : {};
+        const name = typeof record.full_name === 'string' ? record.full_name : typeof record.name === 'string' ? record.name : '';
+        if (!name) continue;
+        const photo = typeof photos[index] === 'string' ? photos[index] : null;
+        highlights.push({ name, photoUrl: photo });
+        if (highlights.length >= 40) return highlights;
       }
-      if (!title || !sectionHtml) return null;
-      return { title, html: sectionHtml };
-    })
-    .filter((section): section is AboutSection => Boolean(section));
+    } else if (typeof row.purchaser_name === 'string' && row.purchaser_name.trim()) {
+      highlights.push({ name: row.purchaser_name.trim() });
+      if (highlights.length >= 40) return highlights;
+    }
+  }
 
-  return {
-    intro: intro ? stripOverviewList(intro).trim() || null : null,
-    sections
-  };
+  return highlights;
 }
 
 export default async function HomePage() {
-  const { site, tickets, scheduleEntries, extras, sections } = await getSiteContent();
-  const galleryItems = extras.gallery;
-  const purposePoints = extras.purpose;
-  const costOutline = extras.costs;
-  const logisticsNotes = extras.logistics;
-  const committees = extras.committees;
-
-  const showSchedule = site.show_schedule && scheduleEntries.length > 0;
-  const showGallery = site.show_gallery && galleryItems.length > 0;
-  const showPurpose = site.show_purpose && purposePoints.length > 0;
-  const showCosts = site.show_costs && costOutline.length > 0;
-  const showLogistics = site.show_logistics && logisticsNotes.length > 0;
-  const showCommittees = site.show_committees && committees.length > 0;
-  const hasFaqSection = sections.some((section) => section.type === 'faq');
-  const hasContactSection = sections.some((section) => section.type === 'contact');
-  const aboutIntroCols = showGallery ? 'lg:grid-cols-[3fr,2fr]' : 'lg:grid-cols-1';
-  const aboutContent = splitAboutSections(site.about_html);
-  const redundantAboutTitles = new Set([
-    'lodging',
-    'transportation',
-    'genealogy',
-    'registration',
-    'coordinator contact information',
-    'coordinator contact',
-    'contact information'
-  ]);
-  const aboutSections = aboutContent.sections.filter((section) => {
-    const normalizedTitle = section.title.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
-    if (!normalizedTitle) return false;
-    if (redundantAboutTitles.has(normalizedTitle)) return false;
-    if (normalizedTitle.startsWith('coordinator contact')) return false;
-    return true;
-  });
-  const showAboutSections = aboutSections.length > 0;
-  const countdownTarget = '2026-07-10T09:00:00-10:00';
+  const attendeeHighlights = await getAttendeeHighlights();
 
   return (
     <div>
       <section className="section hero">
+        <HeroCarousel images={HERO_IMAGES} />
         <div className="container relative z-10 grid gap-12 lg:grid-cols-[3fr,2fr] lg:items-center">
           <div className="space-y-6">
             <span className="hero-tag">E hoʻi i ka piko</span>
-            <h1 className="h1 text-balance text-white">{site.hero_title}</h1>
-            <p className="max-w-xl text-lg text-white/85">{site.hero_subtitle}</p>
+            <h1 className="h1 text-balance text-white">{HERO_TITLE}</h1>
+            <p className="max-w-xl text-lg text-white/85">{HERO_SUBTITLE}</p>
             <div className="flex flex-col gap-3 text-sm text-white/80 sm:flex-row sm:items-center sm:gap-6">
               <div className="flex items-center gap-2">
                 <i className="h-2 w-2 rounded-full bg-emerald-300" />
-                <span>{site.event_dates}</span>
+                <span>{EVENT_DATES}</span>
               </div>
               <div className="flex items-center gap-2">
                 <i className="h-2 w-2 rounded-full bg-amber-200" />
-                <span>{site.location}</span>
+                <span>{LOCATION}</span>
               </div>
             </div>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <Link href="/register" className="btn btn-large w-full sm:w-auto">
                 Register
               </Link>
-              {showSchedule ? (
-                <a href="/#schedule" className="btn btn-secondary w-full sm:w-auto">
-                  View Schedule
-                </a>
-              ) : null}
+              <a href="/#schedule" className="btn btn-secondary w-full sm:w-auto">
+                View Schedule
+              </a>
             </div>
           </div>
           <div>
@@ -267,7 +228,7 @@ export default async function HomePage() {
               <div className="mt-6 rounded-2xl bg-white/15 p-4 text-white shadow-soft">
                 <p className="mono text-xs uppercase tracking-[0.3em] text-white/70">Countdown</p>
                 <div className="mt-3">
-                  <Countdown targetIso={countdownTarget} fallback={site.event_dates ?? undefined} />
+                  <Countdown targetIso={COUNTDOWN_TARGET} fallback={EVENT_DATES} />
                 </div>
               </div>
             </div>
@@ -275,276 +236,188 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section id="about" className="section">
-        <div className="container">
-          <div className="mb-12 text-center">
-            <span className="section-title">Overview</span>
-            <h2 className="h2 mt-3">Reunion Details</h2>
+      <section id="overview" className="section">
+        <div className="container max-w-5xl">
+          <div className="mb-10 text-center">
+            <span className="section-title">Welcome</span>
+            <h2 className="h2 mt-3">Aloha kākou</h2>
+          </div>
+          <div className="space-y-4 text-base text-sand-700">
+            {WELCOME_PARAGRAPHS.map((paragraph) => (
+              <p key={paragraph}>{paragraph}</p>
+            ))}
+          </div>
+          <div className="mt-10 grid gap-4 md:grid-cols-2">
+            {OVERVIEW_ITEMS.map((item) => (
+              <div key={item.label} className="card shadow-soft p-6">
+                <p className="mono text-xs uppercase tracking-[0.3em] text-sand-600">{item.label}</p>
+                <p className="mt-3 text-lg font-semibold text-sand-900">{item.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="section section-alt">
+        <div className="container max-w-6xl">
+          <div className="mb-10 text-center">
+            <span className="section-title">ʻOhana</span>
+            <h2 className="h2 mt-3">Who Else Is Coming</h2>
             <p className="mt-2 text-sm text-sand-700">
-              Key details, travel notes, and how we will gather across the weekend.
+              See the growing list of relatives who have already registered.
             </p>
           </div>
-          <div className={`grid gap-12 ${aboutIntroCols} lg:items-start`}>
-            <div className="space-y-8">
-              {aboutContent.intro ? (
-                <div
-                  className="prose prose-lg prose-slate max-w-none text-sand-700"
-                  dangerouslySetInnerHTML={{ __html: aboutContent.intro }}
-                />
-              ) : null}
-              {showPurpose ? (
-                <div>
-                  <h3 className="section-title">Purpose Highlights</h3>
-                  <ul className="card mt-4 space-y-2 p-6 text-sm text-sand-700 shadow-soft">
-                    {purposePoints.map((point) => (
-                      <li key={point} className="flex items-start gap-3">
-                        <span className="mt-1 inline-flex h-2 w-2 flex-none rounded-full bg-emerald-500" />
-                        <span>{point}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-            </div>
-            {showGallery ? (
-              <div className="grid gap-4">
-                {galleryItems.slice(0, 3).map((item, idx) => (
-                  <div key={idx} className="card shadow-soft overflow-hidden">
-                    <img src={item.src} alt={item.alt ?? 'Reunion photo'} className="h-52 w-full object-cover" />
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </div>
-          {showAboutSections ? (
-            <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {aboutSections.map((section) => (
-                <div key={section.title} className="card shadow-soft p-5">
-                  <h3 className="text-lg font-semibold text-sand-900">{section.title}</h3>
-                  <div
-                    className="prose prose-sm prose-slate mt-2 max-w-none text-sand-700"
-                    dangerouslySetInnerHTML={{ __html: section.html }}
-                  />
-                </div>
-              ))}
-            </div>
-          ) : null}
+          <AttendeeMarquee attendees={attendeeHighlights} />
         </div>
       </section>
 
-      {showSchedule ? (
-        <section id="schedule" className="section section-alt">
-          <div className="container max-w-5xl">
-            <div className="mb-12 text-center">
-              <span className="section-title">Weekend Flow</span>
-              <h2 className="h2 mt-3">Tentative Schedule</h2>
-              <p className="mt-2 text-sm text-sand-700">
-                Times & locations may shift slightly as we confirm partners.
-              </p>
-            </div>
-            <div className="grid gap-6">
-              {scheduleEntries.map((entry, idx) => {
-                const agenda = Array.isArray(entry.items) && entry.items.length ? entry.items : [];
-                const fallbackDescription = !agenda.length && entry.description ? entry.description : null;
-                const parsedAgenda = agenda.map((item) => splitScheduleItem(item));
-                const hasTimes = parsedAgenda.some((item) => item.time);
-
-                return (
-                  <div
-                    key={`${entry.time}-${idx}`}
-                    className="card shadow-soft p-6 transition hover:-translate-y-1"
-                  >
-                    <p className="section-title">{entry.time}</p>
-                    <h3 className="mt-3 text-xl font-semibold text-sand-900">{entry.title}</h3>
-                    {agenda.length > 0 ? (
-                      <div className="mt-4 space-y-3 text-sm text-sand-700">
-                        {parsedAgenda.map((item, itemIdx) =>
-                          hasTimes ? (
-                            <div key={`${entry.time}-item-${itemIdx}`} className="grid gap-2 sm:grid-cols-[120px_1fr]">
-                              <span
-                                className={`mono text-xs font-semibold uppercase tracking-[0.2em] ${
-                                  item.time ? 'text-sand-600' : 'text-sand-400'
-                                }`}
-                              >
-                                {item.time ?? 'TBD'}
-                              </span>
-                              <span>{item.detail}</span>
-                            </div>
-                          ) : (
-                            <p key={`${entry.time}-item-${itemIdx}`}>{item.detail}</p>
-                          )
-                        )}
-                      </div>
-                    ) : fallbackDescription ? (
-                      <p className="mt-2 text-sm text-sand-700">{fallbackDescription}</p>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      ) : null}
-
-      {showCosts || showLogistics ? (
-        <section id="logistics" className="section">
-          <div className="container max-w-5xl">
-            <div className="mb-12 text-center">
-              <span className="section-title">Costs & Planning</span>
-              <h2 className="h2 mt-3">Reunion Logistics</h2>
-              <p className="mt-2 text-sm text-sand-700">
-                We are keeping registrations as affordable as possible. Thanks for helping with supplies, setup, and hosting.
-              </p>
-            </div>
-            <div className={`grid gap-8 ${showCosts && showLogistics ? 'md:grid-cols-2' : 'md:grid-cols-1'}`}>
-              {showCosts ? (
-                <div className="card shadow-soft p-6">
-                  <h3 className="text-2xl font-semibold text-sand-900">Cost per Person</h3>
-                  <ul className="mt-4 space-y-3 text-sm text-sand-700">
-                    {costOutline.map((item) => (
-                      <li key={item.label}>
-                        <p className="font-semibold text-sand-900">{item.label}</p>
-                        <p>{item.detail}</p>
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="mono mt-4 text-xs uppercase tracking-[0.25em] text-sand-500">
-                    Additional help and donations welcome for venue rentals and supplies.
-                  </p>
-                </div>
-              ) : null}
-              {showLogistics ? (
-                <div className="card shadow-soft bg-white/80 p-6">
-                  <h3 className="text-2xl font-semibold text-sand-900">Logistics & Support</h3>
-                  <ul className="mt-4 space-y-3 text-sm text-sand-700">
-                    {logisticsNotes.map((note) => (
-                      <li key={note} className="flex items-start gap-3">
-                        <span className="mt-1 inline-flex h-2 w-2 flex-none rounded-full bg-emerald-500" />
-                        <span>{note}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-            </div>
-          </div>
-        </section>
-      ) : null}
-
-      <section id="tickets" className="section">
+      <section id="schedule" className="section">
         <div className="container max-w-5xl">
           <div className="mb-12 text-center">
-            <span className="section-title">Tickets</span>
-            <h2 className="h2 mt-3">Choose Your Pass</h2>
-            <p className="mt-2 text-sm text-sand-700">
-              Secure your spot early. Every ticket helps cover venue, meals, and keepsakes.
-            </p>
+            <span className="section-title">Schedule</span>
+            <h2 className="h2 mt-3">Three Day Event</h2>
+            <p className="mt-2 text-sm text-sand-700">Here is the schedule of events for the three day event.</p>
           </div>
-          <div className="grid gap-8 md:grid-cols-3">
-            {tickets.length ? (
-              tickets.map((ticket) => (
-                <div key={ticket.id} className="card shadow-soft flex h-full flex-col p-6">
-                  <span className="section-title">{ticket.name}</span>
-                  <p className="mt-4 text-3xl font-semibold text-sand-900">{ticket.priceFormatted}</p>
-                  <p className="mt-2 text-sm text-sand-700">{ticket.description}</p>
-                  {typeof ticket.inventory === 'number' && (
-                    <p className="mono mt-4 text-xs uppercase tracking-[0.3em] text-emerald-700">
-                      {ticket.inventory} spots left
-                    </p>
-                  )}
-                  <Link href={{ pathname: '/register', query: { ticket: ticket.id } }} className="btn mt-auto">
-                    Select Ticket
-                  </Link>
+          <div className="grid gap-6">
+            {SCHEDULE_ENTRIES.map((entry, idx) => {
+              const parsedAgenda = entry.items.map((item) => splitScheduleItem(item));
+              const hasTimes = parsedAgenda.some((item) => item.time);
+
+              return (
+                <div key={`${entry.time}-${idx}`} className="card shadow-soft p-6 transition hover:-translate-y-1">
+                  <p className="section-title">{entry.time}</p>
+                  <h3 className="mt-3 text-xl font-semibold text-sand-900">{entry.title}</h3>
+                  <div className="mt-4 space-y-3 text-sm text-sand-700">
+                    {parsedAgenda.map((item, itemIdx) =>
+                      hasTimes ? (
+                        <div key={`${entry.time}-item-${itemIdx}`} className="grid gap-2 sm:grid-cols-[120px_1fr]">
+                          <span
+                            className={`mono text-xs font-semibold uppercase tracking-[0.2em] ${
+                              item.time ? 'text-sand-600' : 'text-sand-400'
+                            }`}
+                          >
+                            {item.time ?? 'TBD'}
+                          </span>
+                          <span>{item.detail}</span>
+                        </div>
+                      ) : (
+                        <p key={`${entry.time}-item-${itemIdx}`}>{item.detail}</p>
+                      )
+                    )}
+                  </div>
                 </div>
-              ))
-            ) : (
-              <div className="col-span-3 rounded-3xl border border-dashed border-sand-300 bg-white/80 p-12 text-center text-sand-700">
-                Ticketing will open soon. Check back shortly!
-              </div>
-            )}
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {showCommittees ? (
-        <section id="committees" className="section section-alt">
-          <div className="container max-w-6xl">
-            <div className="mb-12 text-center">
-              <span className="section-title">Committees & Volunteers</span>
-              <h2 className="h2 mt-3">Meet the Planning Committees</h2>
-              <p className="mt-2 text-sm text-sand-700">
-                Thank you to the families stepping forward. If you feel called to help, reach out to the committee leads.
-              </p>
+      <section className="section section-alt">
+        <div className="container max-w-5xl">
+          <div className="mb-10 text-center">
+            <span className="section-title">Genealogy</span>
+            <h2 className="h2 mt-3">Moʻokūʻauhau</h2>
+          </div>
+          <div className="card shadow-soft p-8">
+            <div className="overflow-hidden rounded-2xl border border-sand-200 bg-white/80">
+              <img src="/assets/NawaiandEmily.png" alt="Nawai and Emily Kekoʻolani" className="w-full object-cover" />
             </div>
-            <div className="grid gap-6 md:grid-cols-2">
-              {committees.map((committee) => (
-                <div key={committee.name} className="card shadow-soft p-6">
-                  <p className="section-title">{committee.name}</p>
-                  <h3 className="mt-3 text-lg font-semibold text-sand-900">{committee.leads}</h3>
-                  <p className="mt-2 text-sm text-sand-700">{committee.notes}</p>
-                </div>
+            <div className="mt-6 space-y-4 text-base text-sand-700">
+              {GENEALOGY_PARAGRAPHS.map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
               ))}
             </div>
           </div>
-        </section>
-      ) : null}
+        </div>
+      </section>
 
-      {sections.map((section) => (
-        <SectionRenderer key={section.id} section={section} />
-      ))}
-
-      {!hasFaqSection ? (
-        <section id="faq" className="section section-alt">
-          <div className="container max-w-5xl">
-            <div className="mb-12 text-center">
-              <span className="section-title">FAQ</span>
-              <h2 className="h2 mt-3">Quick Answers</h2>
-              <p className="mt-2 text-sm text-sand-700">
-                We will share more details soon. Here are the essentials for now.
-              </p>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="card shadow-soft p-6">
-                <p className="text-lg font-semibold text-sand-900">When is the reunion?</p>
-                <p className="mt-2 text-sm text-sand-700">{site.event_dates}</p>
-              </div>
-              <div className="card shadow-soft p-6">
-                <p className="text-lg font-semibold text-sand-900">Where will we gather?</p>
-                <p className="mt-2 text-sm text-sand-700">{site.location}</p>
-              </div>
-            </div>
+      <section id="logistics" className="section">
+        <div className="container max-w-5xl">
+          <div className="mb-12 text-center">
+            <span className="section-title">Logistics</span>
+            <h2 className="h2 mt-3">Planning Details</h2>
           </div>
-        </section>
-      ) : null}
-
-      {!hasContactSection ? (
-        <section id="contact" className="section">
-          <div className="container max-w-5xl">
-            <div className="mb-12 text-center">
-              <span className="section-title">Contact</span>
-              <h2 className="h2 mt-3">Registration Support</h2>
-              <p className="mt-2 text-sm text-sand-700">
-                Reach out with questions about registration, lodging, or genealogy updates.
-              </p>
+          <div className="space-y-6">
+            <div className="card shadow-soft p-8">
+              <h3 className="text-2xl font-semibold text-sand-900">Cost</h3>
+              <div className="mt-6 space-y-4 text-base text-sand-700">
+                <p>We are trying our best to keep the cost as low as possible.</p>
+                <div className="space-y-4">
+                  {COST_ITEMS.map((item) => (
+                    <div key={item.label} className="rounded-2xl border border-sand-200 bg-white/80 p-4">
+                      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="font-semibold text-sand-900">{item.label}</p>
+                        <p className="text-sand-700">{item.detail}</p>
+                      </div>
+                      {item.notes ? (
+                        <ul className="mt-3 space-y-1 text-sm text-sand-700">
+                          {item.notes.map((note) => (
+                            <li key={note} className="flex items-start gap-2">
+                              <span className="mt-1 inline-flex h-2 w-2 flex-none rounded-full bg-emerald-500" />
+                              <span>{note}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-lg font-semibold text-sand-900">Total cost each person: $60.00</p>
+              </div>
             </div>
-            <div className="card shadow-soft p-6">
-              <p className="mono text-xs uppercase tracking-[0.3em] text-sand-600">Coordinator</p>
-              <h3 className="mt-3 text-xl font-semibold text-sand-900">Jade Silva</h3>
-              <div className="mt-3 space-y-2 text-sm text-sand-700">
+
+            <div className="card shadow-soft p-8">
+              <h3 className="text-2xl font-semibold text-sand-900">Lodging</h3>
+              <div className="mt-6 space-y-4 text-base text-sand-700">
                 <p>
-                  Email:{' '}
-                  <a href="mailto:pumehanasilva@mac.com" className="text-emerald-700 underline">
-                    pumehanasilva@mac.com
-                  </a>
+                  Hotel: Hilo Hawaiian Hotel has offered us a group rate. Please click on the link for more information.
                 </p>
-                <p>Phone: 808-895-6883 (Hawaiʻi time)</p>
-                <p>Mailing: PO Box 10124, Hilo, HI 96721</p>
+                <div className="space-y-2">
+                  {LODGING_LINKS.map((link) => (
+                    <a
+                      key={link.href}
+                      href={link.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-emerald-700 underline"
+                    >
+                      {link.label}
+                    </a>
+                  ))}
+                </div>
+                <p>Please feel free to check out the other vacation rentals available on our beautiful island of Hawaiʻi.</p>
+                <div>
+                  <p>We also have other hotels in Hilo:</p>
+                  <ul className="mt-2 space-y-1">
+                    <li>Grand Nani Loa</li>
+                    <li>SPC Hotel (formally Hilo Seaside)</li>
+                  </ul>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
-      ) : null}
 
+            <div className="card shadow-soft p-8">
+              <h3 className="text-2xl font-semibold text-sand-900">Transportation</h3>
+              <p className="mt-6 text-base text-sand-700">
+                The transportation from the Waipiʻo lookout into the valley will be provided, but all other
+                transportation will be on your own.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="section section-alt">
+        <div className="container max-w-3xl text-center">
+          <h2 className="h2">Ready to Register?</h2>
+          <p className="mt-3 text-sm text-sand-700">
+            Share your family details so we can plan meals, activities, and keepsakes for everyone attending.
+          </p>
+          <Link href="/register" className="btn btn-large mt-6">
+            Register Now
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

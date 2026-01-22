@@ -39,5 +39,6 @@ export const REGISTRATION_GUIDELINES: RegistrationGuideline[] = [
 
 export const REGISTRATION_FORM_FIELDS = [
   { key: 'people', label: 'Participants (details)' },
+  { key: 'photo_urls', label: 'Photo URLs' },
   { key: 'donation_note', label: 'Donation Note' }
 ];

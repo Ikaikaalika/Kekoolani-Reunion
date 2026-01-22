@@ -1,6 +1,7 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { formatCurrency } from '@/lib/utils';
+import { uploadRegistrationImage } from '@/lib/actions/blob';
 
 const personSchema = z
   .object({
@@ -46,6 +48,7 @@ const formSchema = z.object({
     })
   ),
   people: z.array(personSchema).min(1).max(30),
+  photo_urls: z.array(z.string().url()).optional(),
   donation_note: z.string().optional()
 });
 
@@ -67,6 +70,12 @@ type Question = {
   field_type: 'text' | 'textarea' | 'select' | 'checkbox' | 'date';
   options: any;
   required: boolean;
+};
+
+type UploadItem = {
+  url: string;
+  pathname: string;
+  size: number;
 };
 
 const LINEAGE_OPTIONS = ['Nawai', 'Katherine', 'Amy', 'Other / Not listed'];
@@ -108,6 +117,9 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
   const [error, setError] = useState<string | null>(null);
   const [pendingNavigation, setPendingNavigation] = useState<PendingNavigation>(null);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploads, setUploads] = useState<UploadItem[]>([]);
+  const [isUploading, startUpload] = useTransition();
 
   const allowNavigationRef = useRef(false);
   const isDirtyRef = useRef(false);
@@ -134,6 +146,7 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
     defaultValues: {
       tickets: defaultTickets,
       people: [createEmptyPerson()],
+      photo_urls: [],
       donation_note: ''
     }
   });
@@ -145,6 +158,7 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
 
   const people = useWatch({ control, name: 'people' });
   const quantities = watch('tickets');
+  const photoUrls = watch('photo_urls');
 
   useEffect(() => {
     isDirtyRef.current = isDirty;
@@ -263,6 +277,7 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
             address: person.address,
             same_contact: person.same_contact ?? false
           })),
+          photo_urls: data.photo_urls ?? [],
           donation_note: data.donation_note || null
         }
       );
@@ -573,6 +588,83 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
             Add Person
           </Button>
           <p className="text-xs text-koa">You can add up to 30 people.</p>
+        </div>
+
+        <div className="space-y-4 rounded-3xl border border-slate-100 bg-white/80 p-6 shadow-sm">
+          <div className="space-y-2">
+            <h2 className="text-lg font-semibold text-black">Attendee Photos</h2>
+            <p className="text-sm text-koa">
+              Upload photos for the reunion wall. Add one photo per attendee, in the same order as listed above.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="inline-flex cursor-pointer items-center justify-center rounded-full bg-brandBlue/10 px-4 py-2 text-sm font-medium text-brandBlue shadow-sm transition hover:bg-brandBlue/20">
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(event) => {
+                  const input = event.currentTarget;
+                  const files = Array.from(input.files ?? []);
+                  if (!files.length) return;
+                  setUploadError(null);
+                  startUpload(async () => {
+                    const results = await Promise.all(
+                      files.map(async (file) => {
+                        const data = new FormData();
+                        data.append('file', file);
+                        return uploadRegistrationImage(data);
+                      })
+                    );
+
+                    const nextUploads: UploadItem[] = [];
+                    const errors = results
+                      .map((result) => {
+                        if ('error' in result) return result.error ?? 'Upload failed';
+                        nextUploads.push(result);
+                        return null;
+                      })
+                      .filter(Boolean);
+
+                    if (errors.length) {
+                      setUploadError(errors[0] as string);
+                    } else {
+                      setUploadError(null);
+                    }
+
+                    if (nextUploads.length) {
+                      setUploads((prev) => [...prev, ...nextUploads]);
+                      setValue(
+                        'photo_urls',
+                        [...(photoUrls ?? []), ...nextUploads.map((upload) => upload.url)],
+                        { shouldDirty: true, shouldValidate: true }
+                      );
+                    }
+
+                    input.value = '';
+                  });
+                }}
+              />
+              Choose Images
+            </label>
+            <Button type="button" variant="ghost" disabled>
+              {isUploading ? 'Uploading...' : '8MB max per image'}
+            </Button>
+          </div>
+          {uploadError && <p className="text-sm text-red-500">{uploadError}</p>}
+          {uploads.length > 0 && (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {uploads.map((item) => (
+                <div key={item.pathname} className="rounded-2xl border border-slate-200 bg-white p-3 text-sm">
+                  <div className="overflow-hidden rounded-xl">
+                    <img src={item.url} alt="Uploaded attendee" className="h-32 w-full object-cover" />
+                  </div>
+                  <p className="mt-2 truncate text-xs text-koa">{item.pathname}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="space-y-4">

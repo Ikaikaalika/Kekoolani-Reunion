@@ -1,11 +1,9 @@
 import type { ReactNode } from 'react';
 
 const navLinks = [
-  { href: '/#about', label: 'Overview' },
+  { href: '/#overview', label: 'Overview' },
   { href: '/#schedule', label: 'Schedule' },
   { href: '/#logistics', label: 'Logistics' },
-  { href: '/#tickets', label: 'Tickets' },
-  { href: '/#faq', label: 'FAQ' },
   { href: '/#contact', label: 'Contact' }
 ];
 
@@ -36,8 +34,8 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
               <a href="tel:8088956883" className="opacity-90 hover:opacity-100">
                 808-895-6883
               </a>
-              <a href="mailto:ohana@kekoolani.com" className="opacity-90 hover:opacity-100">
-                ohana@kekoolani.com
+              <a href="mailto:pumehanasilva@mac.com" className="opacity-90 hover:opacity-100">
+                pumehanasilva@mac.com
               </a>
             </div>
             <div className="opacity-90">July 10 – 12, 2026 • Hilo & Waipiʻo</div>
@@ -70,7 +68,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
         </div>
       </header>
       <main className="pt-24 md:pt-32">{children}</main>
-      <footer className="bg-navy text-white">
+      <footer id="contact" className="bg-navy text-white">
         <div className="container py-16">
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
             <div className="lg:col-span-2">
@@ -84,19 +82,20 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
                 </div>
               </div>
               <p className="mb-6 max-w-xl text-white/80">
-                A gathering of descendants of Nawai and Emily Kekoʻolani to reconnect, share moʻolelo, and celebrate our ʻohana.
+                Contact Pumehana Silva for registration help, genealogy submissions, or reunion updates.
               </p>
               <div className="space-y-2 text-white/70">
-                <p>Hilo & Waipiʻo, Hawaiʻi</p>
-                <p>ohana@kekoolani.com</p>
+                <p>Pumehana Silva</p>
+                <p>pumehanasilva@mac.com</p>
                 <p>808-895-6883 (Hawaiʻi time)</p>
+                <p>Mailing: PO Box 10124, Hilo, HI 96721</p>
               </div>
             </div>
             <div>
               <h4 className="mb-4 text-lg font-semibold">Quick Links</h4>
               <ul className="space-y-3 text-white/70">
                 <li>
-                  <a href="/#about" className="transition-colors hover:text-white">
+                  <a href="/#overview" className="transition-colors hover:text-white">
                     Overview
                   </a>
                 </li>
@@ -108,16 +107,6 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
                 <li>
                   <a href="/#logistics" className="transition-colors hover:text-white">
                     Logistics
-                  </a>
-                </li>
-                <li>
-                  <a href="/#tickets" className="transition-colors hover:text-white">
-                    Tickets
-                  </a>
-                </li>
-                <li>
-                  <a href="/#faq" className="transition-colors hover:text-white">
-                    FAQ
                   </a>
                 </li>
                 <li>
