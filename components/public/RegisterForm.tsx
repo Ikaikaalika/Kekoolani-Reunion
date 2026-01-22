@@ -340,6 +340,18 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
     setUploadingIndex(index);
     setUploadErrors((prev) => ({ ...prev, [index]: '' }));
 
+    if (!file.type.startsWith('image/')) {
+      setUploadErrors((prev) => ({ ...prev, [index]: 'Only image files are allowed.' }));
+      setUploadingIndex(null);
+      return;
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+      setUploadErrors((prev) => ({ ...prev, [index]: 'File must be 8MB or smaller.' }));
+      setUploadingIndex(null);
+      return;
+    }
+
     const data = new FormData();
     data.append('file', file);
     const result = await uploadRegistrationImage(data);
