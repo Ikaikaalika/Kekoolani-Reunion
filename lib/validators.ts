@@ -69,6 +69,45 @@ export const sectionTypeSchema = z.enum([
   'custom_html'
 ]);
 
+export const registrationFieldTypeSchema = z.enum([
+  'text',
+  'textarea',
+  'select',
+  'checkbox',
+  'date',
+  'multiselect',
+  'number',
+  'email',
+  'phone',
+  'photo'
+]);
+
+export const registrationFieldScopeSchema = z.enum(['person', 'order']);
+
+export const registrationFieldSchema = z.object({
+  id: z.string().uuid().optional(),
+  field_key: z.string().min(1),
+  label: z.string().min(1),
+  field_type: registrationFieldTypeSchema,
+  options: z
+    .array(
+      z.object({
+        value: z.string(),
+        label: z.string()
+      })
+    )
+    .optional()
+    .nullable(),
+  required: z.boolean().default(false),
+  position: z.number().int().min(0).optional(),
+  scope: registrationFieldScopeSchema.default('person'),
+  enabled: z.boolean().default(true),
+  help_text: z.string().optional().nullable(),
+  placeholder: z.string().optional().nullable(),
+  locked: z.boolean().default(false),
+  section: z.string().optional().nullable()
+});
+
 const sectionContentSchemas = {
   text: z.object({
     body: z.string().min(1)

@@ -4,18 +4,20 @@ import { createSupabaseServerClient } from '@/lib/supabaseClient';
 import { formatCurrency } from '@/lib/utils';
 import { parseExtras } from '@/lib/siteContent';
 import { SITE_SETTINGS_ID } from '@/lib/constants';
+import { normalizeRegistrationFields } from '@/lib/registrationFields';
 import type { Database } from '@/types/supabase';
 
 type TicketRow = Database['public']['Tables']['ticket_types']['Row'];
 type QuestionRow = Database['public']['Tables']['registration_questions']['Row'];
 type SiteSettingsRow = Database['public']['Tables']['site_settings']['Row'];
 type QuestionTicketRow = Database['public']['Tables']['registration_question_tickets']['Row'];
+type RegistrationFieldRow = Database['public']['Tables']['registration_fields']['Row'];
 
 type RegistrationQuestion = QuestionRow & { ticket_ids: string[] };
 
 async function getRegistrationConfig() {
   const supabase = createSupabaseServerClient();
-  const [ticketRes, questionRes, siteRes, questionTicketRes] = await Promise.all([
+  const [ticketRes, questionRes, siteRes, questionTicketRes, fieldRes] = await Promise.all([
     supabase
       .from('ticket_types')
       .select('*')
@@ -23,7 +25,8 @@ async function getRegistrationConfig() {
       .order('position', { ascending: true }),
     supabase.from('registration_questions').select('*').order('position', { ascending: true }),
     supabase.from('site_settings').select('*').eq('id', SITE_SETTINGS_ID).maybeSingle(),
-    supabase.from('registration_question_tickets').select('question_id, ticket_type_id')
+    supabase.from('registration_question_tickets').select('question_id, ticket_type_id'),
+    supabase.from('registration_fields').select('*').order('position', { ascending: true }).order('created_at', { ascending: true })
   ]);
 
   const tickets = ((ticketRes.data ?? []) as TicketRow[]).map((ticket) => ({
@@ -32,6 +35,7 @@ async function getRegistrationConfig() {
   }));
 
   const questionLinks = (questionTicketRes.data ?? []) as QuestionTicketRow[];
+  const registrationFields = normalizeRegistrationFields((fieldRes.data ?? []) as RegistrationFieldRow[]);
   const questionTicketMap = questionLinks.reduce<Record<string, string[]>>((acc, link) => {
     if (!acc[link.question_id]) {
       acc[link.question_id] = [];
@@ -47,13 +51,13 @@ async function getRegistrationConfig() {
 
   const extras = parseExtras(((siteRes.data as SiteSettingsRow | null)?.gallery_json) ?? null);
 
-  return { tickets, questions, extras };
+  return { tickets, questions, extras, registrationFields };
 }
 
 export default async function RegisterPage({ searchParams }: { searchParams: { ticket?: string; canceled?: string } }) {
   const presetTicket = searchParams.ticket;
   const canceled = searchParams.canceled === '1';
-  const { tickets, questions, extras } = await getRegistrationConfig();
+  const { tickets, questions, extras, registrationFields } = await getRegistrationConfig();
   const costSummary = extras.costs;
 
   return (
@@ -108,7 +112,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: { t
             .
           </p>
         </aside>
-        <RegisterForm tickets={tickets} questions={questions} presetTicket={presetTicket} />
+        <RegisterForm tickets={tickets} questions={questions} registrationFields={registrationFields} presetTicket={presetTicket} />
       </div>
     </div>
   );

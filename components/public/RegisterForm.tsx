@@ -12,57 +12,29 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { formatCurrency } from '@/lib/utils';
 import { uploadRegistrationImage } from '@/lib/actions/blob';
+import type { RegistrationField } from '@/lib/registrationFields';
 
-const personSchema = z
-  .object({
-    full_name: z.string().min(1, 'Full name is required'),
-    age: z.string().min(1, 'Age is required'),
-    relationship: z.string().min(1, 'Relationship is required'),
-    lineage: z.string().min(1, 'Select a lineage'),
-    lineage_other: z.string().optional(),
-    attendance_days: z.array(z.string()).min(1, 'Select at least one day'),
-    tshirt_size: z.string().min(1, 'Select a T-shirt size'),
-    tshirt_quantity: z.coerce.number().int().min(1, 'Enter a quantity'),
-    email: z.string().email('Email is required'),
-    phone: z.string().min(1, 'Phone number is required'),
-    address: z.string().min(1, 'Mailing address is required'),
-    same_contact: z.boolean().optional(),
-    show_name: z.boolean().default(true),
-    show_photo: z.boolean().default(false)
-  })
-  .superRefine((data, ctx) => {
-    if (data.lineage === 'Other / Not listed' && !data.lineage_other?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Please share your lineage details',
-        path: ['lineage_other']
-      });
-    }
-    if (!data.show_name && !data.show_photo) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Select name or photo for the Who's Coming section",
-        path: ['show_name']
-      });
-    }
-  });
+const PRIMARY_NAME_KEY = 'full_name';
+const PRIMARY_EMAIL_KEY = 'email';
+const LINEAGE_KEY = 'lineage';
+const LINEAGE_OTHER_KEY = 'lineage_other';
+const SAME_CONTACT_KEY = 'same_contact';
+const SHOW_NAME_KEY = 'show_name';
+const SHOW_PHOTO_KEY = 'show_photo';
+const PHOTO_UPLOAD_KEY = 'photo_upload';
+const CONTACT_KEYS = ['email', 'phone', 'address'];
 
-type PersonForm = z.infer<typeof personSchema>;
+const ALWAYS_REQUIRED_KEYS = new Set([PRIMARY_NAME_KEY, PRIMARY_EMAIL_KEY]);
+const OPTIONAL_CHECKBOX_KEYS = new Set([SAME_CONTACT_KEY, SHOW_NAME_KEY, SHOW_PHOTO_KEY]);
+const HIDDEN_KEYS = new Set([PHOTO_UPLOAD_KEY]);
 
-const formSchema = z.object({
-  tickets: z.array(
-    z.object({
-      ticket_type_id: z.string(),
-      quantity: z.coerce.number().int().min(0)
-    })
-  ),
-  people: z.array(personSchema).min(1).max(30),
-  photo_urls: z.array(z.string().url().nullable()).optional(),
-  payment_method: z.enum(['stripe', 'paypal', 'check']),
-  donation_note: z.string().optional()
-});
-
-type FormSchema = z.infer<typeof formSchema>;
+type FormSchema = {
+  tickets: { ticket_type_id: string; quantity: number }[];
+  people: Array<Record<string, any>>;
+  photo_urls?: Array<string | null>;
+  payment_method: 'stripe' | 'paypal' | 'check';
+  donation_note?: string;
+};
 
 type Ticket = {
   id: string;
@@ -83,42 +55,184 @@ type Question = {
   ticket_ids?: string[];
 };
 
-const LINEAGE_OPTIONS = ['Nawai', 'Katherine', 'Amy', 'Charles', 'Myra', 'Winifred', 'Henry', 'Royden', 'Other / Not listed'];
+function preprocessNumber(value: unknown) {
+  if (value === '' || value === null || value === undefined) {
+    return undefined;
+  }
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isNaN(parsed) ? undefined : parsed;
+}
 
-const PARTICIPATION_DAYS = [
-  { value: 'Friday', label: 'Friday (July 10)' },
-  { value: 'Saturday', label: 'Saturday (July 11)' },
-  { value: 'Sunday', label: 'Sunday (July 12)' }
-];
+function buildFieldSchema(field: RegistrationField) {
+  if (field.field_type === 'photo') {
+    return null;
+  }
+  const required = ALWAYS_REQUIRED_KEYS.has(field.field_key) || field.required;
+  const isOptionalCheckbox = OPTIONAL_CHECKBOX_KEYS.has(field.field_key);
+  const requiredMessage = `${field.label} is required`;
 
-const TSHIRT_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
+  switch (field.field_type) {
+    case 'textarea':
+    case 'text':
+    case 'select':
+    case 'date':
+    case 'email':
+    case 'phone': {
+      let schema = z.string();
+      if (field.field_type === 'email') {
+        schema = z.string().email('Email is required');
+      }
+      if (required && !isOptionalCheckbox) {
+        schema = schema.min(1, requiredMessage);
+      } else {
+        schema = schema.optional();
+      }
+      return schema;
+    }
+    case 'number': {
+      const minValue = field.field_key === 'tshirt_quantity' ? 1 : 0;
+      const schema = z.preprocess(
+        preprocessNumber,
+        z.number().int().min(minValue, required ? requiredMessage : undefined)
+      );
+      return required ? schema : schema.optional();
+    }
+    case 'checkbox': {
+      if (required && !isOptionalCheckbox) {
+        return z.boolean().refine((value) => value === true, { message: requiredMessage });
+      }
+      return z.boolean().optional();
+    }
+    case 'multiselect': {
+      const schema = z.array(z.string());
+      return required ? schema.min(1, 'Select at least one option') : schema.optional();
+    }
+    default:
+      return z.string().optional();
+  }
+}
 
-const createEmptyPerson = (): PersonForm => ({
-  full_name: '',
-  age: '',
-  relationship: '',
-  lineage: '',
-  lineage_other: '',
-  attendance_days: [],
-  tshirt_size: '',
-  tshirt_quantity: 1,
-  email: '',
-  phone: '',
-  address: '',
-  same_contact: false,
-  show_name: true,
-  show_photo: false
-});
+function buildPersonSchema(fields: RegistrationField[]) {
+  const shape: Record<string, z.ZodTypeAny> = {};
+  const fieldMap = new Map(fields.map((field) => [field.field_key, field]));
+
+  fields.forEach((field) => {
+    if (HIDDEN_KEYS.has(field.field_key)) return;
+    const schema = buildFieldSchema(field);
+    if (schema) {
+      shape[field.field_key] = schema;
+    }
+  });
+
+  const lineageField = fieldMap.get(LINEAGE_KEY);
+  const lineageOtherField = fieldMap.get(LINEAGE_OTHER_KEY);
+
+  return z.object(shape).superRefine((data, ctx) => {
+    if (lineageField && lineageOtherField) {
+      const lineageValue = typeof data[LINEAGE_KEY] === 'string' ? data[LINEAGE_KEY] : '';
+      const lineageOtherValue = typeof data[LINEAGE_OTHER_KEY] === 'string' ? data[LINEAGE_OTHER_KEY] : '';
+      const optionValue =
+        lineageField.options?.find((option) =>
+          typeof option?.value === 'string' ? option.value.toLowerCase().includes('other') : false
+        )?.value ?? 'Other / Not listed';
+      if (lineageValue === optionValue && !lineageOtherValue.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Please share your lineage details',
+          path: [LINEAGE_OTHER_KEY]
+        });
+      }
+    }
+
+    const showName = Boolean(data[SHOW_NAME_KEY]);
+    const showPhoto = Boolean(data[SHOW_PHOTO_KEY]);
+    if (SHOW_NAME_KEY in data || SHOW_PHOTO_KEY in data) {
+      if (!showName && !showPhoto) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Select name or photo for the Who's Coming section",
+          path: [SHOW_NAME_KEY]
+        });
+      }
+    }
+  });
+}
+
+function buildFormSchema(personSchema: z.ZodTypeAny) {
+  return z.object({
+    tickets: z.array(
+      z.object({
+        ticket_type_id: z.string(),
+        quantity: z.coerce.number().int().min(0)
+      })
+    ),
+    people: z.array(personSchema).min(1).max(30),
+    photo_urls: z.array(z.string().url().nullable()).optional(),
+    payment_method: z.enum(['stripe', 'paypal', 'check']),
+    donation_note: z.string().optional()
+  });
+}
+
+function createEmptyPerson(fields: RegistrationField[]) {
+  const person: Record<string, any> = {};
+  fields.forEach((field) => {
+    if (HIDDEN_KEYS.has(field.field_key)) return;
+    switch (field.field_type) {
+      case 'checkbox':
+        person[field.field_key] = field.field_key === SHOW_NAME_KEY ? true : false;
+        return;
+      case 'multiselect':
+        person[field.field_key] = [];
+        return;
+      case 'number':
+        person[field.field_key] = field.field_key === 'tshirt_quantity' ? 1 : '';
+        return;
+      default:
+        person[field.field_key] = '';
+    }
+  });
+  if (!(SHOW_NAME_KEY in person)) {
+    person[SHOW_NAME_KEY] = true;
+  }
+  if (!(SHOW_PHOTO_KEY in person)) {
+    person[SHOW_PHOTO_KEY] = false;
+  }
+  if (!(SAME_CONTACT_KEY in person)) {
+    person[SAME_CONTACT_KEY] = false;
+  }
+  return person;
+}
+
+function normalizeFieldValue(field: RegistrationField, value: unknown) {
+  if (field.field_type === 'photo') return null;
+  if (field.field_type === 'checkbox') {
+    return Boolean(value);
+  }
+  if (field.field_type === 'multiselect') {
+    return Array.isArray(value) ? value : [];
+  }
+  if (field.field_type === 'number') {
+    if (value === '' || value === null || value === undefined) return null;
+    const parsed = typeof value === 'number' ? value : Number(value);
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed ? trimmed : null;
+  }
+  return value ?? null;
+}
 
 interface RegisterFormProps {
   tickets: Ticket[];
   questions: Question[];
+  registrationFields: RegistrationField[];
   presetTicket?: string;
 }
 
 type PendingNavigation = { type: 'link'; href: string } | { type: 'back' } | null;
 
-export default function RegisterForm({ tickets, questions, presetTicket }: RegisterFormProps) {
+export default function RegisterForm({ tickets, questions, registrationFields, presetTicket }: RegisterFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -129,6 +243,39 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
 
   const allowNavigationRef = useRef(false);
   const isDirtyRef = useRef(false);
+
+  const personFields = useMemo(
+    () =>
+      registrationFields
+        .filter((field) => field.scope === 'person' && field.enabled)
+        .sort((a, b) => a.position - b.position),
+    [registrationFields]
+  );
+  const personFieldMap = useMemo(
+    () => new Map(personFields.map((field) => [field.field_key, field] as const)),
+    [personFields]
+  );
+  const coreFields = useMemo(
+    () => personFields.filter((field) => ![PHOTO_UPLOAD_KEY, SHOW_NAME_KEY, SHOW_PHOTO_KEY].includes(field.field_key)),
+    [personFields]
+  );
+  const sectionGroups = useMemo(() => {
+    const groups: Array<{ name: string; fields: RegistrationField[] }> = [];
+    const seen = new Map<string, RegistrationField[]>();
+    coreFields.forEach((field) => {
+      const section = field.section?.trim() || 'Details';
+      if (!seen.has(section)) {
+        const list: RegistrationField[] = [];
+        seen.set(section, list);
+        groups.push({ name: section, fields: list });
+      }
+      seen.get(section)!.push(field);
+    });
+    return groups;
+  }, [coreFields]);
+  const personSchema = useMemo(() => buildPersonSchema(personFields), [personFields]);
+  const formSchema = useMemo(() => buildFormSchema(personSchema), [personSchema]);
+  const createPerson = () => createEmptyPerson(personFields);
 
   const defaultTickets = useMemo(
     () =>
@@ -151,7 +298,7 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
     resolver: zodResolver(formSchema),
     defaultValues: {
       tickets: defaultTickets,
-      people: [createEmptyPerson()],
+      people: [createPerson()],
       photo_urls: [],
       payment_method: 'check',
       donation_note: ''
@@ -220,31 +367,28 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
     const primary = people?.[0];
     if (!primary) return;
 
+    const contactKeys = CONTACT_KEYS.filter((key) => personFieldMap.has(key));
+
     people?.forEach((person, index) => {
       if (index === 0) return;
-      if (!person?.same_contact) return;
+      if (!person?.[SAME_CONTACT_KEY]) return;
 
-      const updates: Array<{ field: keyof PersonForm; value: string }> = [
-        { field: 'email', value: primary.email || '' },
-        { field: 'phone', value: primary.phone || '' },
-        { field: 'address', value: primary.address || '' }
-      ];
-
-      updates.forEach(({ field, value }) => {
-        const currentValue = person[field] as string | undefined;
+      contactKeys.forEach((fieldKey) => {
+        const value = typeof primary[fieldKey] === 'string' ? primary[fieldKey] : '';
+        const currentValue = typeof person[fieldKey] === 'string' ? person[fieldKey] : '';
         if (currentValue !== value) {
-          setValue(`people.${index}.${field}`, value, { shouldValidate: true, shouldDirty: true });
+          setValue(`people.${index}.${fieldKey}` as const, value, { shouldValidate: true, shouldDirty: true });
         }
       });
     });
-  }, [people, setValue]);
+  }, [people, personFieldMap, setValue]);
 
   useEffect(() => {
     if (!people?.length) return;
     people.forEach((person, index) => {
       const hasPhoto = Boolean(photoUrls?.[index]);
-      if (!hasPhoto && person?.show_photo) {
-        setValue(`people.${index}.show_photo`, false, { shouldValidate: true, shouldDirty: true });
+      if (!hasPhoto && person?.[SHOW_PHOTO_KEY]) {
+        setValue(`people.${index}.${SHOW_PHOTO_KEY}` as const, false, { shouldValidate: true, shouldDirty: true });
       }
     });
   }, [people, photoUrls, setValue]);
@@ -312,7 +456,14 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
     setLoading(true);
     try {
       const rawValues = getValues();
-      const primaryContact = data.people[0];
+      const primaryContact = data.people[0] ?? {};
+      const purchaserName = typeof primaryContact[PRIMARY_NAME_KEY] === 'string' ? primaryContact[PRIMARY_NAME_KEY].trim() : '';
+      const purchaserEmail = typeof primaryContact[PRIMARY_EMAIL_KEY] === 'string' ? primaryContact[PRIMARY_EMAIL_KEY].trim() : '';
+
+      if (!purchaserName || !purchaserEmail) {
+        throw new Error('Primary contact name and email are required.');
+      }
+
       const answers = activeQuestions.reduce<Record<string, unknown>>(
         (acc, question) => {
           const fieldName = `question_${question.id}`;
@@ -325,30 +476,26 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
           return acc;
         },
         {
-          people: data.people.map((person) => ({
-            full_name: person.full_name,
-            age: person.age,
-            relationship: person.relationship,
-            lineage: person.lineage,
-            lineage_other: person.lineage_other || null,
-            attendance_days: person.attendance_days ?? [],
-            tshirt_size: person.tshirt_size,
-            tshirt_quantity: person.tshirt_quantity,
-            email: person.email,
-            phone: person.phone,
-            address: person.address,
-            same_contact: person.same_contact ?? false,
-            show_name: person.show_name ?? true,
-            show_photo: person.show_photo ?? false
-          })),
+          people: data.people.map((person, index) => {
+            const record: Record<string, unknown> = {};
+            personFields.forEach((field) => {
+              if (HIDDEN_KEYS.has(field.field_key)) return;
+              let value = person[field.field_key];
+              if (field.field_key === SHOW_PHOTO_KEY && !photoUrls?.[index]) {
+                value = false;
+              }
+              record[field.field_key] = normalizeFieldValue(field, value);
+            });
+            return record;
+          }),
           photo_urls: data.photo_urls ?? [],
           donation_note: data.donation_note || null
         }
       );
 
       const payload = {
-        purchaser_name: primaryContact.full_name,
-        purchaser_email: primaryContact.email,
+        purchaser_name: purchaserName,
+        purchaser_email: purchaserEmail,
         payment_method: data.payment_method,
         tickets: data.tickets,
         answers
@@ -443,18 +590,191 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
         <div className="space-y-2">
           <h2 className="text-lg font-semibold text-black">Participant Information</h2>
           <p className="text-sm text-koa">
-            Start with the primary contact. Add each additional person below. All fields are required.
+            Start with the primary contact. Add each additional person below. Required fields are marked.
           </p>
         </div>
 
         <div className="space-y-6">
           {fields.map((field, index) => {
-            const personErrors = errors.people?.[index];
-            const sameContact = Boolean(people?.[index]?.same_contact);
+            const personErrors = errors.people?.[index] as Record<string, any> | undefined;
+            const sameContact = Boolean(people?.[index]?.[SAME_CONTACT_KEY]);
             const personLabel = index === 0 ? 'Primary Contact' : `Participant ${index + 1}`;
             const contactClass = sameContact ? 'bg-slate-100 text-slate-500' : '';
             const hasPhoto = Boolean(photoUrls?.[index]);
             const showPhotoDisabled = !hasPhoto;
+            const lineageValue = typeof people?.[index]?.[LINEAGE_KEY] === 'string' ? people[index][LINEAGE_KEY] : '';
+            const lineageField = personFieldMap.get(LINEAGE_KEY);
+            const lineageOtherField = personFieldMap.get(LINEAGE_OTHER_KEY);
+            const otherValue = (
+              lineageField?.options?.find((option) =>
+                typeof option?.value === 'string' ? option.value.toLowerCase().includes('other') : false
+              )?.value ?? 'Other / Not listed'
+            );
+            const showLineageOther = Boolean(lineageOtherField && lineageValue === otherValue);
+            const showNameField = personFieldMap.get(SHOW_NAME_KEY);
+            const showPhotoField = personFieldMap.get(SHOW_PHOTO_KEY);
+            const photoField = personFieldMap.get(PHOTO_UPLOAD_KEY);
+
+            const renderField = (fieldItem: RegistrationField) => {
+              if (fieldItem.field_key === SAME_CONTACT_KEY) {
+                if (index === 0) return null;
+                return (
+                  <div key={`${fieldItem.field_key}-${index}`} className="md:col-span-2 space-y-2">
+                    <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                      <input type="checkbox" className="mt-1 h-4 w-4" {...register(`people.${index}.${fieldItem.field_key}` as any)} />
+                      <span>
+                        {fieldItem.label}
+                        {fieldItem.help_text ? <span className="mt-1 block text-xs text-koa">{fieldItem.help_text}</span> : null}
+                      </span>
+                    </label>
+                    {personErrors?.[fieldItem.field_key] && (
+                      <p className="text-xs text-red-500">{personErrors[fieldItem.field_key].message}</p>
+                    )}
+                  </div>
+                );
+              }
+
+              if (fieldItem.field_key === LINEAGE_OTHER_KEY && !showLineageOther) {
+                return null;
+              }
+
+              const fieldName = `people.${index}.${fieldItem.field_key}` as const;
+              const error = personErrors?.[fieldItem.field_key];
+              const isRequired =
+                ALWAYS_REQUIRED_KEYS.has(fieldItem.field_key) ||
+                fieldItem.required ||
+                (fieldItem.field_key === LINEAGE_OTHER_KEY && showLineageOther);
+              const options = Array.isArray(fieldItem.options) ? fieldItem.options : [];
+              const isReadOnly = sameContact && CONTACT_KEYS.includes(fieldItem.field_key);
+              const wrapperClass =
+                fieldItem.field_type === 'textarea' ||
+                fieldItem.field_type === 'multiselect' ||
+                fieldItem.field_key === LINEAGE_OTHER_KEY
+                  ? 'md:col-span-2'
+                  : '';
+
+              if (fieldItem.field_type === 'multiselect') {
+                return (
+                  <div key={`${fieldItem.field_key}-${index}`} className={`space-y-2 ${wrapperClass}`}>
+                    <Label>
+                      {fieldItem.label}
+                      {isRequired && <span className="ml-2 text-xs font-semibold text-red-500">Required</span>}
+                    </Label>
+                    <div className="grid gap-2 sm:grid-cols-3">
+                      {options.map((option, optionIndex) => (
+                        <label
+                          key={`${fieldItem.field_key}-${optionIndex}`}
+                          className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                        >
+                          <input type="checkbox" value={option.value} className="h-4 w-4" {...register(fieldName as any)} />
+                          <span>{option.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {fieldItem.help_text && <p className="text-xs text-koa">{fieldItem.help_text}</p>}
+                    {error && <p className="text-xs text-red-500">{error.message}</p>}
+                  </div>
+                );
+              }
+
+              if (fieldItem.field_type === 'select') {
+                return (
+                  <div key={`${fieldItem.field_key}-${index}`} className={`space-y-2 ${wrapperClass}`}>
+                    <Label htmlFor={`person-${index}-${fieldItem.field_key}`}>
+                      {fieldItem.label}
+                      {isRequired && <span className="ml-2 text-xs font-semibold text-red-500">Required</span>}
+                    </Label>
+                    <select
+                      id={`person-${index}-${fieldItem.field_key}`}
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brandBlue focus:outline-none focus:ring-2 focus:ring-brandBlueLight/40"
+                      {...register(fieldName as any)}
+                    >
+                      <option value="">Select an option</option>
+                      {options.map((option, optionIndex) => (
+                        <option key={`${fieldItem.field_key}-${optionIndex}`} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    {fieldItem.help_text && <p className="text-xs text-koa">{fieldItem.help_text}</p>}
+                    {error && <p className="text-xs text-red-500">{error.message}</p>}
+                  </div>
+                );
+              }
+
+              if (fieldItem.field_type === 'checkbox') {
+                return (
+                  <div key={`${fieldItem.field_key}-${index}`} className={`space-y-2 ${wrapperClass}`}>
+                    <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                      <input type="checkbox" className="h-4 w-4" {...register(fieldName as any)} />
+                      <span>
+                        {fieldItem.label}
+                        {fieldItem.help_text ? <span className="mt-1 block text-xs text-koa">{fieldItem.help_text}</span> : null}
+                      </span>
+                    </label>
+                    {error && <p className="text-xs text-red-500">{error.message}</p>}
+                  </div>
+                );
+              }
+
+              if (fieldItem.field_type === 'textarea') {
+                return (
+                  <div key={`${fieldItem.field_key}-${index}`} className={`space-y-2 ${wrapperClass}`}>
+                    <Label htmlFor={`person-${index}-${fieldItem.field_key}`}>
+                      {fieldItem.label}
+                      {isRequired && <span className="ml-2 text-xs font-semibold text-red-500">Required</span>}
+                    </Label>
+                    <Textarea
+                      id={`person-${index}-${fieldItem.field_key}`}
+                      rows={3}
+                      placeholder={fieldItem.placeholder ?? ''}
+                      readOnly={isReadOnly}
+                      className={isReadOnly ? contactClass : ''}
+                      {...register(fieldName as any)}
+                    />
+                    {fieldItem.help_text && <p className="text-xs text-koa">{fieldItem.help_text}</p>}
+                    {error && <p className="text-xs text-red-500">{error.message}</p>}
+                  </div>
+                );
+              }
+
+              const inputType =
+                fieldItem.field_type === 'email'
+                  ? 'email'
+                  : fieldItem.field_type === 'phone'
+                  ? 'tel'
+                  : fieldItem.field_type === 'date'
+                  ? 'date'
+                  : fieldItem.field_type === 'number'
+                  ? 'number'
+                  : 'text';
+
+              return (
+                <div key={`${fieldItem.field_key}-${index}`} className={`space-y-2 ${wrapperClass}`}>
+                  <Label htmlFor={`person-${index}-${fieldItem.field_key}`}>
+                    {fieldItem.label}
+                    {isRequired && <span className="ml-2 text-xs font-semibold text-red-500">Required</span>}
+                  </Label>
+                  <Input
+                    id={`person-${index}-${fieldItem.field_key}`}
+                    type={inputType}
+                    min={
+                      fieldItem.field_type === 'number'
+                        ? fieldItem.field_key === 'tshirt_quantity'
+                          ? 1
+                          : 0
+                        : undefined
+                    }
+                    placeholder={fieldItem.placeholder ?? ''}
+                    readOnly={isReadOnly}
+                    className={isReadOnly ? contactClass : ''}
+                    {...register(fieldName as any)}
+                  />
+                  {fieldItem.help_text && <p className="text-xs text-koa">{fieldItem.help_text}</p>}
+                  {error && <p className="text-xs text-red-500">{error.message}</p>}
+                </div>
+              );
+            };
 
             return (
               <div key={field.id} className="rounded-3xl border border-slate-100 bg-white/80 p-6 shadow-sm">
@@ -481,250 +801,84 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
                   )}
                 </div>
 
-                {index > 0 && (
-                  <label className="mt-4 flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
-                    <input type="checkbox" className="mt-1 h-4 w-4" {...register(`people.${index}.same_contact`)} />
-                    <span>Use primary contact information (email, phone, mailing address).</span>
-                  </label>
-                )}
+                {sectionGroups.map((section) => (
+                  <div key={`${section.name}-${index}`} className="mt-6 space-y-4">
+                    <h4 className="text-sm font-semibold text-black">{section.name}</h4>
+                    <div className="grid gap-6 md:grid-cols-2">{section.fields.map((fieldItem) => renderField(fieldItem))}</div>
+                  </div>
+                ))}
 
-                <div className="mt-6 grid gap-6 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor={`person-${index}-full-name`}>Full Name (Last, First, Middle)</Label>
-                    <Input
-                      id={`person-${index}-full-name`}
-                      placeholder="Last, First Middle"
-                      {...register(`people.${index}.full_name`)}
-                    />
-                    {personErrors?.full_name && (
-                      <p className="text-xs text-red-500">{personErrors.full_name.message}</p>
+                {(photoField || showNameField || showPhotoField) && (
+                  <div className="mt-6 space-y-4">
+                    <h4 className="text-sm font-semibold text-black">Who's Coming Display</h4>
+                    {photoField && (
+                      <div className="rounded-2xl border border-dashed border-slate-200 bg-white/70 p-4">
+                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                          <div>
+                            <Label htmlFor={`photo-${index}`}>{photoField.label}</Label>
+                            {photoField.help_text ? <p className="text-xs text-koa">{photoField.help_text}</p> : null}
+                          </div>
+                          <input
+                            id={`photo-${index}`}
+                            type="file"
+                            accept="image/*"
+                            onChange={(event) => {
+                              const file = event.target.files?.[0];
+                              if (file) {
+                                handlePhotoUpload(index, file);
+                              }
+                            }}
+                          />
+                        </div>
+                        {uploadingIndex === index && <p className="mt-2 text-xs text-koa">Uploading...</p>}
+                        {uploadErrors[index] && <p className="mt-2 text-xs text-red-500">{uploadErrors[index]}</p>}
+                        {photoUrls?.[index] && (
+                          <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200">
+                            <img src={photoUrls[index] as string} alt="Uploaded preview" className="h-40 w-full object-cover" />
+                          </div>
+                        )}
+                        {photoUrls?.[index] && (
+                          <button
+                            type="button"
+                            className="mt-3 text-xs font-semibold text-slate-500 underline"
+                            onClick={() => updatePhotoUrl(index, null)}
+                          >
+                            Remove photo
+                          </button>
+                        )}
+                      </div>
                     )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`person-${index}-age`}>Age</Label>
-                    <Input
-                      id={`person-${index}-age`}
-                      type="number"
-                      min={0}
-                      placeholder="Age"
-                      {...register(`people.${index}.age`)}
-                    />
-                    {personErrors?.age && <p className="text-xs text-red-500">{personErrors.age.message}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`person-${index}-relationship`}>Relationship to Nawai & Emily</Label>
-                    <Input
-                      id={`person-${index}-relationship`}
-                      placeholder="Grandchild, great-grandchild, etc."
-                      {...register(`people.${index}.relationship`)}
-                    />
-                    {personErrors?.relationship && (
-                      <p className="text-xs text-red-500">{personErrors.relationship.message}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`person-${index}-lineage`}>Lineage (Parent/Grandparent Line)</Label>
-                    <select
-                      id={`person-${index}-lineage`}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brandBlue focus:outline-none focus:ring-2 focus:ring-brandBlueLight/40"
-                      {...register(`people.${index}.lineage`)}
-                    >
-                      <option value="">Select a lineage</option>
-                      {LINEAGE_OPTIONS.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                    {personErrors?.lineage && (
-                      <p className="text-xs text-red-500">{personErrors.lineage.message}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor={`person-${index}-lineage-other`}>Lineage (if Other)</Label>
-                    <Input
-                      id={`person-${index}-lineage-other`}
-                      placeholder="Share your lineage details"
-                      {...register(`people.${index}.lineage_other`)}
-                    />
-                    {personErrors?.lineage_other && (
-                      <p className="text-xs text-red-500">{personErrors.lineage_other.message}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="mt-6 space-y-2">
-                  <Label>Days of Participation</Label>
-                  <div className="grid gap-2 sm:grid-cols-3">
-                    {PARTICIPATION_DAYS.map((day) => (
-                      <label
-                        key={day.value}
-                        className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                      >
-                        <input
-                          type="checkbox"
-                          value={day.value}
-                          className="h-4 w-4"
-                          {...register(`people.${index}.attendance_days`)}
-                        />
-                        <span>{day.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                  {personErrors?.attendance_days && (
-                    <p className="text-xs text-red-500">{personErrors.attendance_days.message}</p>
-                  )}
-                </div>
-
-                <div className="mt-6 grid gap-6 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor={`person-${index}-tshirt-size`}>T-shirt Size</Label>
-                    <select
-                      id={`person-${index}-tshirt-size`}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brandBlue focus:outline-none focus:ring-2 focus:ring-brandBlueLight/40"
-                      {...register(`people.${index}.tshirt_size`)}
-                    >
-                      <option value="">Select a size</option>
-                      {TSHIRT_SIZES.map((size) => (
-                        <option key={size} value={size}>
-                          {size}
-                        </option>
-                      ))}
-                    </select>
-                    {personErrors?.tshirt_size && (
-                      <p className="text-xs text-red-500">{personErrors.tshirt_size.message}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`person-${index}-tshirt-quantity`}>T-shirt Quantity</Label>
-                    <Input
-                      id={`person-${index}-tshirt-quantity`}
-                      type="number"
-                      min={1}
-                      {...register(`people.${index}.tshirt_quantity`, { valueAsNumber: true })}
-                    />
-                    {personErrors?.tshirt_quantity && (
-                      <p className="text-xs text-red-500">{personErrors.tshirt_quantity.message}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="mt-6">
-                  <h4 className="text-sm font-semibold text-black">Contact Information</h4>
-                  <div className="mt-4 grid gap-6 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor={`person-${index}-email`}>Email</Label>
-                      <Input
-                        id={`person-${index}-email`}
-                        type="email"
-                        placeholder="ohana@kekoolani.com"
-                        readOnly={sameContact}
-                        className={contactClass}
-                        {...register(`people.${index}.email`)}
-                      />
-                      {personErrors?.email && <p className="text-xs text-red-500">{personErrors.email.message}</p>}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor={`person-${index}-phone`}>Phone</Label>
-                      <Input
-                        id={`person-${index}-phone`}
-                        placeholder="808-555-1234"
-                        readOnly={sameContact}
-                        className={contactClass}
-                        {...register(`people.${index}.phone`)}
-                      />
-                      {personErrors?.phone && <p className="text-xs text-red-500">{personErrors.phone.message}</p>}
-                    </div>
-                  </div>
-                  <div className="mt-4 space-y-2">
-                    <Label htmlFor={`person-${index}-address`}>Mailing Address</Label>
-                    <Textarea
-                      id={`person-${index}-address`}
-                      rows={3}
-                      placeholder="Street, City, State, Zip"
-                      readOnly={sameContact}
-                      className={contactClass}
-                      {...register(`people.${index}.address`)}
-                    />
-                    {personErrors?.address && (
-                      <p className="text-xs text-red-500">{personErrors.address.message}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="mt-6">
-                  <h4 className="text-sm font-semibold text-black">Participant Photo</h4>
-                  <p className="mt-1 text-xs text-koa">Upload one photo for this participant.</p>
-                  <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
-                    <div className="h-20 w-20 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-                      {photoUrls?.[index] ? (
-                        <img src={photoUrls[index] ?? ''} alt={`${personLabel} photo`} className="h-full w-full object-cover" />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">No photo</div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {showNameField && (
+                        <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                          <input type="checkbox" className="h-4 w-4" {...register(`people.${index}.${SHOW_NAME_KEY}`)} />
+                          <span>{showNameField.label}</span>
+                        </label>
                       )}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <label className="inline-flex cursor-pointer items-center justify-center rounded-full bg-brandBlue/10 px-4 py-2 text-sm font-medium text-brandBlue shadow-sm transition hover:bg-brandBlue/20">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          disabled={uploadingIndex === index}
-                          onChange={(event) => {
-                            const file = event.currentTarget.files?.[0];
-                            if (!file) return;
-                            handlePhotoUpload(index, file);
-                            event.currentTarget.value = '';
-                          }}
-                        />
-                        {photoUrls?.[index] ? 'Replace photo' : 'Upload photo'}
-                      </label>
-                      {photoUrls?.[index] && (
-                        <button
-                          type="button"
-                          className="text-xs font-semibold text-slate-500 underline"
-                          onClick={() => updatePhotoUrl(index, null)}
+                      {showPhotoField && (
+                        <label
+                          className={`flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm ${
+                            showPhotoDisabled ? 'cursor-not-allowed text-slate-400 opacity-60' : ''
+                          }`}
                         >
-                          Remove photo
-                        </button>
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4"
+                            {...register(`people.${index}.${SHOW_PHOTO_KEY}`)}
+                            disabled={showPhotoDisabled}
+                          />
+                          <span>{showPhotoField.label}</span>
+                        </label>
                       )}
-                      <span className="text-xs text-koa">{uploadingIndex === index ? 'Uploading...' : '8MB max'}</span>
                     </div>
+                    {showPhotoDisabled && showPhotoField && (
+                      <p className="mt-2 text-xs text-koa">Upload a photo above to enable the photo option.</p>
+                    )}
+                    {personErrors?.[SHOW_NAME_KEY] && (
+                      <p className="mt-2 text-xs text-red-500">{personErrors[SHOW_NAME_KEY].message}</p>
+                    )}
                   </div>
-                  {uploadErrors[index] && <p className="mt-2 text-xs text-red-500">{uploadErrors[index]}</p>}
-                </div>
-
-                <div className="mt-6">
-                  <h4 className="text-sm font-semibold text-black">Who&apos;s Coming Display</h4>
-                  <p className="mt-1 text-xs text-koa">
-                    Choose how this participant appears on the Who&apos;s Coming section of the homepage.
-                  </p>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
-                      <input type="checkbox" className="h-4 w-4" {...register(`people.${index}.show_name`)} />
-                      <span>Show name</span>
-                    </label>
-                    <label
-                      className={`flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm ${
-                        showPhotoDisabled ? 'cursor-not-allowed text-slate-400 opacity-60' : ''
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4"
-                        disabled={showPhotoDisabled}
-                        {...register(`people.${index}.show_photo`)}
-                      />
-                      <span>Show photo</span>
-                    </label>
-                  </div>
-                  {showPhotoDisabled && (
-                    <p className="mt-2 text-xs text-koa">Upload a photo above to enable the photo option.</p>
-                  )}
-                  {personErrors?.show_name && (
-                    <p className="mt-2 text-xs text-red-500">{personErrors.show_name.message}</p>
-                  )}
-                </div>
+                )}
               </div>
             );
           })}
@@ -735,7 +889,7 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
             type="button"
             variant="secondary"
             className="w-full sm:w-auto"
-            onClick={() => append(createEmptyPerson())}
+            onClick={() => append(createPerson())}
             disabled={fields.length >= 30}
           >
             Add Person

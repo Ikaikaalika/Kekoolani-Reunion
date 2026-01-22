@@ -107,6 +107,43 @@ export interface Database {
         };
         Update: Database['public']['Tables']['registration_question_tickets']['Insert'];
       };
+      registration_fields: {
+        Row: {
+          id: string;
+          field_key: string;
+          label: string;
+          field_type: string;
+          options: Json | null;
+          required: boolean;
+          position: number;
+          scope: string;
+          enabled: boolean;
+          help_text: string | null;
+          placeholder: string | null;
+          locked: boolean;
+          section: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          field_key: string;
+          label: string;
+          field_type: string;
+          options?: Json | null;
+          required?: boolean;
+          position?: number;
+          scope?: string;
+          enabled?: boolean;
+          help_text?: string | null;
+          placeholder?: string | null;
+          locked?: boolean;
+          section?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Database['public']['Tables']['registration_fields']['Insert'];
+      };
       ticket_types: {
         Row: {
           id: string;
