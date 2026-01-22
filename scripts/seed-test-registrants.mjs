@@ -29,7 +29,7 @@ const photoPool = [
   '/assets/MaunaKea.jpg'
 ];
 
-const groups = [
+const defaultGroups = [
   ['Kaleo TEST', 'Leilani TEST'],
   ['Malia TEST', 'Kaimana TEST'],
   ['Nohea TEST', 'Keoni TEST'],
@@ -38,6 +38,15 @@ const groups = [
 
 const lineageOptions = ['Nawai', 'Katherine', 'Amy', 'Charles', 'Myra', 'Winifred', 'Henry', 'Royden'];
 const tshirtSizes = ['S', 'M', 'L', 'XL'];
+const customNamesArg = process.argv.find((arg) => arg.startsWith('--names='));
+const customNames = customNamesArg
+  ? customNamesArg
+      .replace('--names=', '')
+      .split(',')
+      .map((name) => name.trim())
+      .filter(Boolean)
+  : [];
+const groups = customNames.length ? customNames.map((name) => [name]) : defaultGroups;
 
 const makePerson = (fullName, index, groupIndex) => {
   const lower = fullName.toLowerCase().replace(/\s+/g, '.');
