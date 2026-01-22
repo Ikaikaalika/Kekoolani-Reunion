@@ -157,7 +157,7 @@ async function getAttendeeHighlights(): Promise<AttendeeHighlight[]> {
   const { data, error } = await supabase
     .from('orders')
     .select('purchaser_name, form_answers, status, created_at')
-    .eq('status', 'paid')
+    .in('status', ['paid', 'pending'])
     .order('created_at', { ascending: false })
     .limit(40);
 

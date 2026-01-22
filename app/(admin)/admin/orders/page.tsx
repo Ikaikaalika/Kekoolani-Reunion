@@ -72,6 +72,7 @@ export default async function AdminOrdersPage() {
               <th className="py-3 pr-6">Purchaser</th>
               <th className="py-3 pr-6">Email</th>
               <th className="py-3 pr-6">Status</th>
+              <th className="py-3 pr-6">Payment</th>
               <th className="py-3 pr-6">Total</th>
               <th className="py-3 pr-6">Tickets</th>
               <th className="py-3 pr-6">Attendees</th>
@@ -119,6 +120,7 @@ export default async function AdminOrdersPage() {
                       {order.status.toUpperCase()}
                     </span>
                   </td>
+                  <td className="py-3 pr-6 text-xs text-slate-600">{order.payment_method ?? '-'}</td>
                   <td className="py-3 pr-6 font-semibold text-slate-900">
                     {formatCurrency(order.total_cents, orderCurrency ?? 'usd')}
                   </td>
@@ -139,7 +141,7 @@ export default async function AdminOrdersPage() {
             })}
             {!orders.length && (
               <tr>
-                <td colSpan={8 + staticFields.length + questions.length} className="py-8 text-center text-slate-500">
+                <td colSpan={9 + staticFields.length + questions.length} className="py-8 text-center text-slate-500">
                   No orders yet.
                 </td>
               </tr>

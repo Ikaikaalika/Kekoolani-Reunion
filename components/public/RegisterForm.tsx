@@ -58,6 +58,7 @@ const formSchema = z.object({
   ),
   people: z.array(personSchema).min(1).max(30),
   photo_urls: z.array(z.string().url()).optional(),
+  payment_method: z.enum(['stripe', 'paypal', 'check']),
   donation_note: z.string().optional()
 });
 
@@ -158,6 +159,7 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
       tickets: defaultTickets,
       people: [createEmptyPerson()],
       photo_urls: [],
+      payment_method: 'check',
       donation_note: ''
     }
   });
@@ -308,6 +310,7 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
       const payload = {
         purchaser_name: primaryContact.full_name,
         purchaser_email: primaryContact.email,
+        payment_method: data.payment_method,
         tickets: data.tickets,
         answers
       };
@@ -325,6 +328,11 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
       if (json.checkoutUrl) {
         allowNavigationRef.current = true;
         window.location.href = json.checkoutUrl as string;
+        return;
+      }
+      if (json.redirectUrl) {
+        allowNavigationRef.current = true;
+        router.push(json.redirectUrl as string);
       }
     } catch (err) {
       if (err instanceof Error) {
@@ -764,6 +772,28 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
           </div>
         </div>
 
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-black">Payment Preference</h2>
+          <p className="text-sm text-koa">
+            We are recording your preferred payment method. No payment will be collected yet.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+              <input type="radio" value="stripe" className="h-4 w-4" {...register('payment_method')} />
+              <span>Stripe</span>
+            </label>
+            <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+              <input type="radio" value="paypal" className="h-4 w-4" {...register('payment_method')} />
+              <span>PayPal</span>
+            </label>
+            <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+              <input type="radio" value="check" className="h-4 w-4" {...register('payment_method')} />
+              <span>Mail-in check</span>
+            </label>
+          </div>
+          {errors.payment_method && <p className="text-xs text-red-500">{errors.payment_method.message}</p>}
+        </div>
+
         {questions.length > 0 && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-black">Registration Questions</h2>
@@ -830,7 +860,7 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
         {error && <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
 
         <Button type="submit" size="lg" loading={loading} disabled={!tickets.length} className="w-full">
-          Proceed to Payment
+          Submit Registration
         </Button>
       </form>
     </div>

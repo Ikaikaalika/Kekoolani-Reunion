@@ -125,6 +125,7 @@ export interface Database {
         Row: {
           id: string;
           stripe_session_id: string | null;
+          payment_method: string | null;
           purchaser_email: string;
           purchaser_name: string;
           status: 'pending' | 'paid' | 'canceled';
@@ -136,6 +137,7 @@ export interface Database {
         Insert: {
           id?: string;
           stripe_session_id?: string | null;
+          payment_method?: string | null;
           purchaser_email: string;
           purchaser_name: string;
           status?: 'pending' | 'paid' | 'canceled';

@@ -57,7 +57,9 @@ const makePerson = (fullName, index, groupIndex) => {
     email,
     phone,
     address,
-    same_contact: false
+    same_contact: false,
+    show_name: true,
+    show_photo: true
   };
 };
 
@@ -109,6 +111,7 @@ const seed = async () => {
       purchaser_email: people[0].email,
       status: 'paid',
       total_cents: ticket ? ticket.price_cents * quantity : 0,
+      payment_method: 'check',
       form_answers: {
         people,
         photo_urls,

@@ -47,6 +47,7 @@ export const questionSchema = z.object({
 export const checkoutSchema = z.object({
   purchaser_name: z.string().min(1),
   purchaser_email: z.string().email(),
+  payment_method: z.enum(['stripe', 'paypal', 'check']),
   tickets: z
     .array(
       z.object({
