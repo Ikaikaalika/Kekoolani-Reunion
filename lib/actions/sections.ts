@@ -40,6 +40,7 @@ export async function upsertSection(formData: FormData) {
   }
 
   revalidatePath('/');
+  revalidatePath('/admin');
   revalidatePath('/admin/sections');
 }
 
@@ -56,5 +57,6 @@ export async function deleteSection(formData: FormData) {
   }
 
   revalidatePath('/');
+  revalidatePath('/admin');
   revalidatePath('/admin/sections');
 }

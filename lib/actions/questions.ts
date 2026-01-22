@@ -36,6 +36,7 @@ export async function upsertQuestion(formData: FormData) {
   }
 
   revalidatePath('/register');
+  revalidatePath('/admin');
   revalidatePath('/admin/questions');
 }
 
@@ -50,5 +51,6 @@ export async function deleteQuestion(formData: FormData) {
     throw new Error('Failed to delete question');
   }
   revalidatePath('/register');
+  revalidatePath('/admin');
   revalidatePath('/admin/questions');
 }

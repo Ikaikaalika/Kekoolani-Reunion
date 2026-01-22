@@ -31,6 +31,7 @@ export async function upsertTicket(formData: FormData) {
 
   revalidatePath('/register');
   revalidatePath('/');
+  revalidatePath('/admin');
   revalidatePath('/admin/tickets');
 }
 
@@ -48,5 +49,6 @@ export async function deleteTicket(formData: FormData) {
 
   revalidatePath('/register');
   revalidatePath('/');
+  revalidatePath('/admin');
   revalidatePath('/admin/tickets');
 }

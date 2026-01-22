@@ -1,16 +1,26 @@
+import QuestionsManager from '@/components/admin/QuestionsManager';
+import SectionsManager from '@/components/admin/SectionsManager';
+import TicketsManager from '@/components/admin/TicketsManager';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { upsertQuestion, deleteQuestion } from '@/lib/actions/questions';
+import { upsertTicket, deleteTicket } from '@/lib/actions/tickets';
+import { normalizeSectionList } from '@/lib/sections';
 import { createSupabaseServerClient } from '@/lib/supabaseClient';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
 import type { Database } from '@/types/supabase';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 type TicketRow = Database['public']['Tables']['ticket_types']['Row'];
+type QuestionRow = Database['public']['Tables']['registration_questions']['Row'];
+type SectionRow = Database['public']['Tables']['content_sections']['Row'];
 
 async function loadOverview() {
   const supabase = createSupabaseServerClient();
-  const [ordersRes, ticketsRes] = await Promise.all([
+  const [ordersRes, ticketsRes, questionsRes, sectionsRes] = await Promise.all([
     supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(5),
-    supabase.from('ticket_types').select('*').eq('active', true)
+    supabase.from('ticket_types').select('*').order('position', { ascending: true }).order('created_at', { ascending: true }),
+    supabase.from('registration_questions').select('*').order('position', { ascending: true }).order('created_at', { ascending: true }),
+    supabase.from('content_sections').select('*')
   ]);
 
   const ordersData = (ordersRes.data ?? []) as OrderRow[];
@@ -19,16 +29,22 @@ async function loadOverview() {
     .reduce((sum, order) => sum + order.total_cents, 0);
 
   const ticketData = (ticketsRes.data ?? []) as TicketRow[];
+  const ticketCount = ticketData.filter((ticket) => ticket.active).length;
+  const questions = (questionsRes.data ?? []) as QuestionRow[];
+  const sections = normalizeSectionList((sectionsRes.data ?? []) as SectionRow[]);
 
   return {
     latestOrders: ordersData,
-    ticketCount: ticketData.length,
-    totalRevenue
+    ticketCount,
+    totalRevenue,
+    tickets: ticketData,
+    questions,
+    sections
   };
 }
 
 export default async function AdminOverviewPage() {
-  const { latestOrders, ticketCount, totalRevenue } = await loadOverview();
+  const { latestOrders, ticketCount, totalRevenue, tickets, questions, sections } = await loadOverview();
 
   return (
     <div className="space-y-8">
@@ -120,6 +136,33 @@ export default async function AdminOverviewPage() {
           </div>
         </CardContent>
       </Card>
+
+      <section className="space-y-6">
+        <div>
+          <p className="section-title">Homepage</p>
+          <h2 className="mt-3 text-3xl font-semibold text-sand-900">Custom Sections</h2>
+          <p className="mt-2 text-sm text-koa">Edit or add dynamic content blocks that appear on the public homepage.</p>
+        </div>
+        <SectionsManager sections={sections} />
+      </section>
+
+      <section className="space-y-6">
+        <div>
+          <p className="section-title">Registration</p>
+          <h2 className="mt-3 text-3xl font-semibold text-sand-900">Ticket Types</h2>
+          <p className="mt-2 text-sm text-koa">Update pricing, inventory, and ticket descriptions for registration.</p>
+        </div>
+        <TicketsManager tickets={tickets} upsertAction={upsertTicket} deleteAction={deleteTicket} />
+      </section>
+
+      <section className="space-y-6">
+        <div>
+          <p className="section-title">Registration</p>
+          <h2 className="mt-3 text-3xl font-semibold text-sand-900">Registration Questions</h2>
+          <p className="mt-2 text-sm text-koa">Manage custom questions shown on the registration form.</p>
+        </div>
+        <QuestionsManager questions={questions} upsertAction={upsertQuestion} deleteAction={deleteQuestion} />
+      </section>
     </div>
   );
 }
