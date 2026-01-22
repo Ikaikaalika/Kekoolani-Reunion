@@ -241,6 +241,31 @@ main {
   color: #ffffff;
 }
 
+.marquee-bubble-label[data-lineage='Charles'] {
+  background: #b45309;
+  color: #ffffff;
+}
+
+.marquee-bubble-label[data-lineage='Myra'] {
+  background: #0f766e;
+  color: #ffffff;
+}
+
+.marquee-bubble-label[data-lineage='Winifred'] {
+  background: #db2777;
+  color: #ffffff;
+}
+
+.marquee-bubble-label[data-lineage='Henry'] {
+  background: #b91c1c;
+  color: #ffffff;
+}
+
+.marquee-bubble-label[data-lineage='Royden'] {
+  background: #1e3a8a;
+  color: #ffffff;
+}
+
 .marquee-bubble-label[data-lineage='Other / Not listed'] {
   background: #64748b;
   color: #ffffff;

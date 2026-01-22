@@ -251,7 +251,7 @@ export function parseExtras(raw: unknown): SiteExtras {
     const gallery = 'gallery' in record ? toGalleryItems(record.gallery) : DEFAULT_EXTRAS.gallery;
     const costs = Array.isArray(record.costs)
       ? record.costs
-          .map((item) => {
+          .map((item): CostItem | null => {
             if (!item || typeof item !== 'object') return null;
             const cost = item as Record<string, unknown>;
             const label = typeof cost.label === 'string' ? cost.label : null;
@@ -260,7 +260,7 @@ export function parseExtras(raw: unknown): SiteExtras {
             const notes = Array.isArray(cost.notes)
               ? cost.notes.filter((note): note is string => typeof note === 'string')
               : undefined;
-            return { label, detail, notes: notes && notes.length ? notes : undefined };
+            return notes && notes.length ? { label, detail, notes } : { label, detail };
           })
           .filter((item): item is CostItem => Boolean(item))
       : DEFAULT_EXTRAS.costs;

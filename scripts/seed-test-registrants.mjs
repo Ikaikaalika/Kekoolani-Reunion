@@ -36,7 +36,7 @@ const groups = [
   ['Pua TEST', 'Makana TEST']
 ];
 
-const lineageOptions = ['Nawai', 'Katherine', 'Amy'];
+const lineageOptions = ['Nawai', 'Katherine', 'Amy', 'Charles', 'Myra', 'Winifred', 'Henry', 'Royden'];
 const tshirtSizes = ['S', 'M', 'L', 'XL'];
 
 const makePerson = (fullName, index, groupIndex) => {

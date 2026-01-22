@@ -82,7 +82,7 @@ type Question = {
   required: boolean;
 };
 
-const LINEAGE_OPTIONS = ['Nawai', 'Katherine', 'Amy', 'Other / Not listed'];
+const LINEAGE_OPTIONS = ['Nawai', 'Katherine', 'Amy', 'Charles', 'Myra', 'Winifred', 'Henry', 'Royden', 'Other / Not listed'];
 
 const PARTICIPATION_DAYS = [
   { value: 'Friday', label: 'Friday (July 10)' },
