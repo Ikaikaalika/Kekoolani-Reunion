@@ -50,7 +50,7 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
   if (!items.length) {
     return (
       <div className="marquee-empty">
-        Registrations are opening soon. Check back to see who is coming.
+        No registrants yet. Be the first to register and share your family.
       </div>
     );
   }

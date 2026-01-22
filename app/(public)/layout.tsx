@@ -1,5 +1,9 @@
 import type { ReactNode } from 'react';
 import TaroLeafIcon from '@/components/icons/TaroLeafIcon';
+import { createSupabaseServerClient } from '@/lib/supabaseClient';
+import { SITE_SETTINGS_ID } from '@/lib/constants';
+import { SITE_DEFAULTS } from '@/lib/siteContent';
+import type { Database } from '@/types/supabase';
 
 const navLinks = [
   { href: '/#overview', label: 'Overview' },
@@ -9,7 +13,19 @@ const navLinks = [
   { href: '/#contact', label: 'Contact' }
 ];
 
-export default function PublicLayout({ children }: { children: ReactNode }) {
+type SiteSettingsRow = Database['public']['Tables']['site_settings']['Row'];
+
+export default async function PublicLayout({ children }: { children: ReactNode }) {
+  const supabase = createSupabaseServerClient();
+  const { data } = await supabase
+    .from('site_settings')
+    .select('event_dates, location')
+    .eq('id', SITE_SETTINGS_ID)
+    .maybeSingle<SiteSettingsRow>();
+
+  const eventDates = data?.event_dates ?? SITE_DEFAULTS.event_dates;
+  const location = data?.location ?? SITE_DEFAULTS.location;
+
   return (
     <div className="min-h-screen bg-white">
       <header className="fixed top-0 z-50 w-full">
@@ -23,7 +39,9 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
                 pumehanasilva@mac.com
               </a>
             </div>
-            <div className="opacity-90">July 10 – 12, 2026 • Hilo & Waipiʻo</div>
+            <div className="opacity-90">
+              {eventDates} • {location}
+            </div>
           </div>
         </div>
         <div className="border-b border-slate-100 bg-white/80 backdrop-blur-xl">
@@ -115,8 +133,8 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
               <h4 className="mb-4 text-lg font-semibold">Details</h4>
               <div className="mb-6 space-y-2 text-white/70">
                 <p>Friday – Sunday</p>
-                <p>July 10 – 12, 2026</p>
-                <p>Hilo & Waipiʻo, Hawaiʻi</p>
+                <p>{eventDates}</p>
+                <p>{location}</p>
               </div>
               <a href="/admin" className="text-white/70 transition-colors hover:text-white">
                 Admin Login

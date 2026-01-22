@@ -70,7 +70,7 @@ export default async function AdminOverviewPage() {
         <Card>
           <CardHeader>
             <CardTitle>Total Revenue</CardTitle>
-            <CardDescription>Paid orders captured via Stripe</CardDescription>
+            <CardDescription>Paid orders recorded to date</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-semibold text-sand-900">{formatCurrency(totalRevenue)}</p>

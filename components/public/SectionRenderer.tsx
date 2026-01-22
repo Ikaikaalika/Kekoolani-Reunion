@@ -7,7 +7,7 @@ interface SectionRendererProps {
 
 const SECTION_IDS: Partial<Record<SectionType, string>> = {
   faq: 'faq',
-  contact: 'contact'
+  contact: 'contact-section'
 };
 
 function renderBodyCopy(text: string) {

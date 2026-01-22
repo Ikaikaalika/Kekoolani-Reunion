@@ -3,13 +3,15 @@ import Link from 'next/link';
 import Countdown from '@/components/public/Countdown';
 import HeroCarousel from '@/components/public/HeroCarousel';
 import AttendeeMarquee from '@/components/public/AttendeeMarquee';
+import SectionRenderer from '@/components/public/SectionRenderer';
 import { createSupabaseServerClient } from '@/lib/supabaseClient';
 import { SITE_SETTINGS_ID } from '@/lib/constants';
 import { aboutHtmlToText, getSiteExtras, getSiteSchedule, SITE_DEFAULTS } from '@/lib/siteContent';
+import { normalizeSectionList } from '@/lib/sections';
 import type { Database } from '@/types/supabase';
 
 const HERO_IMAGE = '/assets/IMG_0722.JPG';
-const COUNTDOWN_TARGET = '2026-07-10T09:00:00-10:00';
+const COUNTDOWN_TARGET = '2026-07-10T10:00:00-10:00';
 
 const scheduleItemPattern =
   /^(\d{1,2}(?::\d{2})?(?:\s*(?:a\.?m\.?|p\.?m\.?|a|p))?(?:\s*[-\u2013\u2014]\s*\d{1,2}(?::\d{2})?(?:\s*(?:a\.?m\.?|p\.?m\.?|a|p))?)?)\s+(.+)$/i;
@@ -123,11 +125,19 @@ async function getAttendeeHighlights(): Promise<AttendeeHighlight[]> {
 
 async function getSiteContent() {
   const supabase = createSupabaseServerClient();
-  const { data } = await supabase
+  const [{ data }, { data: sectionsData }] = await Promise.all([
+    supabase
     .from('site_settings')
     .select('*')
     .eq('id', SITE_SETTINGS_ID)
-    .maybeSingle<SiteSettingsRow>();
+    .maybeSingle<SiteSettingsRow>(),
+    supabase
+      .from('content_sections')
+      .select('*')
+      .eq('published', true)
+      .order('position', { ascending: true })
+      .order('created_at', { ascending: true })
+  ]);
 
   const extras = getSiteExtras(data ?? null);
   const schedule = getSiteSchedule(data ?? null);
@@ -142,13 +152,14 @@ async function getSiteContent() {
     site: data,
     extras,
     schedule,
-    welcomeParagraphs
+    welcomeParagraphs,
+    sections: normalizeSectionList(sectionsData ?? [])
   };
 }
 
 export default async function HomePage() {
   const [attendeeHighlights, siteContent] = await Promise.all([getAttendeeHighlights(), getSiteContent()]);
-  const { site, extras, schedule, welcomeParagraphs } = siteContent;
+  const { site, extras, schedule, welcomeParagraphs, sections } = siteContent;
 
   const heroTitle = site?.hero_title ?? SITE_DEFAULTS.hero_title;
   const heroSubtitle = site?.hero_subtitle ?? SITE_DEFAULTS.hero_subtitle ?? '';
@@ -206,9 +217,11 @@ export default async function HomePage() {
               <Link href="/register" className="btn btn-large w-full sm:w-auto">
                 Register
               </Link>
-              <a href="/#schedule" className="btn btn-secondary w-full sm:w-auto">
-                View Schedule
-              </a>
+              {showSchedule ? (
+                <a href="/#schedule" className="btn btn-secondary w-full sm:w-auto">
+                  View Schedule
+                </a>
+              ) : null}
             </div>
           </div>
           <div>
@@ -288,8 +301,8 @@ export default async function HomePage() {
           <div className="container max-w-5xl">
             <div className="mb-12 text-center">
               <span className="section-title">Schedule</span>
-              <h2 className="h2 mt-3">Three Day Event</h2>
-              <p className="mt-2 text-sm text-sand-700">Here is the schedule of events for the three day event.</p>
+              <h2 className="h2 mt-3">Tentative Schedule</h2>
+              <p className="mt-2 text-sm text-sand-700">Here is the tentative schedule for the reunion weekend.</p>
             </div>
             <div className="grid gap-6">
               {schedule.map((entry, idx) => {
@@ -449,6 +462,10 @@ export default async function HomePage() {
           </div>
         </section>
       ) : null}
+
+      {sections.length
+        ? sections.map((section) => <SectionRenderer key={section.id} section={section} />)
+        : null}
 
       {showCta ? (
         <section className="section section-alt">

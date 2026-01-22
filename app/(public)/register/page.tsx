@@ -2,7 +2,7 @@ import RegisterForm from '@/components/public/RegisterForm';
 import { REGISTRATION_GUIDELINES } from '@/lib/registrationGuidelines';
 import { createSupabaseServerClient } from '@/lib/supabaseClient';
 import { formatCurrency } from '@/lib/utils';
-import { parseExtras } from '@/lib/siteContent';
+import { parseExtras, SITE_DEFAULTS } from '@/lib/siteContent';
 import { SITE_SETTINGS_ID } from '@/lib/constants';
 import { normalizeRegistrationFields } from '@/lib/registrationFields';
 import type { Database } from '@/types/supabase';
@@ -50,14 +50,15 @@ async function getRegistrationConfig() {
   }));
 
   const extras = parseExtras(((siteRes.data as SiteSettingsRow | null)?.gallery_json) ?? null);
+  const eventDates = (siteRes.data as SiteSettingsRow | null)?.event_dates ?? SITE_DEFAULTS.event_dates;
 
-  return { tickets, questions, extras, registrationFields };
+  return { tickets, questions, extras, registrationFields, eventDates };
 }
 
 export default async function RegisterPage({ searchParams }: { searchParams: { ticket?: string; canceled?: string } }) {
   const presetTicket = searchParams.ticket;
   const canceled = searchParams.canceled === '1';
-  const { tickets, questions, extras, registrationFields } = await getRegistrationConfig();
+  const { tickets, questions, extras, registrationFields, eventDates } = await getRegistrationConfig();
   const costSummary = extras.costs;
 
   return (
@@ -65,7 +66,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: { t
       <div className="container max-w-3xl">
         <div className="mb-12 text-center">
           <span className="mono text-xs uppercase tracking-[0.3em] text-koa">Reserve your spot</span>
-          <h1 className="h2 mt-3">Family Registration - July 10-12, 2026</h1>
+          <h1 className="h2 mt-3">Family Registration - {eventDates}</h1>
           <p className="mt-2 text-sm text-koa">
             Secure your seats at the reunion, let us know your family details, and select the experiences that fit your crew.
           </p>
@@ -106,8 +107,8 @@ export default async function RegisterPage({ searchParams }: { searchParams: { t
           </ul>
           <p className="mono mt-4 text-xs uppercase tracking-[0.25em] text-koa">
             Have questions or need help? Email{' '}
-            <a href="mailto:ohana@kekoolani.com" className="text-brandBlue underline">
-              ohana@kekoolani.com
+            <a href="mailto:pumehanasilva@mac.com" className="text-brandBlue underline">
+              pumehanasilva@mac.com
             </a>
             .
           </p>
