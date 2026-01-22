@@ -6,15 +6,20 @@ import AttendeeMarquee from '@/components/public/AttendeeMarquee';
 import { createSupabaseServerClient } from '@/lib/supabaseClient';
 import type { Database } from '@/types/supabase';
 
-const HERO_IMAGES = [
+const HERO_IMAGE = '/assets/IMG_0722.JPG';
+const WELCOME_CAROUSEL_IMAGES = [
+  '/assets/IMG_0644.JPG',
+  '/assets/IMG_0647.JPG',
+  '/assets/IMG_0721.JPG',
+  '/assets/IMG_2937.JPG',
+  '/assets/IMG_2972.JPG',
   '/assets/Hilo-1.jpg',
   '/assets/Hilo.jpg',
   '/assets/Keiki_LoiKalo.jpg',
   '/assets/LoiKalo1.jpg',
   '/assets/LoiKalo2.jpeg',
   '/assets/LoiKalo3.jpg',
-  '/assets/MaunaKea.jpg',
-  '/assets/NawaiandEmily.png'
+  '/assets/MaunaKea.jpg'
 ];
 
 const HERO_TITLE = 'Kekoʻolani Family Reunion 2026';
@@ -40,34 +45,38 @@ const SCHEDULE_ENTRIES = [
     time: 'Friday, 7/10/26 · 10:00 am – 3:30 pm',
     title: 'Jade & Meleʻs home in Kaʻūmana',
     items: [
-      'Hoʻolauna (Meet & greet)',
-      'Genealogy session',
-      'Keiki activities',
-      'Lunch',
-      'Moʻolelo with our kūpuna',
-      'Hula workshops',
-      'Kanikapila',
-      'Makahiki games'
+      '10:00 am – 10:30 am Hoʻolauna (Meet & greet)',
+      '10:30 am – 11:15 am Genealogy session',
+      '11:15 am – 12:00 pm Keiki activities',
+      '12:00 pm – 12:45 pm Lunch',
+      '12:45 pm – 1:30 pm Moʻolelo with our kūpuna',
+      '1:30 pm – 2:15 pm Hula workshops',
+      '2:15 pm – 2:45 pm Kanikapila',
+      '2:45 pm – 3:30 pm Makahiki games'
     ]
   },
   {
     time: 'Saturday, 7/11/26 · 8:00 am – 3:00 pm',
     title: 'Huakaʻi to Waipiʻo',
-    items: ['Visit into Waipiʻo valley', 'Lunch at Kukuihaele Park', 'Visit Kalopa family graves']
+    items: [
+      '8:00 am – 10:30 am Visit into Waipiʻo valley',
+      '11:00 am – 12:30 pm Lunch at Kukuihaele Park',
+      '1:00 pm – 2:30 pm Visit Kalopa family graves'
+    ]
   },
   {
     time: 'Sunday, 7/12/26 · 9:00 am – 1:00 pm • 4:00 pm – 9:00 pm',
     title: 'Jade & Meleʻs home in Kaʻūmana',
     items: [
-      'Visit Alae Cemetery',
-      'Hula Workshops / Kanikapila',
-      'Family activities',
-      'Lunch',
-      'Family lūʻau',
-      'Dinner',
-      'Entertainment',
-      'Family sharing',
-      'Closing / A hui hou'
+      '9:00 am – 10:00 am Visit Alae Cemetery',
+      '10:15 am – 11:30 am Hula Workshops / Kanikapila',
+      '11:30 am – 12:15 pm Family activities',
+      '12:15 pm – 1:00 pm Lunch',
+      '4:00 pm – 5:00 pm Family lūʻau',
+      '5:30 pm – 6:15 pm Dinner',
+      '6:30 pm – 7:15 pm Entertainment',
+      '7:15 pm – 8:15 pm Family sharing',
+      '8:15 pm – 9:00 pm Closing / A hui hou'
     ]
   }
 ];
@@ -183,7 +192,10 @@ export default async function HomePage() {
   return (
     <div>
       <section className="section hero">
-        <HeroCarousel images={HERO_IMAGES} />
+        <div className="absolute inset-0">
+          <img src={HERO_IMAGE} alt="Waipiʻo Valley" className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-emerald-900/50 to-emerald-700/30" />
+        </div>
         <div className="container relative z-10 grid gap-12 lg:grid-cols-[3fr,2fr] lg:items-center">
           <div className="space-y-6">
             <span className="hero-tag">E hoʻi i ka piko</span>
@@ -246,6 +258,11 @@ export default async function HomePage() {
             {WELCOME_PARAGRAPHS.map((paragraph) => (
               <p key={paragraph}>{paragraph}</p>
             ))}
+          </div>
+          <div className="mt-10 overflow-hidden rounded-3xl border border-sand-200 bg-white/80 shadow-soft">
+            <div className="relative h-64 md:h-80">
+              <HeroCarousel images={WELCOME_CAROUSEL_IMAGES} />
+            </div>
           </div>
           <div className="mt-10 grid gap-4 md:grid-cols-2">
             {OVERVIEW_ITEMS.map((item) => (
