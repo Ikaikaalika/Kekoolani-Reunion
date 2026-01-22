@@ -361,7 +361,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="section section-alt">
+      <section id="genealogy" className="section section-alt">
         <div className="container max-w-5xl">
           <div className="mb-10 text-center">
             <span className="section-title">Genealogy</span>
@@ -383,8 +383,7 @@ export default async function HomePage() {
       <section id="logistics" className="section">
         <div className="container max-w-5xl">
           <div className="mb-12 text-center">
-            <span className="section-title">Logistics</span>
-            <h2 className="h2 mt-3">Planning Details</h2>
+            <h2 className="h2">Logistics and Planning</h2>
           </div>
           <div className="space-y-6">
             <div className="card shadow-soft p-8">

@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 const navLinks = [
   { href: '/#overview', label: 'Overview' },
   { href: '/#schedule', label: 'Schedule' },
+  { href: '/#genealogy', label: 'Genealogy' },
   { href: '/#logistics', label: 'Logistics' },
   { href: '/#contact', label: 'Contact' }
 ];
@@ -102,6 +103,11 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
                 <li>
                   <a href="/#schedule" className="transition-colors hover:text-white">
                     Schedule
+                  </a>
+                </li>
+                <li>
+                  <a href="/#genealogy" className="transition-colors hover:text-white">
+                    Genealogy
                   </a>
                 </li>
                 <li>
