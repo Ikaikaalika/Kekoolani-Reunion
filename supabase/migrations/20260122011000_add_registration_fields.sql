@@ -222,11 +222,11 @@ insert into registration_fields (
     'Optional, but helps us recognize each person in the family photo wall.',
     null,
     false,
-    'Who\'s Coming'
+    'Who''s Coming'
   ),
   (
     'show_name',
-    'Show name in Who\'s Coming',
+    'Show name in Who''s Coming',
     'checkbox',
     null,
     false,
@@ -236,11 +236,11 @@ insert into registration_fields (
     null,
     null,
     false,
-    'Who\'s Coming'
+    'Who''s Coming'
   ),
   (
     'show_photo',
-    'Show photo in Who\'s Coming',
+    'Show photo in Who''s Coming',
     'checkbox',
     null,
     false,
@@ -250,6 +250,6 @@ insert into registration_fields (
     null,
     null,
     false,
-    'Who\'s Coming'
+    'Who''s Coming'
   )
 on conflict (field_key) do nothing;
