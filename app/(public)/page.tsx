@@ -284,6 +284,8 @@ export default async function HomePage() {
               See the growing list of relatives who have already registered.
             </p>
           </div>
+        </div>
+        <div className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen">
           <AttendeeMarquee attendees={attendeeHighlights} />
         </div>
       </section>
