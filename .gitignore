@@ -33,3 +33,6 @@ prisma/migrations
 
 # vercel
 .vercel
+
+# supabase
+supabase/.temp

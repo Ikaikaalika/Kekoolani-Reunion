@@ -61,4 +61,6 @@ export async function updateSiteSettings(formData: FormData) {
 
   revalidatePath('/');
   revalidatePath('/admin');
+  revalidatePath('/admin/sections');
+  revalidatePath('/admin/content');
 }
