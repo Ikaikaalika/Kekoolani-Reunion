@@ -144,8 +144,11 @@ const GENEALOGY_PARAGRAPHS = [
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 
 type AttendeeHighlight = {
-  name: string;
+  name?: string | null;
   photoUrl?: string | null;
+  showName: boolean;
+  showPhoto: boolean;
+  lineage?: string | null;
 };
 
 async function getAttendeeHighlights(): Promise<AttendeeHighlight[]> {
@@ -171,14 +174,41 @@ async function getAttendeeHighlights(): Promise<AttendeeHighlight[]> {
       for (let index = 0; index < people.length; index += 1) {
         const person = people[index];
         const record = person && typeof person === 'object' ? (person as Record<string, unknown>) : {};
-        const name = typeof record.full_name === 'string' ? record.full_name : typeof record.name === 'string' ? record.name : '';
-        if (!name) continue;
+        const name =
+          typeof record.full_name === 'string'
+            ? record.full_name
+            : typeof record.name === 'string'
+              ? record.name
+              : '';
+        const lineage = typeof record.lineage === 'string' ? record.lineage : null;
         const photo = typeof photos[index] === 'string' ? photos[index] : null;
-        highlights.push({ name, photoUrl: photo });
+        const hasPhoto = Boolean(photo);
+        const rawShowName = record.show_name;
+        const rawShowPhoto = record.show_photo;
+        const showName = (typeof rawShowName === 'boolean' ? rawShowName : true) && Boolean(name);
+        const showPhoto = (typeof rawShowPhoto === 'boolean' ? rawShowPhoto : hasPhoto) && hasPhoto;
+
+        if (!showName && !showPhoto) {
+          continue;
+        }
+
+        highlights.push({
+          name: showName ? name : null,
+          photoUrl: showPhoto ? photo : null,
+          showName,
+          showPhoto,
+          lineage
+        });
         if (highlights.length >= 40) return highlights;
       }
     } else if (typeof row.purchaser_name === 'string' && row.purchaser_name.trim()) {
-      highlights.push({ name: row.purchaser_name.trim() });
+      highlights.push({
+        name: row.purchaser_name.trim(),
+        photoUrl: null,
+        showName: true,
+        showPhoto: false,
+        lineage: null
+      });
       if (highlights.length >= 40) return highlights;
     }
   }

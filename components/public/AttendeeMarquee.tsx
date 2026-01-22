@@ -5,8 +5,11 @@ import { useMemo } from 'react';
 import type { CSSProperties } from 'react';
 
 type Attendee = {
-  name: string;
+  name?: string | null;
   photoUrl?: string | null;
+  showName: boolean;
+  showPhoto: boolean;
+  lineage?: string | null;
 };
 
 type AttendeeMarqueeProps = {
@@ -25,7 +28,24 @@ function getInitials(name: string) {
 }
 
 export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
-  const items = useMemo(() => attendees.filter((item) => item.name.trim()), [attendees]);
+  const items = useMemo(
+    () =>
+      attendees
+        .map((attendee) => {
+          const name = attendee.name?.trim() ?? '';
+          const showName = attendee.showName && Boolean(name);
+          const showPhoto = attendee.showPhoto && Boolean(attendee.photoUrl);
+          if (!showName && !showPhoto) return null;
+          return {
+            ...attendee,
+            name,
+            showName,
+            showPhoto
+          };
+        })
+        .filter(Boolean) as Array<Attendee & { name: string }>,
+    [attendees]
+  );
 
   if (!items.length) {
     return (
@@ -53,77 +73,129 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
   return (
     <div className="marquee">
       <div className="marquee-track marquee-track-top" style={{ '--marquee-duration': '48s' } as CSSProperties}>
-        {loopItems.map((attendee, index) => (
-          <div key={`${attendee.name}-${index}`} className="marquee-bubble" style={getBubbleStyle(index, 0)}>
-            <div className="marquee-bubble-core animate-float">
-              {attendee.photoUrl ? (
-                <img src={attendee.photoUrl} alt={attendee.name} className="h-full w-full object-cover" />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-2xl font-semibold">
-                  {getInitials(attendee.name)}
+        {loopItems.map((attendee, index) => {
+          const keyBase = attendee.name || attendee.photoUrl || 'attendee';
+          const bubbleClass = `marquee-bubble${attendee.showPhoto ? '' : ' marquee-bubble--name-only'}`;
+          const lineage = attendee.lineage ?? '';
+          return (
+            <div key={`${keyBase}-${index}`} className={bubbleClass} style={getBubbleStyle(index, 0)}>
+              {attendee.showPhoto && (
+                <div className="marquee-bubble-core animate-float">
+                  {attendee.photoUrl ? (
+                    <img
+                      src={attendee.photoUrl}
+                      alt={attendee.showName ? attendee.name : ''}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-2xl font-semibold">
+                      {getInitials(attendee.name)}
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
-            <span className="marquee-bubble-label">{attendee.name}</span>
-          </div>
-        ))}
-        {loopItems.map((attendee, index) => (
-          <div
-            key={`${attendee.name}-duplicate-${index}`}
-            className="marquee-bubble"
-            style={getBubbleStyle(index, 1)}
-            aria-hidden="true"
-          >
-            <div className="marquee-bubble-core animate-float">
-              {attendee.photoUrl ? (
-                <img src={attendee.photoUrl} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-2xl font-semibold">
-                  {getInitials(attendee.name)}
-                </div>
+              {attendee.showName && (
+                <span className="marquee-bubble-label" data-lineage={lineage}>
+                  {attendee.name}
+                </span>
               )}
             </div>
-            <span className="marquee-bubble-label">{attendee.name}</span>
-          </div>
-        ))}
+          );
+        })}
+        {loopItems.map((attendee, index) => {
+          const keyBase = attendee.name || attendee.photoUrl || 'attendee';
+          const bubbleClass = `marquee-bubble${attendee.showPhoto ? '' : ' marquee-bubble--name-only'}`;
+          const lineage = attendee.lineage ?? '';
+          return (
+            <div
+              key={`${keyBase}-duplicate-${index}`}
+              className={bubbleClass}
+              style={getBubbleStyle(index, 1)}
+              aria-hidden="true"
+            >
+              {attendee.showPhoto && (
+                <div className="marquee-bubble-core animate-float">
+                  {attendee.photoUrl ? (
+                    <img src={attendee.photoUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-2xl font-semibold">
+                      {getInitials(attendee.name)}
+                    </div>
+                  )}
+                </div>
+              )}
+              {attendee.showName && (
+                <span className="marquee-bubble-label" data-lineage={lineage}>
+                  {attendee.name}
+                </span>
+              )}
+            </div>
+          );
+        })}
       </div>
       <div
         className="marquee-track marquee-track-bottom marquee-track-reverse"
         style={{ '--marquee-duration': '60s' } as CSSProperties}
       >
-        {reverseItems.map((attendee, index) => (
-          <div key={`${attendee.name}-alt-${index}`} className="marquee-bubble" style={getBubbleStyle(index, 2)}>
-            <div className="marquee-bubble-core animate-float">
-              {attendee.photoUrl ? (
-                <img src={attendee.photoUrl} alt={attendee.name} className="h-full w-full object-cover" />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-2xl font-semibold">
-                  {getInitials(attendee.name)}
+        {reverseItems.map((attendee, index) => {
+          const keyBase = attendee.name || attendee.photoUrl || 'attendee';
+          const bubbleClass = `marquee-bubble${attendee.showPhoto ? '' : ' marquee-bubble--name-only'}`;
+          const lineage = attendee.lineage ?? '';
+          return (
+            <div key={`${keyBase}-alt-${index}`} className={bubbleClass} style={getBubbleStyle(index, 2)}>
+              {attendee.showPhoto && (
+                <div className="marquee-bubble-core animate-float">
+                  {attendee.photoUrl ? (
+                    <img
+                      src={attendee.photoUrl}
+                      alt={attendee.showName ? attendee.name : ''}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-2xl font-semibold">
+                      {getInitials(attendee.name)}
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
-            <span className="marquee-bubble-label">{attendee.name}</span>
-          </div>
-        ))}
-        {reverseItems.map((attendee, index) => (
-          <div
-            key={`${attendee.name}-alt-duplicate-${index}`}
-            className="marquee-bubble"
-            style={getBubbleStyle(index, 3)}
-            aria-hidden="true"
-          >
-            <div className="marquee-bubble-core animate-float">
-              {attendee.photoUrl ? (
-                <img src={attendee.photoUrl} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-2xl font-semibold">
-                  {getInitials(attendee.name)}
-                </div>
+              {attendee.showName && (
+                <span className="marquee-bubble-label" data-lineage={lineage}>
+                  {attendee.name}
+                </span>
               )}
             </div>
-            <span className="marquee-bubble-label">{attendee.name}</span>
-          </div>
-        ))}
+          );
+        })}
+        {reverseItems.map((attendee, index) => {
+          const keyBase = attendee.name || attendee.photoUrl || 'attendee';
+          const bubbleClass = `marquee-bubble${attendee.showPhoto ? '' : ' marquee-bubble--name-only'}`;
+          const lineage = attendee.lineage ?? '';
+          return (
+            <div
+              key={`${keyBase}-alt-duplicate-${index}`}
+              className={bubbleClass}
+              style={getBubbleStyle(index, 3)}
+              aria-hidden="true"
+            >
+              {attendee.showPhoto && (
+                <div className="marquee-bubble-core animate-float">
+                  {attendee.photoUrl ? (
+                    <img src={attendee.photoUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-2xl font-semibold">
+                      {getInitials(attendee.name)}
+                    </div>
+                  )}
+                </div>
+              )}
+              {attendee.showName && (
+                <span className="marquee-bubble-label" data-lineage={lineage}>
+                  {attendee.name}
+                </span>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

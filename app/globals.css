@@ -202,6 +202,15 @@ main {
   transform: translateY(var(--bubble-offset));
 }
 
+.marquee-bubble--name-only {
+  gap: 0;
+}
+
+.marquee-bubble--name-only .marquee-bubble-label {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.9rem;
+}
+
 .marquee-bubble-core {
   height: var(--bubble-size);
   width: var(--bubble-size);
@@ -215,6 +224,26 @@ main {
 .marquee-bubble-label {
   @apply rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-sand-900 shadow-soft;
   white-space: nowrap;
+}
+
+.marquee-bubble-label[data-lineage='Nawai'] {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.marquee-bubble-label[data-lineage='Katherine'] {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+.marquee-bubble-label[data-lineage='Amy'] {
+  background: #f59e0b;
+  color: #ffffff;
+}
+
+.marquee-bubble-label[data-lineage='Other / Not listed'] {
+  background: #64748b;
+  color: #ffffff;
 }
 
 @keyframes marquee-scroll {

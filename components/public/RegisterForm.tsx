@@ -26,7 +26,9 @@ const personSchema = z
     email: z.string().email('Email is required'),
     phone: z.string().min(1, 'Phone number is required'),
     address: z.string().min(1, 'Mailing address is required'),
-    same_contact: z.boolean().optional()
+    same_contact: z.boolean().optional(),
+    show_name: z.boolean().default(true),
+    show_photo: z.boolean().default(false)
   })
   .superRefine((data, ctx) => {
     if (data.lineage === 'Other / Not listed' && !data.lineage_other?.trim()) {
@@ -34,6 +36,13 @@ const personSchema = z
         code: z.ZodIssueCode.custom,
         message: 'Please share your lineage details',
         path: ['lineage_other']
+      });
+    }
+    if (!data.show_name && !data.show_photo) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Select name or photo for the Who's Coming section",
+        path: ['show_name']
       });
     }
   });
@@ -100,7 +109,9 @@ const createEmptyPerson = (): PersonForm => ({
   email: '',
   phone: '',
   address: '',
-  same_contact: false
+  same_contact: false,
+  show_name: true,
+  show_photo: false
 });
 
 interface RegisterFormProps {
@@ -186,6 +197,16 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
       });
     });
   }, [people, setValue]);
+
+  useEffect(() => {
+    if (!people?.length) return;
+    people.forEach((person, index) => {
+      const hasPhoto = Boolean(photoUrls?.[index]);
+      if (!hasPhoto && person?.show_photo) {
+        setValue(`people.${index}.show_photo`, false, { shouldValidate: true, shouldDirty: true });
+      }
+    });
+  }, [people, photoUrls, setValue]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -275,7 +296,9 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
             email: person.email,
             phone: person.phone,
             address: person.address,
-            same_contact: person.same_contact ?? false
+            same_contact: person.same_contact ?? false,
+            show_name: person.show_name ?? true,
+            show_photo: person.show_photo ?? false
           })),
           photo_urls: data.photo_urls ?? [],
           donation_note: data.donation_note || null
@@ -383,6 +406,8 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
             const sameContact = Boolean(people?.[index]?.same_contact);
             const personLabel = index === 0 ? 'Primary Contact' : `Participant ${index + 1}`;
             const contactClass = sameContact ? 'bg-slate-100 text-slate-500' : '';
+            const hasPhoto = Boolean(photoUrls?.[index]);
+            const showPhotoDisabled = !hasPhoto;
 
             return (
               <div key={field.id} className="rounded-3xl border border-slate-100 bg-white/80 p-6 shadow-sm">
@@ -571,6 +596,38 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
                       <p className="text-xs text-red-500">{personErrors.address.message}</p>
                     )}
                   </div>
+                </div>
+
+                <div className="mt-6">
+                  <h4 className="text-sm font-semibold text-black">Who&apos;s Coming Display</h4>
+                  <p className="mt-1 text-xs text-koa">
+                    Choose how this participant appears on the Who&apos;s Coming section of the homepage.
+                  </p>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                      <input type="checkbox" className="h-4 w-4" {...register(`people.${index}.show_name`)} />
+                      <span>Show name</span>
+                    </label>
+                    <label
+                      className={`flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm ${
+                        showPhotoDisabled ? 'cursor-not-allowed text-slate-400 opacity-60' : ''
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4"
+                        disabled={showPhotoDisabled}
+                        {...register(`people.${index}.show_photo`)}
+                      />
+                      <span>Show photo</span>
+                    </label>
+                  </div>
+                  {showPhotoDisabled && (
+                    <p className="mt-2 text-xs text-koa">Upload a photo above to enable the photo option.</p>
+                  )}
+                  {personErrors?.show_name && (
+                    <p className="mt-2 text-xs text-red-500">{personErrors.show_name.message}</p>
+                  )}
                 </div>
               </div>
             );
