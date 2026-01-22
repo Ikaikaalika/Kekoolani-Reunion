@@ -37,7 +37,7 @@ export default function TicketsManager({ tickets, upsertAction, deleteAction }: 
   return (
     <div className="space-y-8">
       {tickets.map((ticket) => (
-        <div key={ticket.id} className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div key={ticket.id} className="card shadow-soft space-y-4 p-6">
           <form action={upsertAction} className="space-y-4">
             <input type="hidden" name="id" value={ticket.id} />
             <div className="grid gap-4 md:grid-cols-2">
@@ -63,8 +63,8 @@ export default function TicketsManager({ tickets, upsertAction, deleteAction }: 
               <Textarea id={`description-${ticket.id}`} name="description" rows={3} defaultValue={ticket.description ?? ''} />
             </div>
             <div className="flex items-center justify-between">
-              <label className="flex items-center gap-3 text-sm text-slate-600">
-                <input type="checkbox" name="active" defaultChecked={ticket.active} className="h-4 w-4 rounded border-slate-300" />
+              <label className="flex items-center gap-3 text-sm text-koa">
+                <input type="checkbox" name="active" defaultChecked={ticket.active} className="h-4 w-4 rounded border-sand-300" />
                 Visible on registration
               </label>
               <SaveButton />
@@ -77,9 +77,9 @@ export default function TicketsManager({ tickets, upsertAction, deleteAction }: 
         </div>
       ))}
 
-      <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-6 shadow-sm">
-        <h3 className="text-lg font-semibold text-slate-900">Add Ticket Type</h3>
-        <p className="text-sm text-slate-600">Create a new ticket offering for the reunion.</p>
+      <div className="rounded-3xl border border-dashed border-sand-300 bg-white/90 p-6 shadow-soft">
+        <h3 className="text-lg font-semibold text-sand-900">Add Ticket Type</h3>
+        <p className="text-sm text-koa">Create a new ticket offering for the reunion.</p>
         <form action={upsertAction} className="mt-4 space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
@@ -103,8 +103,8 @@ export default function TicketsManager({ tickets, upsertAction, deleteAction }: 
             <Label htmlFor="new-description">Description</Label>
             <Textarea id="new-description" name="description" rows={3} placeholder="Includes access to all events and the luau." />
           </div>
-          <label className="flex items-center gap-3 text-sm text-slate-600">
-            <input type="checkbox" name="active" defaultChecked className="h-4 w-4 rounded border-slate-300" />
+          <label className="flex items-center gap-3 text-sm text-koa">
+            <input type="checkbox" name="active" defaultChecked className="h-4 w-4 rounded border-sand-300" />
             Visible on registration
           </label>
           <SaveButton />

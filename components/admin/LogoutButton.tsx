@@ -25,7 +25,7 @@ export default function LogoutButton() {
     <Button
       type="button"
       variant="secondary"
-      className="border border-slate-300 text-slate-700 shadow-sm"
+      className="shadow-soft"
       loading={loading}
       onClick={handleSignOut}
     >

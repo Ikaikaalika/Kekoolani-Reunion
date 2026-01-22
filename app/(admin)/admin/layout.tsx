@@ -2,35 +2,56 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import AdminNav from '@/components/admin/AdminNav';
 import LogoutButton from '@/components/admin/LogoutButton';
+import TaroLeafIcon from '@/components/icons/TaroLeafIcon';
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-fern-50 via-white to-sand-100 text-slate-900">
-      <div className="border-b border-slate-200 bg-white/90">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-8">
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Admin</p>
-            <h1 className="text-2xl font-semibold text-slate-900">Kekoʻolani Reunion Coordination Center</h1>
-          </div>
+    <div className="min-h-screen bg-sand-50 text-sand-900">
+      <header className="sticky top-0 z-40 border-b border-sand-200 bg-white/80 backdrop-blur">
+        <div className="container flex flex-col gap-4 py-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
+            <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-brandBlue/10 shadow-soft">
+              <TaroLeafIcon className="h-7 w-7 text-brandBlue" />
+            </span>
+            <div>
+              <p className="mono text-xs uppercase tracking-[0.3em] text-koa">Admin</p>
+              <h1 className="text-xl font-semibold text-sand-900">Kekoʻolani Coordination Center</h1>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
             <Link
               href="/"
-              className="rounded-full bg-ocean-500 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-ocean-600"
+              className="inline-flex items-center justify-center rounded-full border border-brandBlue/30 bg-white px-4 py-2 text-sm font-semibold text-brandBlue shadow-soft transition hover:bg-brandBlue hover:text-white"
             >
               View Site
             </Link>
             <LogoutButton />
           </div>
         </div>
-      </div>
-      <div className="-mt-10 pb-16">
-        <div className="mx-auto max-w-6xl px-6">
+      </header>
+      <main className="container pb-16 pt-10">
+        <section className="hero relative overflow-hidden rounded-3xl p-8 shadow-soft md:p-12">
+          <div className="relative z-10 space-y-4">
+            <span className="hero-tag">Admin Dashboard</span>
+            <h2 className="text-3xl font-semibold md:text-4xl">Reunion operations, in one place.</h2>
+            <p className="max-w-2xl text-white/80">
+              Update the public website, manage registration details, and keep the family informed for 2026.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/register" className="btn btn-large">
+                View Registration
+              </Link>
+              <Link href="/#overview" className="btn btn-secondary btn-large">
+                Public Homepage
+              </Link>
+            </div>
+          </div>
+        </section>
+        <div className="mt-8">
           <AdminNav />
-          <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-            {children}
-          </section>
         </div>
-      </div>
+        <div className="mt-10 space-y-10">{children}</div>
+      </main>
     </div>
   );
 }

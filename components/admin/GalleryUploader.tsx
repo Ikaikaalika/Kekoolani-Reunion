@@ -51,16 +51,16 @@ export default function GalleryUploader({ onUploaded }: GalleryUploaderProps) {
   };
 
   return (
-    <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="card shadow-soft space-y-4 p-6">
       <div>
-        <h3 className="text-lg font-semibold text-slate-900">Upload to Gallery</h3>
-        <p className="text-sm text-slate-600">
+        <h3 className="text-lg font-semibold text-sand-900">Upload to Gallery</h3>
+        <p className="text-sm text-koa">
           Upload images to Vercel Blob storage. Uploaded URLs are automatically added to your gallery list below.
           You can also copy an image URL to reuse elsewhere.
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <label className="inline-flex cursor-pointer items-center justify-center rounded-full bg-ocean-50 px-4 py-2 text-sm font-medium text-ocean-700 shadow-sm transition hover:bg-ocean-100">
+        <label className="inline-flex cursor-pointer items-center justify-center rounded-full bg-brandBlue/10 px-4 py-2 text-sm font-semibold text-brandBlue shadow-soft transition hover:bg-brandBlue/20">
           <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
           Choose Image
         </label>
@@ -72,16 +72,16 @@ export default function GalleryUploader({ onUploaded }: GalleryUploaderProps) {
       {uploads.length > 0 && (
         <div className="space-y-3">
           {uploads.map((item) => (
-            <div key={item.pathname} className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+            <div key={item.pathname} className="rounded-2xl border border-sand-200 bg-sand-50 p-3 text-sm text-koa">
               <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 <div className="break-all">
-                  <p className="font-mono text-xs text-slate-500">{item.pathname}</p>
-                  <a href={item.url} className="text-ocean-600 hover:text-ocean-700" target="_blank" rel="noreferrer">
+                  <p className="font-mono text-xs text-koa">{item.pathname}</p>
+                  <a href={item.url} className="text-brandBlue hover:text-brandBlueDark" target="_blank" rel="noreferrer">
                     {item.url}
                   </a>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-slate-500">{(item.size / 1024).toFixed(1)} KB</span>
+                  <span className="text-xs text-koa">{(item.size / 1024).toFixed(1)} KB</span>
                   <Button type="button" size="sm" variant="secondary" onClick={() => copySnippet(item.url)}>
                     Copy Image URL
                   </Button>

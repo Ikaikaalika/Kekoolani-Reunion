@@ -75,8 +75,9 @@ export default async function AdminContentPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-slate-900">Landing Page Content</h2>
-        <p className="text-sm text-slate-600">Update the hero, schedule, gallery, and planning info shown on the public site.</p>
+        <p className="section-title">Site Content</p>
+        <h2 className="mt-3 text-3xl font-semibold text-sand-900">Landing Page Content</h2>
+        <p className="mt-2 text-sm text-koa">Update the hero, schedule, gallery, and planning info shown on the public site.</p>
       </div>
       <ContentForm site={site} action={updateSiteSettings} />
     </div>

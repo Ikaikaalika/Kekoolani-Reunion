@@ -93,7 +93,7 @@ function QuestionCard({ question, upsertAction, deleteAction }: { question: Ques
   };
 
   return (
-    <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="card shadow-soft space-y-4 p-6">
       <form action={upsertAction} className="space-y-4">
         <input type="hidden" name="id" value={question.id} />
         <input type="hidden" name="options" value={optionsJson} />
@@ -115,7 +115,7 @@ function QuestionCard({ question, upsertAction, deleteAction }: { question: Ques
                   ensureOptionArray();
                 }
               }}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-ocean-500 focus:outline-none"
+              className="w-full rounded-lg border border-sand-300 bg-white px-3 py-2 text-sm text-koa focus:border-brandBlue focus:outline-none"
             >
               <option value="text">Short answer</option>
               <option value="textarea">Long answer</option>
@@ -130,7 +130,7 @@ function QuestionCard({ question, upsertAction, deleteAction }: { question: Ques
           </div>
         </div>
         {requiresOptions ? (
-          <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div className="space-y-3 rounded-2xl border border-sand-200 bg-sand-50 p-4">
             <div className="flex items-center justify-between">
               <Label>Answer choices</Label>
               <Button
@@ -175,12 +175,12 @@ function QuestionCard({ question, upsertAction, deleteAction }: { question: Ques
                 </Button>
               </div>
             ))}
-            <p className="text-xs text-slate-500">Values should be short and unique for each option.</p>
+            <p className="text-xs text-koa">Values should be short and unique for each option.</p>
           </div>
         ) : null}
         <div className="flex items-center justify-between">
-          <label className="flex items-center gap-3 text-sm text-slate-600">
-            <input type="checkbox" name="required" defaultChecked={question.required} className="h-4 w-4 rounded border-slate-300" />
+          <label className="flex items-center gap-3 text-sm text-koa">
+            <input type="checkbox" name="required" defaultChecked={question.required} className="h-4 w-4 rounded border-sand-300" />
             Required field
           </label>
           <SaveButton />
@@ -210,9 +210,9 @@ function NewQuestionForm({ upsertAction }: { upsertAction: Props['upsertAction']
   );
 
   return (
-    <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-6 shadow-sm">
-      <h3 className="text-lg font-semibold text-slate-900">Add Question</h3>
-      <p className="text-sm text-slate-600">Collect the details you need from families during registration.</p>
+    <div className="rounded-3xl border border-dashed border-sand-300 bg-white/90 p-6 shadow-soft">
+      <h3 className="text-lg font-semibold text-sand-900">Add Question</h3>
+      <p className="text-sm text-koa">Collect the details you need from families during registration.</p>
       <form action={upsertAction} className="mt-4 space-y-4">
         <input type="hidden" name="options" value={optionsJson} />
         <div className="space-y-2">
@@ -233,7 +233,7 @@ function NewQuestionForm({ upsertAction }: { upsertAction: Props['upsertAction']
                   setOptions((prev) => (prev.length ? prev : [createEmptyOption()]));
                 }
               }}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-ocean-500 focus:outline-none"
+              className="w-full rounded-lg border border-sand-300 bg-white px-3 py-2 text-sm text-koa focus:border-brandBlue focus:outline-none"
             >
               <option value="text">Short answer</option>
               <option value="textarea">Long answer</option>
@@ -248,7 +248,7 @@ function NewQuestionForm({ upsertAction }: { upsertAction: Props['upsertAction']
           </div>
         </div>
         {requiresOptions ? (
-          <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div className="space-y-3 rounded-2xl border border-sand-200 bg-sand-50 p-4">
             <div className="flex items-center justify-between">
               <Label>Answer choices</Label>
               <Button type="button" variant="secondary" onClick={() => setOptions((prev) => [...prev, createEmptyOption()])}>
@@ -295,11 +295,11 @@ function NewQuestionForm({ upsertAction }: { upsertAction: Props['upsertAction']
                 </Button>
               </div>
             ))}
-            <p className="text-xs text-slate-500">Both label and value are required for each option.</p>
+            <p className="text-xs text-koa">Both label and value are required for each option.</p>
           </div>
         ) : null}
-        <label className="flex items-center gap-3 text-sm text-slate-600">
-          <input type="checkbox" name="required" className="h-4 w-4 rounded border-slate-300" />
+        <label className="flex items-center gap-3 text-sm text-koa">
+          <input type="checkbox" name="required" className="h-4 w-4 rounded border-sand-300" />
           Required
         </label>
         <SaveButton label="Add Question" />

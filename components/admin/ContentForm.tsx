@@ -121,8 +121,8 @@ function toExtrasPayload(params: {
 function SectionTitle({ title, description }: { title: string; description?: string }) {
   return (
     <div>
-      <h3 className="text-base font-semibold text-slate-900">{title}</h3>
-      {description ? <p className="text-sm text-slate-600">{description}</p> : null}
+      <h3 className="text-base font-semibold text-sand-900">{title}</h3>
+      {description ? <p className="text-sm text-koa">{description}</p> : null}
     </div>
   );
 }
@@ -250,37 +250,37 @@ export default function ContentForm({ site, action }: ContentFormProps) {
       <input type="hidden" name="gallery_json" value={extrasPayload} />
       <input type="hidden" name="about_html" value={aboutHtml} />
 
-      <section className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="card shadow-soft space-y-6 p-6">
         <SectionTitle title="Homepage Sections" description="Toggle default sections on or off. Use the Sections tab for custom layouts." />
         <div className="grid gap-3 md:grid-cols-2">
-          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-            <input type="checkbox" name="show_schedule" defaultChecked={site.show_schedule} className="h-4 w-4 rounded border-slate-300" />
+          <label className="flex items-center gap-3 rounded-2xl border border-sand-200 bg-sand-50 px-4 py-3 text-sm text-koa">
+            <input type="checkbox" name="show_schedule" defaultChecked={site.show_schedule} className="h-4 w-4 rounded border-sand-300" />
             Show weekend schedule
           </label>
-          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-            <input type="checkbox" name="show_gallery" defaultChecked={site.show_gallery} className="h-4 w-4 rounded border-slate-300" />
+          <label className="flex items-center gap-3 rounded-2xl border border-sand-200 bg-sand-50 px-4 py-3 text-sm text-koa">
+            <input type="checkbox" name="show_gallery" defaultChecked={site.show_gallery} className="h-4 w-4 rounded border-sand-300" />
             Show photo gallery
           </label>
-          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-            <input type="checkbox" name="show_purpose" defaultChecked={site.show_purpose} className="h-4 w-4 rounded border-slate-300" />
+          <label className="flex items-center gap-3 rounded-2xl border border-sand-200 bg-sand-50 px-4 py-3 text-sm text-koa">
+            <input type="checkbox" name="show_purpose" defaultChecked={site.show_purpose} className="h-4 w-4 rounded border-sand-300" />
             Show reunion purpose highlights
           </label>
-          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-            <input type="checkbox" name="show_costs" defaultChecked={site.show_costs} className="h-4 w-4 rounded border-slate-300" />
+          <label className="flex items-center gap-3 rounded-2xl border border-sand-200 bg-sand-50 px-4 py-3 text-sm text-koa">
+            <input type="checkbox" name="show_costs" defaultChecked={site.show_costs} className="h-4 w-4 rounded border-sand-300" />
             Show cost outline
           </label>
-          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-            <input type="checkbox" name="show_logistics" defaultChecked={site.show_logistics} className="h-4 w-4 rounded border-slate-300" />
+          <label className="flex items-center gap-3 rounded-2xl border border-sand-200 bg-sand-50 px-4 py-3 text-sm text-koa">
+            <input type="checkbox" name="show_logistics" defaultChecked={site.show_logistics} className="h-4 w-4 rounded border-sand-300" />
             Show logistics notes
           </label>
-          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-            <input type="checkbox" name="show_committees" defaultChecked={site.show_committees} className="h-4 w-4 rounded border-slate-300" />
+          <label className="flex items-center gap-3 rounded-2xl border border-sand-200 bg-sand-50 px-4 py-3 text-sm text-koa">
+            <input type="checkbox" name="show_committees" defaultChecked={site.show_committees} className="h-4 w-4 rounded border-sand-300" />
             Show committee roster
           </label>
         </div>
       </section>
 
-      <section className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="card shadow-soft space-y-6 p-6">
         <SectionTitle title="Hero Details" description="This content appears at the top of the public page." />
         <div className="grid gap-6 md:grid-cols-2">
           <div className="space-y-2">
@@ -309,22 +309,22 @@ export default function ContentForm({ site, action }: ContentFormProps) {
             onChange={(event) => setAboutText(event.target.value)}
             placeholder="Share the purpose, history, and goals for this family gathering. Use blank lines to create new paragraphs."
           />
-          <p className="text-xs text-slate-500">Paragraph breaks will be preserved; no HTML required.</p>
+          <p className="text-xs text-koa">Paragraph breaks will be preserved; no HTML required.</p>
         </div>
       </section>
 
-      <section className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="card shadow-soft space-y-6 p-6">
         <SectionTitle
           title="Weekend Schedule"
           description="Outline each day's highlights. Add time blocks and agenda items in the order you want them displayed."
         />
         <div className="space-y-5">
           {schedule.map((entry, index) => (
-            <div key={entry.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div key={entry.id} className="rounded-2xl border border-sand-200 bg-sand-50 p-4">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="grid flex-1 gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-[0.25em] text-slate-500">Day / Time</Label>
+                    <Label className="text-xs uppercase tracking-[0.25em] text-koa">Day / Time</Label>
                     <Input
                       value={entry.time}
                       onChange={(event) =>
@@ -334,7 +334,7 @@ export default function ContentForm({ site, action }: ContentFormProps) {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-[0.25em] text-slate-500">Title</Label>
+                    <Label className="text-xs uppercase tracking-[0.25em] text-koa">Title</Label>
                     <Input
                       value={entry.title}
                       onChange={(event) =>
@@ -380,7 +380,7 @@ export default function ContentForm({ site, action }: ContentFormProps) {
         </Button>
       </section>
 
-      <section className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="card shadow-soft space-y-6 p-6">
         <SectionTitle
           title="Gallery & Visual Story"
           description="Add up to three images to display on the public page. Use the uploader to host new media or paste existing URLs."
@@ -399,9 +399,9 @@ export default function ContentForm({ site, action }: ContentFormProps) {
         />
         <div className="space-y-4">
           {gallery.map((item, index) => (
-            <div key={item.id} className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-[2fr,2fr,auto]">
+            <div key={item.id} className="grid gap-4 rounded-2xl border border-sand-200 bg-sand-50 p-4 md:grid-cols-[2fr,2fr,auto]">
               <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-[0.25em] text-slate-500">Image URL</Label>
+                <Label className="text-xs uppercase tracking-[0.25em] text-koa">Image URL</Label>
                 <Input
                   value={item.src}
                   onChange={(event) => updateGalleryItem(item.id, 'src', event.target.value)}
@@ -409,7 +409,7 @@ export default function ContentForm({ site, action }: ContentFormProps) {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-[0.25em] text-slate-500">Alt Text</Label>
+                <Label className="text-xs uppercase tracking-[0.25em] text-koa">Alt Text</Label>
                 <Input
                   value={item.alt ?? ''}
                   onChange={(event) => updateGalleryItem(item.id, 'alt', event.target.value)}
@@ -431,14 +431,14 @@ export default function ContentForm({ site, action }: ContentFormProps) {
         </Button>
       </section>
 
-      <section className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="card shadow-soft space-y-6 p-6">
         <SectionTitle
           title="Purpose & Logistics"
           description="Keep these lists clear and friendly. What does the family need to know to prepare?"
         />
         <div className="grid gap-6 md:grid-cols-2">
           <div className="space-y-4">
-            <h4 className="font-semibold text-slate-900">Purpose statements</h4>
+            <h4 className="font-semibold text-sand-900">Purpose statements</h4>
             <div className="space-y-3">
               {purpose.map((item) => (
                 <div key={item.id} className="flex gap-3">
@@ -458,7 +458,7 @@ export default function ContentForm({ site, action }: ContentFormProps) {
             </Button>
           </div>
           <div className="space-y-4">
-            <h4 className="font-semibold text-slate-900">Cost outline</h4>
+            <h4 className="font-semibold text-sand-900">Cost outline</h4>
             <div className="space-y-3">
               {costs.map((item) => (
                 <div key={item.id} className="grid gap-3 md:grid-cols-2">
@@ -486,7 +486,7 @@ export default function ContentForm({ site, action }: ContentFormProps) {
           </div>
         </div>
         <div className="space-y-4">
-          <h4 className="font-semibold text-slate-900">Logistics notes</h4>
+          <h4 className="font-semibold text-sand-900">Logistics notes</h4>
           <div className="space-y-3">
             {logistics.map((item) => (
               <div key={item.id} className="flex gap-3">
@@ -507,14 +507,14 @@ export default function ContentForm({ site, action }: ContentFormProps) {
         </div>
       </section>
 
-      <section className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="card shadow-soft space-y-6 p-6">
         <SectionTitle
           title="Planning Committees"
           description="Document who is leading each committee so families know where to help."
         />
         <div className="space-y-4">
           {committees.map((item) => (
-            <div key={item.id} className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-[2fr,2fr,2fr,auto]">
+            <div key={item.id} className="grid gap-4 rounded-2xl border border-sand-200 bg-sand-50 p-4 md:grid-cols-[2fr,2fr,2fr,auto]">
               <Input
                 value={item.name}
                 onChange={(event) => updateCommitteeItem(item.id, 'name', event.target.value)}

@@ -615,7 +615,7 @@ function SectionEditor({ draft, onRemoveLocal }: { draft: SectionDraft; onRemove
   };
 
   return (
-    <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="card shadow-soft space-y-4 p-6">
       <form action={upsertSection} className="space-y-4">
         <input type="hidden" name="payload" value={payloadString} readOnly />
         <div className="grid gap-4 md:grid-cols-2">
@@ -628,7 +628,7 @@ function SectionEditor({ draft, onRemoveLocal }: { draft: SectionDraft; onRemove
             <select
               value={state.type}
               onChange={(event) => switchType(event.target.value as SectionType)}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-ocean-500 focus:outline-none"
+              className="w-full rounded-lg border border-sand-300 bg-white px-3 py-2 text-sm text-koa focus:border-brandBlue focus:outline-none"
               name="type-selector"
             >
               {SECTION_TYPE_OPTIONS.map((option) => (
@@ -647,7 +647,7 @@ function SectionEditor({ draft, onRemoveLocal }: { draft: SectionDraft; onRemove
               onChange={(event) => state.setPosition(Number(event.target.value))}
             />
           </div>
-          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+          <label className="flex items-center gap-3 rounded-2xl border border-sand-200 bg-sand-50 px-4 py-3 text-sm text-koa">
             <input
               type="checkbox"
               checked={state.published}
@@ -706,10 +706,11 @@ export default function SectionsManager({ sections }: SectionsManagerProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">Homepage Sections</h2>
-          <p className="text-sm text-slate-600">
+          <p className="section-title">Homepage</p>
+          <h2 className="mt-3 text-3xl font-semibold text-sand-900">Homepage Sections</h2>
+          <p className="mt-2 text-sm text-koa">
             Arrange custom blocks to extend your landing page beyond the default content.
           </p>
         </div>
@@ -722,7 +723,7 @@ export default function SectionsManager({ sections }: SectionsManagerProps) {
           <SectionEditor key={draft.localId} draft={draft} onRemoveLocal={() => removeLocalDraft(draft.localId)} />
         ))}
         {!drafts.length && (
-          <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
+          <div className="rounded-3xl border border-dashed border-sand-300 bg-white/90 p-8 text-center text-sm text-koa shadow-soft">
             No custom sections yet. Use Add section to create your first block.
           </div>
         )}

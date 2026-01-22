@@ -52,20 +52,21 @@ export default async function AdminOrdersPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">Orders & Attendees</h2>
-          <p className="text-sm text-slate-600">Track reunion registrations, payment details, and responses.</p>
+          <p className="section-title">Orders</p>
+          <h2 className="mt-3 text-3xl font-semibold text-sand-900">Orders & Attendees</h2>
+          <p className="mt-2 text-sm text-koa">Track reunion registrations, payment details, and responses.</p>
         </div>
         <Link
           href="/admin/orders/export"
-          className="inline-flex items-center justify-center rounded-full border border-ocean-200 bg-white px-4 py-2 text-sm font-medium text-ocean-700 shadow-sm transition hover:bg-ocean-50"
+          className="inline-flex items-center justify-center rounded-full border border-brandBlue/30 bg-white px-4 py-2 text-sm font-semibold text-brandBlue shadow-soft transition hover:bg-brandBlue hover:text-white"
         >
           Download CSV
         </Link>
       </div>
 
-      <div className="overflow-x-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <table className="min-w-[900px] text-left text-sm text-slate-700">
-          <thead className="text-xs uppercase tracking-[0.2em] text-slate-500">
+      <div className="overflow-x-auto rounded-3xl border border-sand-200 bg-white/90 p-6 shadow-soft">
+        <table className="min-w-[900px] text-left text-sm text-sand-700">
+          <thead className="bg-sand-50 text-xs uppercase tracking-[0.2em] text-koa">
             <tr>
               <th className="py-3 pr-6">Order</th>
               <th className="py-3 pr-6">Date</th>
@@ -88,7 +89,7 @@ export default async function AdminOrdersPage() {
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-sand-200">
             {orders.map((order) => {
               const ticketSummary = (order.order_items ?? [])
                 .map((item) => `${item.quantity} x ${item.ticket_types?.name ?? item.ticket_type_id}`)
@@ -101,12 +102,12 @@ export default async function AdminOrdersPage() {
 
               return (
                 <tr key={order.id} className="align-top">
-                  <td className="py-3 pr-6 font-mono text-xs text-slate-500">{order.id}</td>
-                  <td className="py-3 pr-6 whitespace-nowrap text-xs text-slate-600">
+                  <td className="py-3 pr-6 font-mono text-xs text-koa">{order.id}</td>
+                  <td className="py-3 pr-6 whitespace-nowrap text-xs text-koa">
                     {new Date(order.created_at).toLocaleString()}
                   </td>
                   <td className="py-3 pr-6">{order.purchaser_name}</td>
-                  <td className="py-3 pr-6 text-xs text-slate-600">{order.purchaser_email}</td>
+                  <td className="py-3 pr-6 text-xs text-koa">{order.purchaser_email}</td>
                   <td className="py-3 pr-6">
                     <span
                       className={`rounded-full px-3 py-1 text-xs font-semibold ${
@@ -120,19 +121,19 @@ export default async function AdminOrdersPage() {
                       {order.status.toUpperCase()}
                     </span>
                   </td>
-                  <td className="py-3 pr-6 text-xs text-slate-600">{order.payment_method ?? '-'}</td>
-                  <td className="py-3 pr-6 font-semibold text-slate-900">
+                  <td className="py-3 pr-6 text-xs text-koa">{order.payment_method ?? '-'}</td>
+                  <td className="py-3 pr-6 font-semibold text-sand-900">
                     {formatCurrency(order.total_cents, orderCurrency ?? 'usd')}
                   </td>
-                  <td className="py-3 pr-6 text-xs text-slate-600">{ticketSummary || '-'}</td>
-                  <td className="py-3 pr-6 text-xs text-slate-600">{order.attendees?.length ?? 0}</td>
+                  <td className="py-3 pr-6 text-xs text-koa">{ticketSummary || '-'}</td>
+                  <td className="py-3 pr-6 text-xs text-koa">{order.attendees?.length ?? 0}</td>
                   {staticFields.map((field) => (
-                    <td key={`${order.id}-${field.key}`} className="py-3 pr-6 text-xs text-slate-600">
+                    <td key={`${order.id}-${field.key}`} className="py-3 pr-6 text-xs text-koa">
                       {normalizeAnswer(answerRecord[field.key]) || '-'}
                     </td>
                   ))}
                   {questions.map((question) => (
-                    <td key={`${order.id}-${question.id}`} className="py-3 pr-6 text-xs text-slate-600">
+                    <td key={`${order.id}-${question.id}`} className="py-3 pr-6 text-xs text-koa">
                       {normalizeAnswer(answerRecord[question.id]) || '-'}
                     </td>
                   ))}
@@ -141,7 +142,7 @@ export default async function AdminOrdersPage() {
             })}
             {!orders.length && (
               <tr>
-                <td colSpan={9 + staticFields.length + questions.length} className="py-8 text-center text-slate-500">
+                <td colSpan={9 + staticFields.length + questions.length} className="py-8 text-center text-koa">
                   No orders yet.
                 </td>
               </tr>
