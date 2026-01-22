@@ -13,14 +13,16 @@ type OrderRow = Database['public']['Tables']['orders']['Row'];
 type TicketRow = Database['public']['Tables']['ticket_types']['Row'];
 type QuestionRow = Database['public']['Tables']['registration_questions']['Row'];
 type SectionRow = Database['public']['Tables']['content_sections']['Row'];
+type QuestionTicketRow = Database['public']['Tables']['registration_question_tickets']['Row'];
 
 async function loadOverview() {
   const supabase = createSupabaseServerClient();
-  const [ordersRes, ticketsRes, questionsRes, sectionsRes] = await Promise.all([
+  const [ordersRes, ticketsRes, questionsRes, sectionsRes, linksRes] = await Promise.all([
     supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(5),
     supabase.from('ticket_types').select('*').order('position', { ascending: true }).order('created_at', { ascending: true }),
     supabase.from('registration_questions').select('*').order('position', { ascending: true }).order('created_at', { ascending: true }),
-    supabase.from('content_sections').select('*')
+    supabase.from('content_sections').select('*'),
+    supabase.from('registration_question_tickets').select('question_id, ticket_type_id')
   ]);
 
   const ordersData = (ordersRes.data ?? []) as OrderRow[];
@@ -32,6 +34,14 @@ async function loadOverview() {
   const ticketCount = ticketData.filter((ticket) => ticket.active).length;
   const questions = (questionsRes.data ?? []) as QuestionRow[];
   const sections = normalizeSectionList((sectionsRes.data ?? []) as SectionRow[]);
+  const links = (linksRes.data ?? []) as QuestionTicketRow[];
+  const ticketAssignments = links.reduce<Record<string, string[]>>((acc, link) => {
+    if (!acc[link.question_id]) {
+      acc[link.question_id] = [];
+    }
+    acc[link.question_id].push(link.ticket_type_id);
+    return acc;
+  }, {});
 
   return {
     latestOrders: ordersData,
@@ -39,12 +49,13 @@ async function loadOverview() {
     totalRevenue,
     tickets: ticketData,
     questions,
-    sections
+    sections,
+    ticketAssignments
   };
 }
 
 export default async function AdminOverviewPage() {
-  const { latestOrders, ticketCount, totalRevenue, tickets, questions, sections } = await loadOverview();
+  const { latestOrders, ticketCount, totalRevenue, tickets, questions, sections, ticketAssignments } = await loadOverview();
 
   return (
     <div className="space-y-8">
@@ -161,7 +172,13 @@ export default async function AdminOverviewPage() {
           <h2 className="mt-3 text-3xl font-semibold text-sand-900">Registration Questions</h2>
           <p className="mt-2 text-sm text-koa">Manage custom questions shown on the registration form.</p>
         </div>
-        <QuestionsManager questions={questions} upsertAction={upsertQuestion} deleteAction={deleteQuestion} />
+        <QuestionsManager
+          questions={questions}
+          tickets={tickets}
+          ticketAssignments={ticketAssignments}
+          upsertAction={upsertQuestion}
+          deleteAction={deleteQuestion}
+        />
       </section>
     </div>
   );

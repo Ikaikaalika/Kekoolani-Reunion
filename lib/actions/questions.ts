@@ -7,6 +7,19 @@ import { supabaseAdmin } from '../supabaseAdmin';
 export async function upsertQuestion(formData: FormData) {
   const data = Object.fromEntries(formData.entries());
   const optionsRaw = data.options ? String(data.options) : '[]';
+  const ticketIdsRaw = formData.get('ticket_ids');
+  let ticketIds: string[] = [];
+  if (typeof ticketIdsRaw === 'string' && ticketIdsRaw.trim()) {
+    try {
+      const parsed = JSON.parse(ticketIdsRaw);
+      if (Array.isArray(parsed)) {
+        ticketIds = parsed.filter((item) => typeof item === 'string' && item.trim());
+      }
+    } catch (error) {
+      throw new Error('Ticket assignments must be valid JSON');
+    }
+  }
+  const uniqueTicketIds = Array.from(new Set(ticketIds));
   let options;
   try {
     options = optionsRaw ? JSON.parse(optionsRaw) : null;
@@ -30,9 +43,37 @@ export async function upsertQuestion(formData: FormData) {
 
   const admin = supabaseAdmin as any;
 
-  const { error } = await admin.from('registration_questions').upsert(parsed.data);
+  const { data: savedQuestion, error } = await admin
+    .from('registration_questions')
+    .upsert(parsed.data)
+    .select('id');
   if (error) {
     throw new Error('Failed to save question');
+  }
+
+  const questionId = savedQuestion?.[0]?.id ?? parsed.data.id;
+  if (!questionId) {
+    throw new Error('Unable to determine question id');
+  }
+
+  const { error: deleteError } = await admin
+    .from('registration_question_tickets')
+    .delete()
+    .eq('question_id', questionId);
+  if (deleteError) {
+    throw new Error('Failed to update ticket assignments');
+  }
+
+  if (uniqueTicketIds.length) {
+    const { error: linkError } = await admin.from('registration_question_tickets').insert(
+      uniqueTicketIds.map((ticketId) => ({
+        question_id: questionId,
+        ticket_type_id: ticketId
+      }))
+    );
+    if (linkError) {
+      throw new Error('Failed to update ticket assignments');
+    }
   }
 
   revalidatePath('/register');

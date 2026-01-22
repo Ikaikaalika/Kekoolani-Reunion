@@ -9,17 +9,21 @@ import type { Database } from '@/types/supabase';
 type TicketRow = Database['public']['Tables']['ticket_types']['Row'];
 type QuestionRow = Database['public']['Tables']['registration_questions']['Row'];
 type SiteSettingsRow = Database['public']['Tables']['site_settings']['Row'];
+type QuestionTicketRow = Database['public']['Tables']['registration_question_tickets']['Row'];
+
+type RegistrationQuestion = QuestionRow & { ticket_ids: string[] };
 
 async function getRegistrationConfig() {
   const supabase = createSupabaseServerClient();
-  const [ticketRes, questionRes, siteRes] = await Promise.all([
+  const [ticketRes, questionRes, siteRes, questionTicketRes] = await Promise.all([
     supabase
       .from('ticket_types')
       .select('*')
       .eq('active', true)
       .order('position', { ascending: true }),
     supabase.from('registration_questions').select('*').order('position', { ascending: true }),
-    supabase.from('site_settings').select('*').eq('id', SITE_SETTINGS_ID).maybeSingle()
+    supabase.from('site_settings').select('*').eq('id', SITE_SETTINGS_ID).maybeSingle(),
+    supabase.from('registration_question_tickets').select('question_id, ticket_type_id')
   ]);
 
   const tickets = ((ticketRes.data ?? []) as TicketRow[]).map((ticket) => ({
@@ -27,7 +31,19 @@ async function getRegistrationConfig() {
     priceFormatted: formatCurrency(ticket.price_cents, ticket.currency)
   }));
 
-  const questions = (questionRes.data ?? []) as QuestionRow[];
+  const questionLinks = (questionTicketRes.data ?? []) as QuestionTicketRow[];
+  const questionTicketMap = questionLinks.reduce<Record<string, string[]>>((acc, link) => {
+    if (!acc[link.question_id]) {
+      acc[link.question_id] = [];
+    }
+    acc[link.question_id].push(link.ticket_type_id);
+    return acc;
+  }, {});
+
+  const questions = ((questionRes.data ?? []) as QuestionRow[]).map<RegistrationQuestion>((question) => ({
+    ...question,
+    ticket_ids: questionTicketMap[question.id] ?? []
+  }));
 
   const extras = parseExtras(((siteRes.data as SiteSettingsRow | null)?.gallery_json) ?? null);
 

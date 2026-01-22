@@ -94,6 +94,19 @@ export interface Database {
         };
         Update: Database['public']['Tables']['registration_questions']['Insert'];
       };
+      registration_question_tickets: {
+        Row: {
+          question_id: string;
+          ticket_type_id: string;
+          created_at: string;
+        };
+        Insert: {
+          question_id: string;
+          ticket_type_id: string;
+          created_at?: string;
+        };
+        Update: Database['public']['Tables']['registration_question_tickets']['Insert'];
+      };
       ticket_types: {
         Row: {
           id: string;

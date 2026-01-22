@@ -9,9 +9,12 @@ import { Label } from '@/components/ui/label';
 import type { Database } from '@/types/supabase';
 
 type Question = Database['public']['Tables']['registration_questions']['Row'];
+type Ticket = Database['public']['Tables']['ticket_types']['Row'];
 
 interface Props {
   questions: Question[];
+  tickets: Ticket[];
+  ticketAssignments: Record<string, string[]>;
   upsertAction: (formData: FormData) => Promise<void>;
   deleteAction: (formData: FormData) => Promise<void>;
 }
@@ -72,11 +75,66 @@ function DeleteButton() {
   );
 }
 
-function QuestionCard({ question, upsertAction, deleteAction }: { question: Question; upsertAction: Props['upsertAction']; deleteAction: Props['deleteAction'] }) {
+function TicketSelector({
+  tickets,
+  value,
+  onChange
+}: {
+  tickets: Ticket[];
+  value: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const toggleTicket = (ticketId: string) => {
+    onChange(value.includes(ticketId) ? value.filter((id) => id !== ticketId) : [...value, ticketId]);
+  };
+
+  return (
+    <div className="space-y-2">
+      <Label>Ticket visibility</Label>
+      <p className="text-xs text-koa">Leave all unchecked to apply this question to every ticket type.</p>
+      {tickets.length ? (
+        <div className="grid gap-2 sm:grid-cols-2">
+          {tickets.map((ticket) => (
+            <label
+              key={ticket.id}
+              className="flex items-center gap-3 rounded-xl border border-sand-200 bg-white px-4 py-2 text-sm text-koa"
+            >
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-sand-300"
+                checked={value.includes(ticket.id)}
+                onChange={() => toggleTicket(ticket.id)}
+              />
+              <span>{ticket.name}</span>
+            </label>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-koa">Add ticket types first to target specific questions.</p>
+      )}
+    </div>
+  );
+}
+
+function QuestionCard({
+  question,
+  ticketIds,
+  tickets,
+  upsertAction,
+  deleteAction
+}: {
+  question: Question;
+  ticketIds: string[];
+  tickets: Ticket[];
+  upsertAction: Props['upsertAction'];
+  deleteAction: Props['deleteAction'];
+}) {
   const [fieldType, setFieldType] = useState<Question['field_type']>(question.field_type);
   const [options, setOptions] = useState<OptionItem[]>(() => parseOptions(question.options));
+  const [assignedTickets, setAssignedTickets] = useState<string[]>(() => ticketIds ?? []);
 
   const requiresOptions = OPTION_FIELD_TYPES.has(fieldType);
+  const ticketIdsJson = useMemo(() => JSON.stringify(assignedTickets), [assignedTickets]);
   const optionsJson = useMemo(
     () =>
       JSON.stringify(
@@ -97,6 +155,7 @@ function QuestionCard({ question, upsertAction, deleteAction }: { question: Ques
       <form action={upsertAction} className="space-y-4">
         <input type="hidden" name="id" value={question.id} />
         <input type="hidden" name="options" value={optionsJson} />
+        <input type="hidden" name="ticket_ids" value={ticketIdsJson} />
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor={`prompt-${question.id}`}>Prompt</Label>
@@ -129,6 +188,7 @@ function QuestionCard({ question, upsertAction, deleteAction }: { question: Ques
             <Input id={`position-${question.id}`} name="position" type="number" defaultValue={question.position ?? ''} min={0} />
           </div>
         </div>
+        <TicketSelector tickets={tickets} value={assignedTickets} onChange={setAssignedTickets} />
         {requiresOptions ? (
           <div className="space-y-3 rounded-2xl border border-sand-200 bg-sand-50 p-4">
             <div className="flex items-center justify-between">
@@ -194,9 +254,10 @@ function QuestionCard({ question, upsertAction, deleteAction }: { question: Ques
   );
 }
 
-function NewQuestionForm({ upsertAction }: { upsertAction: Props['upsertAction'] }) {
+function NewQuestionForm({ upsertAction, tickets }: { upsertAction: Props['upsertAction']; tickets: Ticket[] }) {
   const [fieldType, setFieldType] = useState<Question['field_type']>('text');
   const [options, setOptions] = useState<OptionItem[]>([createEmptyOption()]);
+  const [assignedTickets, setAssignedTickets] = useState<string[]>([]);
   const requiresOptions = OPTION_FIELD_TYPES.has(fieldType);
 
   const optionsJson = useMemo(
@@ -208,6 +269,7 @@ function NewQuestionForm({ upsertAction }: { upsertAction: Props['upsertAction']
       ),
     [options, requiresOptions]
   );
+  const ticketIdsJson = useMemo(() => JSON.stringify(assignedTickets), [assignedTickets]);
 
   return (
     <div className="rounded-3xl border border-dashed border-sand-300 bg-white/90 p-6 shadow-soft">
@@ -215,6 +277,7 @@ function NewQuestionForm({ upsertAction }: { upsertAction: Props['upsertAction']
       <p className="text-sm text-koa">Collect the details you need from families during registration.</p>
       <form action={upsertAction} className="mt-4 space-y-4">
         <input type="hidden" name="options" value={optionsJson} />
+        <input type="hidden" name="ticket_ids" value={ticketIdsJson} />
         <div className="space-y-2">
           <Label htmlFor="new-prompt">Prompt</Label>
           <Input id="new-prompt" name="prompt" placeholder="Do you have any dietary needs?" required />
@@ -247,6 +310,7 @@ function NewQuestionForm({ upsertAction }: { upsertAction: Props['upsertAction']
             <Input id="new-position" name="position" type="number" min={0} />
           </div>
         </div>
+        <TicketSelector tickets={tickets} value={assignedTickets} onChange={setAssignedTickets} />
         {requiresOptions ? (
           <div className="space-y-3 rounded-2xl border border-sand-200 bg-sand-50 p-4">
             <div className="flex items-center justify-between">
@@ -308,13 +372,20 @@ function NewQuestionForm({ upsertAction }: { upsertAction: Props['upsertAction']
   );
 }
 
-export default function QuestionsManager({ questions, upsertAction, deleteAction }: Props) {
+export default function QuestionsManager({ questions, tickets, ticketAssignments, upsertAction, deleteAction }: Props) {
   return (
     <div className="space-y-8">
       {questions.map((question) => (
-        <QuestionCard key={question.id} question={question} upsertAction={upsertAction} deleteAction={deleteAction} />
+        <QuestionCard
+          key={question.id}
+          question={question}
+          ticketIds={ticketAssignments[question.id] ?? []}
+          tickets={tickets}
+          upsertAction={upsertAction}
+          deleteAction={deleteAction}
+        />
       ))}
-      <NewQuestionForm upsertAction={upsertAction} />
+      <NewQuestionForm upsertAction={upsertAction} tickets={tickets} />
     </div>
   );
 }

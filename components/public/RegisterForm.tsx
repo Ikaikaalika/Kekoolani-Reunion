@@ -80,6 +80,7 @@ type Question = {
   field_type: 'text' | 'textarea' | 'select' | 'checkbox' | 'date';
   options: any;
   required: boolean;
+  ticket_ids?: string[];
 };
 
 const LINEAGE_OPTIONS = ['Nawai', 'Katherine', 'Amy', 'Charles', 'Myra', 'Winifred', 'Henry', 'Royden', 'Other / Not listed'];
@@ -165,6 +166,24 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
   const people = useWatch({ control, name: 'people' });
   const quantities = watch('tickets');
   const photoUrls = watch('photo_urls') as Array<string | null> | undefined;
+  const selectedTicketIds = useMemo(
+    () => quantities.filter((item) => item.quantity > 0).map((item) => item.ticket_type_id),
+    [quantities]
+  );
+  const activeQuestions = useMemo(() => {
+    if (!questions.length) return [];
+    const selected = new Set(selectedTicketIds);
+    return questions.filter((question) => {
+      const ticketIds = Array.isArray(question.ticket_ids) ? question.ticket_ids : [];
+      if (!ticketIds.length) {
+        return true;
+      }
+      if (!selected.size) {
+        return false;
+      }
+      return ticketIds.some((ticketId) => selected.has(ticketId));
+    });
+  }, [questions, selectedTicketIds]);
 
   const updatePhotoUrl = (index: number, url: string | null) => {
     const next = [...(photoUrls ?? [])];
@@ -294,7 +313,7 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
     try {
       const rawValues = getValues();
       const primaryContact = data.people[0];
-      const answers = questions.reduce<Record<string, unknown>>(
+      const answers = activeQuestions.reduce<Record<string, unknown>>(
         (acc, question) => {
           const fieldName = `question_${question.id}`;
           const raw = (rawValues as any)[fieldName];
@@ -786,11 +805,11 @@ export default function RegisterForm({ tickets, questions, presetTicket }: Regis
           {errors.payment_method && <p className="text-xs text-red-500">{errors.payment_method.message}</p>}
         </div>
 
-        {questions.length > 0 && (
+        {activeQuestions.length > 0 && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-black">Registration Questions</h2>
             <div className="grid gap-5">
-              {questions.map((question) => {
+              {activeQuestions.map((question) => {
                 const fieldName = `question_${question.id}`;
                 const options = Array.isArray(question.options) ? (question.options as Array<any>) : [];
                 return (
