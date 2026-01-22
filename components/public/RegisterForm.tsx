@@ -78,16 +78,11 @@ function buildFieldSchema(field: RegistrationField) {
     case 'date':
     case 'email':
     case 'phone': {
-      let schema = z.string();
-      if (field.field_type === 'email') {
-        schema = z.string().email('Email is required');
-      }
+      const schema = field.field_type === 'email' ? z.string().email('Email is required') : z.string();
       if (required && !isOptionalCheckbox) {
-        schema = schema.min(1, requiredMessage);
-      } else {
-        schema = schema.optional();
+        return schema.min(1, requiredMessage);
       }
-      return schema;
+      return schema.optional();
     }
     case 'number': {
       const minValue = field.field_key === 'tshirt_quantity' ? 1 : 0;
@@ -810,7 +805,7 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
 
                 {(photoField || showNameField || showPhotoField) && (
                   <div className="mt-6 space-y-4">
-                    <h4 className="text-sm font-semibold text-black">Who's Coming Display</h4>
+                    <h4 className="text-sm font-semibold text-black">Who&apos;s Coming Display</h4>
                     {photoField && (
                       <div className="rounded-2xl border border-dashed border-slate-200 bg-white/70 p-4">
                         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
