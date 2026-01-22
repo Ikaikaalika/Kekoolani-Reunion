@@ -3,6 +3,7 @@ import { REGISTRATION_GUIDELINES } from '@/lib/registrationGuidelines';
 import { createSupabaseServerClient } from '@/lib/supabaseClient';
 import { formatCurrency } from '@/lib/utils';
 import { parseExtras } from '@/lib/siteContent';
+import { SITE_SETTINGS_ID } from '@/lib/constants';
 import type { Database } from '@/types/supabase';
 
 type TicketRow = Database['public']['Tables']['ticket_types']['Row'];
@@ -18,7 +19,7 @@ async function getRegistrationConfig() {
       .eq('active', true)
       .order('position', { ascending: true }),
     supabase.from('registration_questions').select('*').order('position', { ascending: true }),
-    supabase.from('site_settings').select('*').limit(1).maybeSingle()
+    supabase.from('site_settings').select('*').eq('id', SITE_SETTINGS_ID).maybeSingle()
   ]);
 
   const tickets = ((ticketRes.data ?? []) as TicketRow[]).map((ticket) => ({

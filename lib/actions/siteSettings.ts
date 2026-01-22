@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '../supabaseAdmin';
 import { updateSiteSettingsSchema } from '../validators';
 import { parseSchedule, parseExtras, SITE_DEFAULTS, DEFAULT_EXTRAS } from '../siteContent';
+import { SITE_SETTINGS_ID } from '../constants';
 
 export async function updateSiteSettings(formData: FormData) {
   const json = Object.fromEntries(formData.entries());
@@ -50,7 +51,7 @@ export async function updateSiteSettings(formData: FormData) {
   const admin = supabaseAdmin as any;
 
   const { error } = await admin.from('site_settings').upsert({
-    id: 'singleton',
+    id: SITE_SETTINGS_ID,
     ...parsed.data
   });
 

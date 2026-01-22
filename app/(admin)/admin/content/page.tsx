@@ -1,6 +1,7 @@
 import ContentForm from '@/components/admin/ContentForm';
 import { createSupabaseServerClient } from '@/lib/supabaseClient';
 import { updateSiteSettings } from '@/lib/actions/siteSettings';
+import { SITE_SETTINGS_ID } from '@/lib/constants';
 import { SITE_DEFAULTS, DEFAULT_EXTRAS } from '@/lib/siteContent';
 import type { Database } from '@/types/supabase';
 
@@ -27,7 +28,7 @@ async function getSite(): Promise<AdminSiteSettings> {
   const { data } = await supabase
     .from('site_settings')
     .select('*')
-    .eq('id', 'singleton')
+    .eq('id', SITE_SETTINGS_ID)
     .maybeSingle<SiteSettingsRow>();
 
   const fallback: AdminSiteSettings = {
