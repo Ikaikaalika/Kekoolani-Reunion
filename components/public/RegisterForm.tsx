@@ -1033,61 +1033,62 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
                   }
                 });
                 return (
-                <div
-                  key={ticket.id}
-                  className="flex flex-col gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm md:flex-row md:items-center md:justify-between"
-                >
-                  <div>
-                    <p className="mono text-xs font-semibold uppercase tracking-[0.2em] text-koa">{ticket.name}</p>
-                    <p className="mt-2 text-2xl font-semibold text-black">{ticket.priceFormatted}</p>
-                    <p className="mt-1 text-sm text-koa">{ticket.description}</p>
-                    {hasAgeRule && (
-                      <div className="mt-2 space-y-1 text-xs text-brandBlue">
-                        <p className="font-semibold uppercase tracking-[0.2em]">
-                          {getAgeRangeLabel(ticket.age_min ?? null, ticket.age_max ?? null)}
+                  <div
+                    key={ticket.id}
+                    className="flex flex-col gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm md:flex-row md:items-center md:justify-between"
+                  >
+                    <div>
+                      <p className="mono text-xs font-semibold uppercase tracking-[0.2em] text-koa">{ticket.name}</p>
+                      <p className="mt-2 text-2xl font-semibold text-black">{ticket.priceFormatted}</p>
+                      <p className="mt-1 text-sm text-koa">{ticket.description}</p>
+                      {hasAgeRule && (
+                        <div className="mt-2 space-y-1 text-xs text-brandBlue">
+                          <p className="font-semibold uppercase tracking-[0.2em]">
+                            {getAgeRangeLabel(ticket.age_min ?? null, ticket.age_max ?? null)}
+                          </p>
+                          <p className="text-koa">Auto-filled from participant ages. Adjust if needed.</p>
+                        </div>
+                      )}
+                      {ageTicketInventoryIssues.some((issue) => issue.id === ticket.id) && (
+                        <p className="mt-2 text-xs text-red-500">
+                          {(() => {
+                            const issue = ageTicketInventoryIssues.find((item) => item.id === ticket.id);
+                            if (!issue) return null;
+                            return `Only ${issue.inventory} remain for this age group. Please adjust participants or contact the reunion team.`;
+                          })()}
                         </p>
-                        <p className="text-koa">Auto-filled from participant ages. Adjust if needed.</p>
-                      </div>
-                    )}
-                    {ageTicketInventoryIssues.some((issue) => issue.id === ticket.id) && (
-                      <p className="mt-2 text-xs text-red-500">
-                        {(() => {
-                          const issue = ageTicketInventoryIssues.find((item) => item.id === ticket.id);
-                          if (!issue) return null;
-                          return `Only ${issue.inventory} remain for this age group. Please adjust participants or contact the reunion team.`;
-                        })()}
-                      </p>
-                    )}
-                    {ageTicketIssues.some((issue) => issue.id === ticket.id) && (
-                      <p className="mt-2 text-xs text-red-500">
-                        {(() => {
-                          const issue = ageTicketIssues.find((item) => item.id === ticket.id);
-                          if (!issue) return null;
-                          return `Ticket quantity must be at least ${issue.required} to cover ages in this range (selected ${issue.selected}).`;
-                        })()}
-                      </p>
-                    )}
-                    {typeof ticket.inventory === 'number' && (
-                      <p className="mono mt-2 text-xs uppercase tracking-[0.2em] text-brandBlue">
-                        {ticket.inventory} remaining
-                      </p>
-                    )}
+                      )}
+                      {ageTicketIssues.some((issue) => issue.id === ticket.id) && (
+                        <p className="mt-2 text-xs text-red-500">
+                          {(() => {
+                            const issue = ageTicketIssues.find((item) => item.id === ticket.id);
+                            if (!issue) return null;
+                            return `Ticket quantity must be at least ${issue.required} to cover ages in this range (selected ${issue.selected}).`;
+                          })()}
+                        </p>
+                      )}
+                      {typeof ticket.inventory === 'number' && (
+                        <p className="mono mt-2 text-xs uppercase tracking-[0.2em] text-brandBlue">
+                          {ticket.inventory} remaining
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Label htmlFor={`tickets.${index}.quantity`} className="mono text-xs uppercase text-slate-500">
+                        Qty
+                      </Label>
+                      <Input
+                        id={`tickets.${index}.quantity`}
+                        type="number"
+                        min={0}
+                        max={ticket.inventory ?? undefined}
+                        className={`w-20 text-center ${hasAgeRule ? 'bg-sand-50' : ''}`}
+                        {...quantityField}
+                      />
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Label htmlFor={`tickets.${index}.quantity`} className="mono text-xs uppercase text-slate-500">
-                      Qty
-                    </Label>
-                    <Input
-                      id={`tickets.${index}.quantity`}
-                      type="number"
-                      min={0}
-                      max={ticket.inventory ?? undefined}
-                      className={`w-20 text-center ${hasAgeRule ? 'bg-sand-50' : ''}`}
-                      {...quantityField}
-                    />
-                  </div>
-                </div>
-              })}
+                );
+              })
             ) : (
               <p className="text-sm text-koa">Tickets will be available soon.</p>
             )}
