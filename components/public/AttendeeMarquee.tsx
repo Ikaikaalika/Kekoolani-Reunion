@@ -1,8 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useMemo } from 'react';
-import type { CSSProperties } from 'react';
+import { useMemo, useState } from 'react';
+import type { CSSProperties, MouseEvent } from 'react';
 
 type Attendee = {
   name?: string | null;
@@ -28,6 +28,9 @@ function getInitials(name: string) {
 }
 
 export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [activeBubbleId, setActiveBubbleId] = useState<string | null>(null);
   const items = useMemo(
     () =>
       attendees
@@ -70,15 +73,56 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
     } as CSSProperties;
   };
 
+  const handleBubbleClick = (bubbleId: string) => (event: MouseEvent<HTMLDivElement>) => {
+    event.stopPropagation();
+    setActiveBubbleId((prev) => {
+      const next = prev === bubbleId ? null : bubbleId;
+      setIsPaused(Boolean(next));
+      return next;
+    });
+  };
+
+  const handleSectionClick = () => {
+    if (!activeBubbleId && !isPaused) return;
+    setActiveBubbleId(null);
+    setIsPaused(false);
+  };
+
+  const handleSectionEnter = () => {
+    setIsHovered(true);
+  };
+
+  const handleSectionLeave = () => {
+    setIsHovered(false);
+    setIsPaused(false);
+    setActiveBubbleId(null);
+  };
+
   return (
-    <div className="marquee">
-      <div className="marquee-track marquee-track-top" style={{ '--marquee-duration': '48s' } as CSSProperties}>
+    <div
+      className={`marquee${isPaused ? ' marquee--paused' : ''}${isHovered ? ' marquee--hover' : ''}`}
+      onClick={handleSectionClick}
+      onMouseEnter={handleSectionEnter}
+      onMouseLeave={handleSectionLeave}
+    >
+      <div
+        className="marquee-track marquee-track-top"
+        style={{ '--marquee-duration': isHovered ? '45s' : '36s' } as CSSProperties}
+      >
         {loopItems.map((attendee, index) => {
           const keyBase = attendee.name || attendee.photoUrl || 'attendee';
-          const bubbleClass = `marquee-bubble${attendee.showPhoto ? '' : ' marquee-bubble--name-only'}`;
+          const bubbleId = `top-${index}-${keyBase}`;
+          const bubbleClass = `marquee-bubble${attendee.showPhoto ? '' : ' marquee-bubble--name-only'}${
+            activeBubbleId === bubbleId ? ' marquee-bubble--active' : ''
+          }`;
           const lineage = attendee.lineage ?? '';
           return (
-            <div key={`${keyBase}-${index}`} className={bubbleClass} style={getBubbleStyle(index, 0)}>
+            <div
+              key={`${keyBase}-${index}`}
+              className={bubbleClass}
+              style={getBubbleStyle(index, 0)}
+              onClick={handleBubbleClick(bubbleId)}
+            >
               {attendee.showPhoto && (
                 <div className="marquee-bubble-core animate-float">
                   {attendee.photoUrl ? (
@@ -104,7 +148,10 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
         })}
         {loopItems.map((attendee, index) => {
           const keyBase = attendee.name || attendee.photoUrl || 'attendee';
-          const bubbleClass = `marquee-bubble${attendee.showPhoto ? '' : ' marquee-bubble--name-only'}`;
+          const bubbleId = `top-duplicate-${index}-${keyBase}`;
+          const bubbleClass = `marquee-bubble${attendee.showPhoto ? '' : ' marquee-bubble--name-only'}${
+            activeBubbleId === bubbleId ? ' marquee-bubble--active' : ''
+          }`;
           const lineage = attendee.lineage ?? '';
           return (
             <div
@@ -112,6 +159,7 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
               className={bubbleClass}
               style={getBubbleStyle(index, 1)}
               aria-hidden="true"
+              onClick={handleBubbleClick(bubbleId)}
             >
               {attendee.showPhoto && (
                 <div className="marquee-bubble-core animate-float">
@@ -135,14 +183,22 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
       </div>
       <div
         className="marquee-track marquee-track-bottom marquee-track-reverse"
-        style={{ '--marquee-duration': '60s' } as CSSProperties}
+        style={{ '--marquee-duration': isHovered ? '60s' : '48s' } as CSSProperties}
       >
         {reverseItems.map((attendee, index) => {
           const keyBase = attendee.name || attendee.photoUrl || 'attendee';
-          const bubbleClass = `marquee-bubble${attendee.showPhoto ? '' : ' marquee-bubble--name-only'}`;
+          const bubbleId = `bottom-${index}-${keyBase}`;
+          const bubbleClass = `marquee-bubble${attendee.showPhoto ? '' : ' marquee-bubble--name-only'}${
+            activeBubbleId === bubbleId ? ' marquee-bubble--active' : ''
+          }`;
           const lineage = attendee.lineage ?? '';
           return (
-            <div key={`${keyBase}-alt-${index}`} className={bubbleClass} style={getBubbleStyle(index, 2)}>
+            <div
+              key={`${keyBase}-alt-${index}`}
+              className={bubbleClass}
+              style={getBubbleStyle(index, 2)}
+              onClick={handleBubbleClick(bubbleId)}
+            >
               {attendee.showPhoto && (
                 <div className="marquee-bubble-core animate-float">
                   {attendee.photoUrl ? (
@@ -168,7 +224,10 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
         })}
         {reverseItems.map((attendee, index) => {
           const keyBase = attendee.name || attendee.photoUrl || 'attendee';
-          const bubbleClass = `marquee-bubble${attendee.showPhoto ? '' : ' marquee-bubble--name-only'}`;
+          const bubbleId = `bottom-duplicate-${index}-${keyBase}`;
+          const bubbleClass = `marquee-bubble${attendee.showPhoto ? '' : ' marquee-bubble--name-only'}${
+            activeBubbleId === bubbleId ? ' marquee-bubble--active' : ''
+          }`;
           const lineage = attendee.lineage ?? '';
           return (
             <div
@@ -176,6 +235,7 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
               className={bubbleClass}
               style={getBubbleStyle(index, 3)}
               aria-hidden="true"
+              onClick={handleBubbleClick(bubbleId)}
             >
               {attendee.showPhoto && (
                 <div className="marquee-bubble-core animate-float">
