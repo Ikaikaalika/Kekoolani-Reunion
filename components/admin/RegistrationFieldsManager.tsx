@@ -19,7 +19,6 @@ interface Props {
 type OptionItem = {
   id: string;
   label: string;
-  value: string;
 };
 
 const FIELD_TYPES: Array<{ value: RegistrationField['field_type']; label: string }> = [
@@ -42,7 +41,7 @@ function createId() {
 }
 
 function createEmptyOption(): OptionItem {
-  return { id: createId(), label: '', value: '' };
+  return { id: createId(), label: '' };
 }
 
 function parseOptions(raw: unknown): OptionItem[] {
@@ -53,13 +52,16 @@ function parseOptions(raw: unknown): OptionItem[] {
     .map((item) => {
       if (!item || typeof item !== 'object') return null;
       const option = item as Record<string, unknown>;
-      const label = typeof option.label === 'string' ? option.label : null;
-      const value = typeof option.value === 'string' ? option.value : null;
-      if (!label || !value) return null;
+      const label =
+        typeof option.label === 'string'
+          ? option.label
+          : typeof option.value === 'string'
+            ? option.value
+            : null;
+      if (!label) return null;
       return {
         id: createId(),
-        label,
-        value
+        label
       };
     })
     .filter((item): item is OptionItem => Boolean(item));
@@ -102,8 +104,11 @@ function FieldCard({
     () =>
       JSON.stringify(
         (requiresOptions ? options : [])
-          .map((option) => ({ label: option.label.trim(), value: option.value.trim() }))
-          .filter((option) => option.label && option.value)
+          .map((option) => {
+            const value = option.label.trim();
+            return { label: value, value };
+          })
+          .filter((option) => option.label)
       ),
     [options, requiresOptions]
   );
@@ -175,25 +180,14 @@ function FieldCard({
               </Button>
             </div>
             {options.map((option) => (
-              <div key={option.id} className="grid gap-3 md:grid-cols-[1fr,1fr,auto]">
+              <div key={option.id} className="grid gap-3 md:grid-cols-[1fr,auto]">
                 <Input
                   value={option.label}
-                  placeholder="Display label"
+                  placeholder="Option label"
                   onChange={(event) =>
                     setOptions((prev) =>
                       prev.map((current) =>
                         current.id === option.id ? { ...current, label: event.target.value } : current
-                      )
-                    )
-                  }
-                />
-                <Input
-                  value={option.value}
-                  placeholder="Saved value"
-                  onChange={(event) =>
-                    setOptions((prev) =>
-                      prev.map((current) =>
-                        current.id === option.id ? { ...current, value: event.target.value } : current
                       )
                     )
                   }
@@ -205,10 +199,10 @@ function FieldCard({
                     setOptions((prev) =>
                       prev.length > 1
                         ? prev.filter((current) => current.id !== option.id)
-                        : prev.map((current) => ({ ...current, label: '', value: '' }))
+                        : prev.map((current) => ({ ...current, label: '' }))
                     )
                   }
-                  disabled={options.length === 1 && !option.label && !option.value}
+                  disabled={options.length === 1 && !option.label}
                 >
                   Remove
                 </Button>
@@ -249,8 +243,11 @@ function NewFieldForm({ upsertAction }: { upsertAction: Props['upsertAction'] })
     () =>
       JSON.stringify(
         (requiresOptions ? options : [])
-          .map((option) => ({ label: option.label.trim(), value: option.value.trim() }))
-          .filter((option) => option.label && option.value)
+          .map((option) => {
+            const value = option.label.trim();
+            return { label: value, value };
+          })
+          .filter((option) => option.label)
       ),
     [options, requiresOptions]
   );
@@ -314,25 +311,14 @@ function NewFieldForm({ upsertAction }: { upsertAction: Props['upsertAction'] })
               </Button>
             </div>
             {options.map((option) => (
-              <div key={option.id} className="grid gap-3 md:grid-cols-[1fr,1fr,auto]">
+              <div key={option.id} className="grid gap-3 md:grid-cols-[1fr,auto]">
                 <Input
                   value={option.label}
-                  placeholder="Display label"
+                  placeholder="Option label"
                   onChange={(event) =>
                     setOptions((prev) =>
                       prev.map((current) =>
                         current.id === option.id ? { ...current, label: event.target.value } : current
-                      )
-                    )
-                  }
-                />
-                <Input
-                  value={option.value}
-                  placeholder="Saved value"
-                  onChange={(event) =>
-                    setOptions((prev) =>
-                      prev.map((current) =>
-                        current.id === option.id ? { ...current, value: event.target.value } : current
                       )
                     )
                   }
@@ -344,10 +330,10 @@ function NewFieldForm({ upsertAction }: { upsertAction: Props['upsertAction'] })
                     setOptions((prev) =>
                       prev.length > 1
                         ? prev.filter((current) => current.id !== option.id)
-                        : prev.map((current) => ({ ...current, label: '', value: '' }))
+                        : prev.map((current) => ({ ...current, label: '' }))
                     )
                   }
-                  disabled={options.length === 1 && !option.label && !option.value}
+                  disabled={options.length === 1 && !option.label}
                 >
                   Remove
                 </Button>

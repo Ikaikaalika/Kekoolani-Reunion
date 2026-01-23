@@ -22,7 +22,6 @@ interface Props {
 type OptionItem = {
   id: string;
   label: string;
-  value: string;
 };
 
 const OPTION_FIELD_TYPES = new Set<Question['field_type']>(['select', 'checkbox']);
@@ -39,13 +38,16 @@ function parseOptions(raw: unknown): OptionItem[] {
     .map((item) => {
       if (!item || typeof item !== 'object') return null;
       const option = item as Record<string, unknown>;
-      const label = typeof option.label === 'string' ? option.label : null;
-      const value = typeof option.value === 'string' ? option.value : null;
-      if (!label || !value) return null;
+      const label =
+        typeof option.label === 'string'
+          ? option.label
+          : typeof option.value === 'string'
+            ? option.value
+            : null;
+      if (!label) return null;
       return {
         id: createId(),
-        label,
-        value
+        label
       };
     })
     .filter((item): item is OptionItem => Boolean(item));
@@ -54,7 +56,7 @@ function parseOptions(raw: unknown): OptionItem[] {
 }
 
 function createEmptyOption(): OptionItem {
-  return { id: createId(), label: '', value: '' };
+  return { id: createId(), label: '' };
 }
 
 function SaveButton({ label = 'Save Question' }: { label?: string }) {
@@ -139,8 +141,11 @@ function QuestionCard({
     () =>
       JSON.stringify(
         (requiresOptions ? options : [])
-          .map((option) => ({ label: option.label.trim(), value: option.value.trim() }))
-          .filter((option) => option.label && option.value)
+          .map((option) => {
+            const value = option.label.trim();
+            return { label: value, value };
+          })
+          .filter((option) => option.label)
       ),
     [options, requiresOptions]
   );
@@ -201,11 +206,11 @@ function QuestionCard({
                 Add option
               </Button>
             </div>
-            {options.map((option, index) => (
-              <div key={option.id} className="grid gap-3 md:grid-cols-[1fr,1fr,auto]">
+            {options.map((option) => (
+              <div key={option.id} className="grid gap-3 md:grid-cols-[1fr,auto]">
                 <Input
                   value={option.label}
-                  placeholder="Display label (e.g., Yes)"
+                  placeholder="Option label (e.g., Yes)"
                   onChange={(event) =>
                     setOptions((prev) =>
                       prev.map((current) =>
@@ -214,28 +219,17 @@ function QuestionCard({
                     )
                   }
                 />
-                <Input
-                  value={option.value}
-                  placeholder="Value saved (e.g., yes)"
-                  onChange={(event) =>
-                    setOptions((prev) =>
-                      prev.map((current) =>
-                        current.id === option.id ? { ...current, value: event.target.value } : current
-                      )
-                    )
-                  }
-                />
                 <Button
                   type="button"
                   variant="ghost"
                   onClick={() => setOptions((prev) => prev.filter((current) => current.id !== option.id || prev.length === 1))}
-                  disabled={options.length === 1 && !option.label && !option.value}
+                  disabled={options.length === 1 && !option.label}
                 >
                   Remove
                 </Button>
               </div>
             ))}
-            <p className="text-xs text-koa">Values should be short and unique for each option.</p>
+            <p className="text-xs text-koa">The saved value will match the label.</p>
           </div>
         ) : null}
         <div className="flex items-center justify-between">
@@ -264,8 +258,11 @@ function NewQuestionForm({ upsertAction, tickets }: { upsertAction: Props['upser
     () =>
       JSON.stringify(
         (requiresOptions ? options : [])
-          .map((option) => ({ label: option.label.trim(), value: option.value.trim() }))
-          .filter((option) => option.label && option.value)
+          .map((option) => {
+            const value = option.label.trim();
+            return { label: value, value };
+          })
+          .filter((option) => option.label)
       ),
     [options, requiresOptions]
   );
@@ -319,8 +316,8 @@ function NewQuestionForm({ upsertAction, tickets }: { upsertAction: Props['upser
                 Add option
               </Button>
             </div>
-            {options.map((option, index) => (
-              <div key={option.id} className="grid gap-3 md:grid-cols-[1fr,1fr,auto]">
+            {options.map((option) => (
+              <div key={option.id} className="grid gap-3 md:grid-cols-[1fr,auto]">
                 <Input
                   value={option.label}
                   placeholder="Display label"
@@ -332,17 +329,6 @@ function NewQuestionForm({ upsertAction, tickets }: { upsertAction: Props['upser
                     )
                   }
                 />
-                <Input
-                  value={option.value}
-                  placeholder="Saved value"
-                  onChange={(event) =>
-                    setOptions((prev) =>
-                      prev.map((current) =>
-                        current.id === option.id ? { ...current, value: event.target.value } : current
-                      )
-                    )
-                  }
-                />
                 <Button
                   type="button"
                   variant="ghost"
@@ -350,16 +336,16 @@ function NewQuestionForm({ upsertAction, tickets }: { upsertAction: Props['upser
                     setOptions((prev) =>
                       prev.length > 1
                         ? prev.filter((current) => current.id !== option.id)
-                        : prev.map((current) => ({ ...current, label: '', value: '' }))
+                        : prev.map((current) => ({ ...current, label: '' }))
                     )
                   }
-                  disabled={options.length === 1 && !option.label && !option.value}
+                  disabled={options.length === 1 && !option.label}
                 >
                   Remove
                 </Button>
               </div>
             ))}
-            <p className="text-xs text-koa">Both label and value are required for each option.</p>
+            <p className="text-xs text-koa">The saved value will match the label.</p>
           </div>
         ) : null}
         <label className="flex items-center gap-3 text-sm text-koa">
