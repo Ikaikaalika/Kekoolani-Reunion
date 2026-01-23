@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from '@/lib/supabaseClient';
 import { formatCurrency } from '@/lib/utils';
 import { REGISTRATION_FORM_FIELDS } from '@/lib/registrationGuidelines';
 import OrderParticipantsManager from '@/components/admin/OrderParticipantsManager';
+import DeleteEmptyOrderButton from '@/components/admin/DeleteEmptyOrderButton';
 import {
   buildTicketPriceSlots,
   calculateNetTotalCents,
@@ -84,6 +85,7 @@ export default async function AdminOrdersPage() {
               <th className="py-3 pr-6">Tickets</th>
               <th className="py-3 pr-6">Attendees</th>
               <th className="py-3 pr-6">Participants</th>
+              <th className="py-3 pr-6">Actions</th>
               {staticFields.map((field) => (
                 <th key={field.key} className="py-3 pr-6">
                   {field.label}
@@ -110,6 +112,7 @@ export default async function AdminOrdersPage() {
               const participants = normalizeOrderParticipants(answerRecord);
               const ticketPrices = buildTicketPriceSlots(order.order_items ?? []);
               const netTotal = calculateNetTotalCents(order.total_cents, people, ticketPrices);
+              const isEmptyOrder = participants.length === 0;
 
               return (
                 <tr key={order.id} className="align-top">
@@ -144,6 +147,9 @@ export default async function AdminOrdersPage() {
                   <td className="py-3 pr-6 text-xs text-koa">
                     <OrderParticipantsManager orderId={order.id} participants={participants} />
                   </td>
+                  <td className="py-3 pr-6 text-xs text-koa">
+                    {isEmptyOrder ? <DeleteEmptyOrderButton orderId={order.id} /> : '-'}
+                  </td>
                   {staticFields.map((field) => (
                     <td key={`${order.id}-${field.key}`} className="py-3 pr-6 text-xs text-koa">
                       {normalizeAnswer(answerRecord[field.key]) || '-'}
@@ -159,7 +165,7 @@ export default async function AdminOrdersPage() {
             })}
             {!orders.length && (
               <tr>
-                <td colSpan={9 + staticFields.length + questions.length} className="py-8 text-center text-koa">
+                <td colSpan={10 + staticFields.length + questions.length} className="py-8 text-center text-koa">
                   No orders yet.
                 </td>
               </tr>

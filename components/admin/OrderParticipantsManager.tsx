@@ -1,8 +1,7 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
-import { deleteEmptyOrder, updateOrderParticipantStatus } from '@/lib/actions/orders';
+import { updateOrderParticipantStatus } from '@/lib/actions/orders';
 
 type Participant = {
   index: number;
@@ -20,7 +19,6 @@ interface OrderParticipantsManagerProps {
 }
 
 export default function OrderParticipantsManager({ orderId, participants }: OrderParticipantsManagerProps) {
-  const router = useRouter();
   const normalizeItems = (list: Participant[]) =>
     list.map((participant, idx) => ({
       ...participant,
@@ -33,7 +31,6 @@ export default function OrderParticipantsManager({ orderId, participants }: Orde
   const [isPending, startTransition] = useTransition();
 
   const canEdit = useMemo(() => Boolean(orderId), [orderId]);
-  const emptyDeleteIndex = -1;
 
   const updateParticipant = (
     index: number,
@@ -93,33 +90,7 @@ export default function OrderParticipantsManager({ orderId, participants }: Orde
   };
 
   if (!items.length) {
-    return (
-      <div className="space-y-2">
-        <p className="text-xs text-koa">No participant details captured.</p>
-        <button
-          type="button"
-          className="text-[11px] font-semibold text-red-500 underline"
-          onClick={() => {
-            if (typeof window !== 'undefined' && !window.confirm('Delete this empty order?')) return;
-            setPendingIndex(emptyDeleteIndex);
-            setError(null);
-            startTransition(async () => {
-              const result = await deleteEmptyOrder({ orderId });
-              if ('error' in result) {
-                setError(result.error ?? 'Unable to delete order');
-              } else {
-                router.refresh();
-              }
-              setPendingIndex(null);
-            });
-          }}
-          disabled={isPending && pendingIndex === emptyDeleteIndex}
-        >
-          Delete empty order
-        </button>
-        {error ? <p className="text-xs text-red-500">{error}</p> : null}
-      </div>
-    );
+    return <p className="text-xs text-koa">No participant details captured.</p>;
   }
 
   return (
