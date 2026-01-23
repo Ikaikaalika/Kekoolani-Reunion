@@ -88,12 +88,18 @@ async function getAttendeeHighlights(): Promise<AttendeeHighlight[]> {
               ? record.name
               : '';
         const lineage = typeof record.lineage === 'string' ? record.lineage : null;
+        const isAttending = record.attending !== false;
+        const isRefunded = record.refunded === true;
         const photo = typeof photos[index] === 'string' ? photos[index] : null;
         const hasPhoto = Boolean(photo);
         const rawShowName = record.show_name;
         const rawShowPhoto = record.show_photo;
         const showName = (typeof rawShowName === 'boolean' ? rawShowName : true) && Boolean(name);
         const showPhoto = (typeof rawShowPhoto === 'boolean' ? rawShowPhoto : hasPhoto) && hasPhoto;
+
+        if (!isAttending || isRefunded) {
+          continue;
+        }
 
         if (!showName && !showPhoto) {
           continue;

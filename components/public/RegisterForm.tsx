@@ -493,6 +493,12 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
               }
               record[field.field_key] = normalizeFieldValue(field, value);
             });
+            if (typeof record.attending !== 'boolean') {
+              record.attending = true;
+            }
+            if (typeof record.refunded !== 'boolean') {
+              record.refunded = false;
+            }
             return record;
           }),
           photo_urls: data.photo_urls ?? [],

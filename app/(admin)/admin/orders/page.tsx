@@ -2,15 +2,21 @@ import Link from 'next/link';
 import { createSupabaseServerClient } from '@/lib/supabaseClient';
 import { formatCurrency } from '@/lib/utils';
 import { REGISTRATION_FORM_FIELDS } from '@/lib/registrationGuidelines';
+import OrderParticipantsManager from '@/components/admin/OrderParticipantsManager';
+import {
+  buildTicketPriceSlots,
+  calculateNetTotalCents,
+  getPeopleFromAnswers,
+  normalizeOrderParticipants
+} from '@/lib/orderUtils';
 import type { Database } from '@/types/supabase';
 
 type OrderWithRelations = Database['public']['Tables']['orders']['Row'] & {
   order_items: Array<{
     ticket_type_id: string;
     quantity: number;
-    ticket_types: { name: string | null; currency: string | null } | null;
+    ticket_types: { name: string | null; currency: string | null; price_cents: number | null } | null;
   }>;
-  attendees: Database['public']['Tables']['attendees']['Row'][];
 };
 
 type QuestionRow = Database['public']['Tables']['registration_questions']['Row'];
@@ -21,7 +27,7 @@ async function getOrders(): Promise<{ orders: OrderWithRelations[]; questions: Q
   const [{ data: ordersData }, { data: questionsData }] = await Promise.all([
     supabase
       .from('orders')
-      .select('*, order_items(ticket_type_id, quantity, ticket_types(name)), attendees(*)')
+      .select('*, order_items(ticket_type_id, quantity, ticket_types(name, currency, price_cents))')
       .order('created_at', { ascending: false })
       .limit(200),
     supabase.from('registration_questions').select('*').order('position', { ascending: true })
@@ -74,9 +80,10 @@ export default async function AdminOrdersPage() {
               <th className="py-3 pr-6">Email</th>
               <th className="py-3 pr-6">Status</th>
               <th className="py-3 pr-6">Payment</th>
-              <th className="py-3 pr-6">Total</th>
+              <th className="py-3 pr-6">Net Total</th>
               <th className="py-3 pr-6">Tickets</th>
               <th className="py-3 pr-6">Attendees</th>
+              <th className="py-3 pr-6">Participants</th>
               {staticFields.map((field) => (
                 <th key={field.key} className="py-3 pr-6">
                   {field.label}
@@ -99,6 +106,10 @@ export default async function AdminOrdersPage() {
                 order.form_answers && typeof order.form_answers === 'object'
                   ? (order.form_answers as Record<string, unknown>)
                   : {};
+              const people = getPeopleFromAnswers(answerRecord);
+              const participants = normalizeOrderParticipants(answerRecord);
+              const ticketPrices = buildTicketPriceSlots(order.order_items ?? []);
+              const netTotal = calculateNetTotalCents(order.total_cents, people, ticketPrices);
 
               return (
                 <tr key={order.id} className="align-top">
@@ -123,10 +134,16 @@ export default async function AdminOrdersPage() {
                   </td>
                   <td className="py-3 pr-6 text-xs text-koa">{order.payment_method ?? '-'}</td>
                   <td className="py-3 pr-6 font-semibold text-sand-900">
-                    {formatCurrency(order.total_cents, orderCurrency ?? 'usd')}
+                    {formatCurrency(netTotal, orderCurrency ?? 'usd')}
+                    {netTotal !== order.total_cents && (
+                      <p className="mt-1 text-xs font-normal text-koa">Original: {formatCurrency(order.total_cents, orderCurrency ?? 'usd')}</p>
+                    )}
                   </td>
                   <td className="py-3 pr-6 text-xs text-koa">{ticketSummary || '-'}</td>
-                  <td className="py-3 pr-6 text-xs text-koa">{order.attendees?.length ?? 0}</td>
+                  <td className="py-3 pr-6 text-xs text-koa">{participants.length}</td>
+                  <td className="py-3 pr-6 text-xs text-koa">
+                    <OrderParticipantsManager orderId={order.id} participants={participants} />
+                  </td>
                   {staticFields.map((field) => (
                     <td key={`${order.id}-${field.key}`} className="py-3 pr-6 text-xs text-koa">
                       {normalizeAnswer(answerRecord[field.key]) || '-'}

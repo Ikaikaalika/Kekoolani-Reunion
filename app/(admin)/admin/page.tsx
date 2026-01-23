@@ -7,6 +7,7 @@ import { upsertTicket, deleteTicket } from '@/lib/actions/tickets';
 import { normalizeSectionList } from '@/lib/sections';
 import { createSupabaseServerClient } from '@/lib/supabaseClient';
 import { formatCurrency } from '@/lib/utils';
+import { buildTicketPriceSlots, calculateNetTotalCents, getPeopleFromAnswers } from '@/lib/orderUtils';
 import type { Database } from '@/types/supabase';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
@@ -14,11 +15,15 @@ type TicketRow = Database['public']['Tables']['ticket_types']['Row'];
 type QuestionRow = Database['public']['Tables']['registration_questions']['Row'];
 type SectionRow = Database['public']['Tables']['content_sections']['Row'];
 type QuestionTicketRow = Database['public']['Tables']['registration_question_tickets']['Row'];
+type OrderItemRow = Database['public']['Tables']['order_items']['Row'] & {
+  ticket_types: { price_cents: number | null } | null;
+};
 
 async function loadOverview() {
   const supabase = createSupabaseServerClient();
-  const [ordersRes, ticketsRes, questionsRes, sectionsRes, linksRes] = await Promise.all([
-    supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(5),
+  const [ordersRes, itemsRes, ticketsRes, questionsRes, sectionsRes, linksRes] = await Promise.all([
+    supabase.from('orders').select('*').order('created_at', { ascending: false }),
+    supabase.from('order_items').select('order_id, quantity, ticket_types(price_cents)'),
     supabase.from('ticket_types').select('*').order('position', { ascending: true }).order('created_at', { ascending: true }),
     supabase.from('registration_questions').select('*').order('position', { ascending: true }).order('created_at', { ascending: true }),
     supabase.from('content_sections').select('*'),
@@ -26,9 +31,23 @@ async function loadOverview() {
   ]);
 
   const ordersData = (ordersRes.data ?? []) as OrderRow[];
+  const orderItems = (itemsRes.data ?? []) as OrderItemRow[];
+  const itemsByOrder = orderItems.reduce<Record<string, OrderItemRow[]>>((acc, item) => {
+    acc[item.order_id] = acc[item.order_id] ? [...acc[item.order_id], item] : [item];
+    return acc;
+  }, {});
   const totalRevenue = ordersData
     .filter((order) => order.status === 'paid')
-    .reduce((sum, order) => sum + order.total_cents, 0);
+    .reduce((sum, order) => {
+      const answers =
+        order.form_answers && typeof order.form_answers === 'object'
+          ? (order.form_answers as Record<string, unknown>)
+          : {};
+      const people = getPeopleFromAnswers(answers);
+      const ticketPrices = buildTicketPriceSlots(itemsByOrder[order.id] ?? []);
+      const netTotal = calculateNetTotalCents(order.total_cents, people, ticketPrices);
+      return sum + netTotal;
+    }, 0);
 
   const ticketData = (ticketsRes.data ?? []) as TicketRow[];
   const ticketCount = ticketData.filter((ticket) => ticket.active).length;
@@ -44,7 +63,7 @@ async function loadOverview() {
   }, {});
 
   return {
-    latestOrders: ordersData,
+    latestOrders: ordersData.slice(0, 5),
     ticketCount,
     totalRevenue,
     tickets: ticketData,
