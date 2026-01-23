@@ -385,6 +385,21 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
     return '';
   };
 
+  useEffect(() => {
+    if (!ageTicketRequirements.length) return;
+    ageTicketRequirements.forEach((ticket) => {
+      const index = quantities.findIndex((item) => item.ticket_type_id === ticket.id);
+      if (index < 0) return;
+      const currentValue = Number.isFinite(quantities[index].quantity) ? quantities[index].quantity : 0;
+      if (currentValue !== ticket.requiredCount) {
+        setValue(`tickets.${index}.quantity` as const, ticket.requiredCount, {
+          shouldValidate: true,
+          shouldDirty: false
+        });
+      }
+    });
+  }, [ageTicketRequirements, quantities, setValue]);
+
   const updatePhotoUrl = (index: number, url: string | null) => {
     const next = [...(photoUrls ?? [])];
     while (next.length <= index) {
@@ -987,16 +1002,19 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
                     <p className="mt-2 text-2xl font-semibold text-black">{ticket.priceFormatted}</p>
                     <p className="mt-1 text-sm text-koa">{ticket.description}</p>
                     {(typeof ticket.age_min === 'number' || typeof ticket.age_max === 'number') && (
-                      <p className="mt-2 text-xs font-semibold uppercase tracking-[0.2em] text-brandBlue">
-                        {getAgeRangeLabel(ticket.age_min ?? null, ticket.age_max ?? null)}
-                      </p>
+                      <div className="mt-2 space-y-1 text-xs text-brandBlue">
+                        <p className="font-semibold uppercase tracking-[0.2em]">
+                          {getAgeRangeLabel(ticket.age_min ?? null, ticket.age_max ?? null)}
+                        </p>
+                        <p className="text-koa">Auto-filled from participant ages.</p>
+                      </div>
                     )}
                     {ageTicketIssues.some((issue) => issue.id === ticket.id) && (
                       <p className="mt-2 text-xs text-red-500">
                         {(() => {
                           const issue = ageTicketIssues.find((item) => item.id === ticket.id);
                           if (!issue) return null;
-                          return `Select at least ${issue.required} to cover ages in this range (selected ${issue.selected}).`;
+                          return `Ticket quantity must be at least ${issue.required} to cover ages in this range (selected ${issue.selected}).`;
                         })()}
                       </p>
                     )}
@@ -1015,7 +1033,12 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
                       type="number"
                       min={0}
                       max={ticket.inventory ?? undefined}
-                      className="w-20 text-center"
+                      readOnly={typeof ticket.age_min === 'number' || typeof ticket.age_max === 'number'}
+                      className={`w-20 text-center ${
+                        typeof ticket.age_min === 'number' || typeof ticket.age_max === 'number'
+                          ? 'bg-sand-100 text-sand-600'
+                          : ''
+                      }`}
                       {...register(`tickets.${index}.quantity` as const, { valueAsNumber: true })}
                     />
                   </div>
