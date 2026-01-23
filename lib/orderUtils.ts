@@ -22,11 +22,13 @@ export function getPeopleFromAnswers(answers: unknown): PersonRecord[] {
   return Array.isArray(people) ? (people.filter((item) => item && typeof item === 'object') as PersonRecord[]) : [];
 }
 
-export function getPhotoUrlsFromAnswers(answers: unknown): string[] {
+export function getPhotoUrlsFromAnswers(answers: unknown): Array<string | null> {
   if (!answers || typeof answers !== 'object') return [];
   const record = answers as Record<string, unknown>;
   const photoUrls = record.photo_urls;
-  return Array.isArray(photoUrls) ? (photoUrls.filter((item) => typeof item === 'string') as string[]) : [];
+  return Array.isArray(photoUrls)
+    ? (photoUrls.map((item) => (typeof item === 'string' ? item : null)) as Array<string | null>)
+    : [];
 }
 
 export function getParticipantName(person: PersonRecord): string {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabaseClient';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { REGISTRATION_FORM_FIELDS } from '@/lib/registrationGuidelines';
+import { getPeopleFromAnswers, isParticipantAttending, isParticipantRefunded } from '@/lib/orderUtils';
 import type { Database } from '@/types/supabase';
 
 const CSV_SEPARATOR = ',';
@@ -29,7 +30,6 @@ type OrderItemRow = Database['public']['Tables']['order_items']['Row'] & {
   ticket_types: { name: string | null; currency: string | null } | null;
 };
 type QuestionRow = Database['public']['Tables']['registration_questions']['Row'];
-type AttendeeRow = Database['public']['Tables']['attendees']['Row'];
 
 export async function GET() {
   const supabase = createSupabaseServerClient();
@@ -42,20 +42,18 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
-  const [ordersRes, itemsRes, attendeesRes, questionsRes] = await Promise.all([
+  const [ordersRes, itemsRes, questionsRes] = await Promise.all([
     supabaseAdmin.from('orders').select('*').order('created_at', { ascending: false }),
     supabaseAdmin.from('order_items').select('*, ticket_types(name, currency)'),
-    supabaseAdmin.from('attendees').select('*'),
     supabaseAdmin.from('registration_questions').select('*').order('position', { ascending: true })
   ]);
 
-  if (ordersRes.error || itemsRes.error || attendeesRes.error || questionsRes.error) {
+  if (ordersRes.error || itemsRes.error || questionsRes.error) {
     return NextResponse.json({ error: 'Failed to gather export data' }, { status: 500 });
   }
 
   const orders = (ordersRes.data ?? []) as OrderRow[];
   const orderItems = (itemsRes.data ?? []) as OrderItemRow[];
-  const attendees = (attendeesRes.data ?? []) as AttendeeRow[];
   const questions = (questionsRes.data ?? []) as QuestionRow[];
   const staticFields = REGISTRATION_FORM_FIELDS;
 
@@ -65,11 +63,6 @@ export async function GET() {
     prev.push(item);
     itemsByOrder.set(item.order_id, prev);
   });
-
-  const attendeeCount = attendees.reduce<Record<string, number>>((acc, attendee) => {
-    acc[attendee.order_id] = (acc[attendee.order_id] ?? 0) + 1;
-    return acc;
-  }, {});
 
   const headers = [
     'Order ID',
@@ -99,6 +92,8 @@ export async function GET() {
 
     const staticColumns = staticFields.map((field) => normalizeAnswer(answers[field.key]));
     const answerColumns = questions.map((question) => normalizeAnswer(answers[question.id]));
+    const people = getPeopleFromAnswers(answers);
+    const attendeeCount = people.filter((person) => isParticipantAttending(person) && !isParticipantRefunded(person)).length;
 
     const baseColumns = [
       order.id,
@@ -113,7 +108,7 @@ export async function GET() {
       ),
       order.stripe_session_id ?? '',
       tickets,
-      String(attendeeCount[order.id] ?? 0)
+      String(attendeeCount)
     ];
 
     return baseColumns.concat(staticColumns, answerColumns).map((value) => escapeCsvValue(value));

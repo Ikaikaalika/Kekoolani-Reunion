@@ -19,7 +19,13 @@ interface OrderParticipantsManagerProps {
 }
 
 export default function OrderParticipantsManager({ orderId, participants }: OrderParticipantsManagerProps) {
-  const [items, setItems] = useState(participants);
+  const normalizeItems = (list: Participant[]) =>
+    list.map((participant, idx) => ({
+      ...participant,
+      index: idx
+    }));
+
+  const [items, setItems] = useState(() => normalizeItems(participants));
   const [error, setError] = useState<string | null>(null);
   const [pendingIndex, setPendingIndex] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -35,7 +41,7 @@ export default function OrderParticipantsManager({ orderId, participants }: Orde
     if (!current) return;
 
     const nextItems = [...items];
-    nextItems[index] = { ...current, ...updates };
+    nextItems[index] = { ...current, ...updates, index };
     setItems(nextItems);
     setPendingIndex(index);
     setError(null);
@@ -43,7 +49,7 @@ export default function OrderParticipantsManager({ orderId, participants }: Orde
     startTransition(async () => {
       const result = await updateOrderParticipantStatus({
         orderId,
-        personIndex: current.index,
+        personIndex: index,
         attending: updates.attending ?? current.attending,
         refunded: updates.refunded ?? current.refunded,
         showName: updates.showName ?? current.showName,
@@ -63,7 +69,7 @@ export default function OrderParticipantsManager({ orderId, participants }: Orde
     const current = items[index];
     if (!current) return;
 
-    const nextItems = items.filter((_, idx) => idx !== index);
+    const nextItems = normalizeItems(items.filter((_, idx) => idx !== index));
     setItems(nextItems);
     setPendingIndex(index);
     setError(null);
