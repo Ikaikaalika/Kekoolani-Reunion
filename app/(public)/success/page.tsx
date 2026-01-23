@@ -18,8 +18,12 @@ export default function SuccessPage({
   const message = isPending
     ? `Your registration is confirmed. We have recorded your payment preference${
         paymentLabel ? ` (${paymentLabel})` : ''
-      }. We'll follow up with next steps.`
+      }. We will follow up with next steps.`
     : 'Your registration is confirmed. A receipt and event details are on the way to your inbox.';
+  const receiptMessage = isPending
+    ? 'A receipt will be emailed once your payment is completed.'
+    : 'Keep an eye out for your receipt in the next few minutes.';
+  const genealogyEmail = 'pumehanasilva@mac.com';
 
   return (
     <div className="section">
@@ -31,7 +35,17 @@ export default function SuccessPage({
           </svg>
         </div>
         <h1 className="h2">{headline}</h1>
-        <p className="max-w-xl text-lg text-koa">{message}</p>
+        <div className="max-w-xl space-y-3 text-lg text-koa">
+          <p>{message}</p>
+          <p>{receiptMessage}</p>
+          <p className="text-base">
+            Genealogy submissions and questions: email{' '}
+            <a href={`mailto:${genealogyEmail}`} className="text-brandBlue underline">
+              {genealogyEmail}
+            </a>
+            .
+          </p>
+        </div>
         {order && (
           <div className="card shadow-soft px-6 py-4 text-sm text-koa">
             Order reference: <span className="font-semibold text-black">{order}</span>

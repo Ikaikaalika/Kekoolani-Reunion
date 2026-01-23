@@ -116,7 +116,11 @@ export async function POST(request: Request) {
       throw new Error('Unable to create order items');
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'http://localhost:3000';
+    const origin = request.headers.get('origin');
+    const forwardedHost = request.headers.get('x-forwarded-host') ?? request.headers.get('host');
+    const forwardedProto = request.headers.get('x-forwarded-proto') ?? 'https';
+    const fallbackHost = forwardedHost ? `${forwardedProto}://${forwardedHost}` : 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? origin ?? fallbackHost;
     const redirectUrl = `${baseUrl}/success?order=${orderRecord.id}&status=pending&method=${paymentMethod}`;
     const stripeEnabled = paymentMethod === 'stripe' && process.env.STRIPE_CHECKOUT_ENABLED === 'true';
 
