@@ -154,7 +154,6 @@ main {
 .marquee {
   @apply relative overflow-hidden py-10;
   min-height: 400px;
-  --float-speed: 1;
 }
 
 .marquee-empty {
@@ -360,7 +359,7 @@ main {
 }
 
 .animate-float {
-  animation: float calc(var(--bubble-drift, 6s) * var(--float-speed, 1)) ease-in-out infinite;
+  animation: float var(--bubble-drift, 6s) ease-in-out infinite;
   animation-delay: var(--bubble-delay, 0s);
 }
 

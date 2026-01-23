@@ -134,9 +134,6 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
       const nextSpeed = currentSpeed + (targetSpeed - currentSpeed) * SPEED_SMOOTHING;
       speedRef.current = nextSpeed;
 
-      const slowFactor = nextSpeed > 0 ? 1 / nextSpeed : 1;
-      marquee.style.setProperty('--float-speed', slowFactor.toFixed(3));
-
       if (!pausedRef.current) {
         const topWidth = widthsRef.current.top;
         if (topWidth > 0) {
