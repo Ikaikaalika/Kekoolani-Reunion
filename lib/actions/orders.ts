@@ -79,3 +79,47 @@ export async function updateOrderParticipantStatus(payload: UpdatePayload) {
 
   return { ok: true };
 }
+
+type DeleteEmptyOrderPayload = {
+  orderId: string;
+};
+
+export async function deleteEmptyOrder(payload: DeleteEmptyOrderPayload) {
+  const { orderId } = payload;
+  if (!orderId) {
+    return { error: 'Missing order id' };
+  }
+
+  const admin = supabaseAdmin as any;
+  const { data: order, error } = await admin.from('orders').select('form_answers').eq('id', orderId).maybeSingle();
+  if (error || !order) {
+    return { error: 'Order not found' };
+  }
+
+  const answers = order.form_answers && typeof order.form_answers === 'object' ? (order.form_answers as Record<string, unknown>) : {};
+  const people = getPeopleFromAnswers(answers);
+  if (people.length > 0) {
+    return { error: 'Order has participant details' };
+  }
+
+  const { error: itemsError } = await admin.from('order_items').delete().eq('order_id', orderId);
+  if (itemsError) {
+    return { error: 'Unable to delete order items' };
+  }
+
+  const { error: attendeesError } = await admin.from('attendees').delete().eq('order_id', orderId);
+  if (attendeesError) {
+    return { error: 'Unable to delete attendees' };
+  }
+
+  const { error: deleteError } = await admin.from('orders').delete().eq('id', orderId);
+  if (deleteError) {
+    return { error: 'Unable to delete order' };
+  }
+
+  revalidatePath('/');
+  revalidatePath('/admin');
+  revalidatePath('/admin/orders');
+
+  return { ok: true };
+}
