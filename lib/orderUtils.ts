@@ -92,3 +92,24 @@ export function calculateNetTotalCents(orderTotalCents: number, people: PersonRe
   const refunded = calculateRefundedCents(orderTotalCents, people, ticketPrices);
   return Math.max(0, orderTotalCents - refunded);
 }
+
+export function getParticipantAge(person: PersonRecord): number | null {
+  const raw = person.age;
+  const parsed = typeof raw === 'number' ? raw : typeof raw === 'string' ? Number(raw) : NaN;
+  if (Number.isNaN(parsed)) return null;
+  return parsed;
+}
+
+export function countParticipantsInAgeRange(
+  people: PersonRecord[],
+  ageMin?: number | null,
+  ageMax?: number | null
+): number {
+  return people.reduce((count, person) => {
+    const age = getParticipantAge(person);
+    if (age === null) return count;
+    if (typeof ageMin === 'number' && age < ageMin) return count;
+    if (typeof ageMax === 'number' && age > ageMax) return count;
+    return count + 1;
+  }, 0);
+}

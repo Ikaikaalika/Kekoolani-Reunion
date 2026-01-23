@@ -57,6 +57,14 @@ export default function TicketsManager({ tickets, upsertAction, deleteAction }: 
                 <Label htmlFor={`inventory-${ticket.id}`}>Inventory</Label>
                 <Input id={`inventory-${ticket.id}`} name="inventory" type="number" defaultValue={ticket.inventory ?? ''} min={0} />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor={`age-min-${ticket.id}`}>Minimum Age (optional)</Label>
+                <Input id={`age-min-${ticket.id}`} name="age_min" type="number" defaultValue={ticket.age_min ?? ''} min={0} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor={`age-max-${ticket.id}`}>Maximum Age (optional)</Label>
+                <Input id={`age-max-${ticket.id}`} name="age_max" type="number" defaultValue={ticket.age_max ?? ''} min={0} />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor={`description-${ticket.id}`}>Description</Label>
@@ -97,6 +105,14 @@ export default function TicketsManager({ tickets, upsertAction, deleteAction }: 
             <div className="space-y-2">
               <Label htmlFor="new-inventory">Inventory</Label>
               <Input id="new-inventory" name="inventory" type="number" min={0} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-age-min">Minimum Age (optional)</Label>
+              <Input id="new-age-min" name="age_min" type="number" min={0} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-age-max">Maximum Age (optional)</Label>
+              <Input id="new-age-max" name="age_max" type="number" min={0} />
             </div>
           </div>
           <div className="space-y-2">

@@ -13,6 +13,8 @@ export async function upsertTicket(formData: FormData) {
     price_cents: Number(data.price_cents ?? 0),
     currency: (data.currency ? String(data.currency) : 'usd').toLowerCase(),
     inventory: data.inventory ? Number(data.inventory) : null,
+    age_min: data.age_min ? Number(data.age_min) : null,
+    age_max: data.age_max ? Number(data.age_max) : null,
     active: data.active === 'on' || data.active === 'true',
     position: data.position ? Number(data.position) : null
   };

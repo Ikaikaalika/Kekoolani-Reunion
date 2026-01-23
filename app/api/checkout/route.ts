@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { checkoutSchema } from '@/lib/validators';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getStripeClient } from '@/lib/stripe';
+import { countParticipantsInAgeRange, getPeopleFromAnswers } from '@/lib/orderUtils';
 import type { Database } from '@/types/supabase';
 
 type TicketRow = Database['public']['Tables']['ticket_types']['Row'];
@@ -61,6 +62,23 @@ export async function POST(request: Request) {
       }
       totalCents += ticket.price_cents * item.quantity;
       orderItems.push({ ticket_type_id: ticket.id, quantity: item.quantity, unit_amount: ticket.price_cents, name: ticket.name });
+    }
+
+    const people = getPeopleFromAnswers(parsed.answers ?? {});
+    const ticketQuantitiesById = new Map(lineItems.map((item) => [item.ticket_type_id, item.quantity]));
+    for (const ticket of ticketRecords) {
+      const hasAgeRule = typeof ticket.age_min === 'number' || typeof ticket.age_max === 'number';
+      if (!hasAgeRule) continue;
+      const requiredCount = countParticipantsInAgeRange(people, ticket.age_min ?? null, ticket.age_max ?? null);
+      const selectedCount = ticketQuantitiesById.get(ticket.id) ?? 0;
+      if (requiredCount > selectedCount) {
+        return NextResponse.json(
+          {
+            error: `Ticket quantity for ${ticket.name} must be at least ${requiredCount} to cover all attendees in that age range.`
+          },
+          { status: 400 }
+        );
+      }
     }
 
     const orderInsert: OrderInsert = {

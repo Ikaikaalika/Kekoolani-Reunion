@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { formatCurrency } from '@/lib/utils';
 import { uploadRegistrationImage } from '@/lib/actions/blob';
 import type { RegistrationField } from '@/lib/registrationFields';
+import { countParticipantsInAgeRange } from '@/lib/orderUtils';
 
 const PRIMARY_NAME_KEY = 'full_name';
 const PRIMARY_EMAIL_KEY = 'email';
@@ -44,6 +45,8 @@ type Ticket = {
   priceFormatted: string;
   currency: string;
   inventory: number | null;
+  age_min?: number | null;
+  age_max?: number | null;
 };
 
 type Question = {
@@ -327,6 +330,61 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
     });
   }, [questions, selectedTicketIds]);
 
+  const ageTicketRequirements = useMemo(() => {
+    if (!tickets.length) return [];
+    const peopleRecords = Array.isArray(people) ? (people as Record<string, unknown>[]) : [];
+    return tickets
+      .filter((ticket) => typeof ticket.age_min === 'number' || typeof ticket.age_max === 'number')
+      .map((ticket) => {
+        const requiredCount = countParticipantsInAgeRange(peopleRecords, ticket.age_min ?? null, ticket.age_max ?? null);
+        return {
+          id: ticket.id,
+          name: ticket.name,
+          requiredCount,
+          ageMin: ticket.age_min ?? null,
+          ageMax: ticket.age_max ?? null
+        };
+      });
+  }, [people, tickets]);
+
+  const ticketQuantitiesById = useMemo(() => {
+    const map = new Map<string, number>();
+    quantities.forEach((item) => {
+      map.set(item.ticket_type_id, Number.isFinite(item.quantity) ? item.quantity : 0);
+    });
+    return map;
+  }, [quantities]);
+
+  const ageTicketIssues = useMemo(() => {
+    return ageTicketRequirements
+      .map((ticket) => {
+        const selected = ticketQuantitiesById.get(ticket.id) ?? 0;
+        if (ticket.requiredCount > selected) {
+          return {
+            id: ticket.id,
+            name: ticket.name,
+            required: ticket.requiredCount,
+            selected
+          };
+        }
+        return null;
+      })
+      .filter(Boolean) as Array<{ id: string; name: string; required: number; selected: number }>;
+  }, [ageTicketRequirements, ticketQuantitiesById]);
+
+  const getAgeRangeLabel = (ageMin: number | null, ageMax: number | null) => {
+    if (typeof ageMin === 'number' && typeof ageMax === 'number') {
+      return `Ages ${ageMin}-${ageMax}`;
+    }
+    if (typeof ageMax === 'number') {
+      return `Age ${ageMax} and younger`;
+    }
+    if (typeof ageMin === 'number') {
+      return `Age ${ageMin} and older`;
+    }
+    return '';
+  };
+
   const updatePhotoUrl = (index: number, url: string | null) => {
     const next = [...(photoUrls ?? [])];
     while (next.length <= index) {
@@ -462,6 +520,11 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
     setError(null);
     setLoading(true);
     try {
+      if (ageTicketIssues.length) {
+        setError('Please update ticket quantities to match age-based requirements.');
+        setLoading(false);
+        return;
+      }
       const rawValues = getValues();
       const primaryContact = data.people[0] ?? {};
       const purchaserName = typeof primaryContact[PRIMARY_NAME_KEY] === 'string' ? primaryContact[PRIMARY_NAME_KEY].trim() : '';
@@ -923,6 +986,20 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
                     <p className="mono text-xs font-semibold uppercase tracking-[0.2em] text-koa">{ticket.name}</p>
                     <p className="mt-2 text-2xl font-semibold text-black">{ticket.priceFormatted}</p>
                     <p className="mt-1 text-sm text-koa">{ticket.description}</p>
+                    {(typeof ticket.age_min === 'number' || typeof ticket.age_max === 'number') && (
+                      <p className="mt-2 text-xs font-semibold uppercase tracking-[0.2em] text-brandBlue">
+                        {getAgeRangeLabel(ticket.age_min ?? null, ticket.age_max ?? null)}
+                      </p>
+                    )}
+                    {ageTicketIssues.some((issue) => issue.id === ticket.id) && (
+                      <p className="mt-2 text-xs text-red-500">
+                        {(() => {
+                          const issue = ageTicketIssues.find((item) => item.id === ticket.id);
+                          if (!issue) return null;
+                          return `Select at least ${issue.required} to cover ages in this range (selected ${issue.selected}).`;
+                        })()}
+                      </p>
+                    )}
                     {typeof ticket.inventory === 'number' && (
                       <p className="mono mt-2 text-xs uppercase tracking-[0.2em] text-brandBlue">
                         {ticket.inventory} remaining

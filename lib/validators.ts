@@ -23,8 +23,22 @@ export const ticketTypeSchema = z.object({
   price_cents: z.number().int().min(0),
   currency: z.string().min(3).default('usd'),
   inventory: z.number().int().min(0).nullable().optional(),
+  age_min: z.number().int().min(0).nullable().optional(),
+  age_max: z.number().int().min(0).nullable().optional(),
   active: z.boolean().default(true),
   position: z.number().int().optional()
+}).superRefine((data, ctx) => {
+  if (
+    typeof data.age_min === 'number' &&
+    typeof data.age_max === 'number' &&
+    data.age_min > data.age_max
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Minimum age cannot exceed maximum age',
+      path: ['age_min']
+    });
+  }
 });
 
 export const questionSchema = z.object({

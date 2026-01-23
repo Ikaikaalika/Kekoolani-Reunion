@@ -152,6 +152,8 @@ export interface Database {
           price_cents: number;
           currency: string;
           inventory: number | null;
+          age_min: number | null;
+          age_max: number | null;
           active: boolean;
           position: number;
           created_at: string;
@@ -164,6 +166,8 @@ export interface Database {
           price_cents: number;
           currency?: string;
           inventory?: number | null;
+          age_min?: number | null;
+          age_max?: number | null;
           active?: boolean;
           position?: number;
           created_at?: string;
