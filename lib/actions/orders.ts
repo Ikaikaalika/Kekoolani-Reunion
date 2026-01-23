@@ -9,10 +9,13 @@ type UpdatePayload = {
   personIndex: number;
   attending?: boolean;
   refunded?: boolean;
+  showName?: boolean;
+  showPhoto?: boolean;
+  remove?: boolean;
 };
 
 export async function updateOrderParticipantStatus(payload: UpdatePayload) {
-  const { orderId, personIndex, attending, refunded } = payload;
+  const { orderId, personIndex, attending, refunded, showName, showPhoto, remove } = payload;
   if (!orderId) {
     return { error: 'Missing order id' };
   }
@@ -32,16 +35,34 @@ export async function updateOrderParticipantStatus(payload: UpdatePayload) {
     return { error: 'Participant not found' };
   }
 
-  const updatedPerson = { ...people[personIndex] } as Record<string, unknown>;
-  if (typeof attending === 'boolean') {
-    updatedPerson.attending = attending;
-  }
-  if (typeof refunded === 'boolean') {
-    updatedPerson.refunded = refunded;
-  }
-  people[personIndex] = updatedPerson;
+  const updatedAnswers = { ...answers } as Record<string, unknown>;
 
-  const updatedAnswers = { ...answers, people };
+  if (remove) {
+    const nextPeople = [...people];
+    nextPeople.splice(personIndex, 1);
+    updatedAnswers.people = nextPeople;
+    if (Array.isArray(updatedAnswers.photo_urls)) {
+      const nextPhotos = [...(updatedAnswers.photo_urls as unknown[])];
+      nextPhotos.splice(personIndex, 1);
+      updatedAnswers.photo_urls = nextPhotos;
+    }
+  } else {
+    const updatedPerson = { ...people[personIndex] } as Record<string, unknown>;
+    if (typeof attending === 'boolean') {
+      updatedPerson.attending = attending;
+    }
+    if (typeof refunded === 'boolean') {
+      updatedPerson.refunded = refunded;
+    }
+    if (typeof showName === 'boolean') {
+      updatedPerson.show_name = showName;
+    }
+    if (typeof showPhoto === 'boolean') {
+      updatedPerson.show_photo = showPhoto;
+    }
+    people[personIndex] = updatedPerson;
+    updatedAnswers.people = people;
+  }
 
   const { error: updateError } = await admin
     .from('orders')

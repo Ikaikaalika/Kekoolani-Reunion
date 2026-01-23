@@ -5,6 +5,9 @@ export type OrderParticipant = {
   name: string;
   attending: boolean;
   refunded: boolean;
+  showName: boolean;
+  showPhoto: boolean;
+  hasPhoto: boolean;
 };
 
 type OrderItemWithTicket = {
@@ -17,6 +20,13 @@ export function getPeopleFromAnswers(answers: unknown): PersonRecord[] {
   const record = answers as Record<string, unknown>;
   const people = record.people;
   return Array.isArray(people) ? (people.filter((item) => item && typeof item === 'object') as PersonRecord[]) : [];
+}
+
+export function getPhotoUrlsFromAnswers(answers: unknown): string[] {
+  if (!answers || typeof answers !== 'object') return [];
+  const record = answers as Record<string, unknown>;
+  const photoUrls = record.photo_urls;
+  return Array.isArray(photoUrls) ? (photoUrls.filter((item) => typeof item === 'string') as string[]) : [];
 }
 
 export function getParticipantName(person: PersonRecord): string {
@@ -36,11 +46,15 @@ export function isParticipantRefunded(person: PersonRecord): boolean {
 
 export function normalizeOrderParticipants(answers: unknown): OrderParticipant[] {
   const people = getPeopleFromAnswers(answers);
+  const photoUrls = getPhotoUrlsFromAnswers(answers);
   return people.map((person, index) => ({
     index,
     name: getParticipantName(person) || `Participant ${index + 1}`,
     attending: isParticipantAttending(person),
-    refunded: isParticipantRefunded(person)
+    refunded: isParticipantRefunded(person),
+    showName: typeof person.show_name === 'boolean' ? person.show_name : true,
+    showPhoto: typeof person.show_photo === 'boolean' ? person.show_photo : Boolean(photoUrls[index]),
+    hasPhoto: Boolean(photoUrls[index])
   }));
 }
 
