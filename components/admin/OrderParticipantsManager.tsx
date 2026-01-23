@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { deleteEmptyOrder, updateOrderParticipantStatus } from '@/lib/actions/orders';
 
 type Participant = {
@@ -19,6 +20,7 @@ interface OrderParticipantsManagerProps {
 }
 
 export default function OrderParticipantsManager({ orderId, participants }: OrderParticipantsManagerProps) {
+  const router = useRouter();
   const normalizeItems = (list: Participant[]) =>
     list.map((participant, idx) => ({
       ...participant,
@@ -105,6 +107,8 @@ export default function OrderParticipantsManager({ orderId, participants }: Orde
               const result = await deleteEmptyOrder({ orderId });
               if ('error' in result) {
                 setError(result.error ?? 'Unable to delete order');
+              } else {
+                router.refresh();
               }
               setPendingIndex(null);
             });
