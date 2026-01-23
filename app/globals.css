@@ -161,16 +161,16 @@ main {
   @apply mx-auto max-w-3xl py-12 text-center text-sm text-sand-600;
 }
 
-.marquee--hover {
-  --float-speed: 1.25;
-}
-
 .marquee--paused .marquee-track {
   animation-play-state: paused;
 }
 
 .marquee--paused .animate-float {
   animation-play-state: paused;
+}
+
+.marquee--js .marquee-track {
+  animation: none;
 }
 
 .marquee-track {
@@ -245,6 +245,11 @@ main {
 
 .marquee-bubble:hover .marquee-bubble-core,
 .marquee-bubble:hover .marquee-bubble-label {
+  transform: scale(1.05);
+}
+
+.marquee-bubble:active .marquee-bubble-core,
+.marquee-bubble:active .marquee-bubble-label {
   transform: scale(1.05);
 }
 

@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, MouseEvent } from 'react';
 
 type Attendee = {
@@ -19,6 +19,11 @@ type AttendeeMarqueeProps = {
 const BUBBLE_SIZES = [112, 120, 128, 136];
 const BUBBLE_OFFSETS = [-28, -12, 8, 20, -18, 14];
 const BUBBLE_DRIFTS = [5.5, 6.5, 7.2, 8.4, 9.1];
+const FAST_SPEED_SCALE = 1;
+const SLOW_SPEED_SCALE = 0.8;
+const TOP_BASE_DURATION = 36;
+const BOTTOM_BASE_DURATION = 48;
+const SPEED_SMOOTHING = 0.12;
 
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -31,6 +36,16 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [activeBubbleId, setActiveBubbleId] = useState<string | null>(null);
+  const marqueeRef = useRef<HTMLDivElement | null>(null);
+  const topTrackRef = useRef<HTMLDivElement | null>(null);
+  const bottomTrackRef = useRef<HTMLDivElement | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const lastTimeRef = useRef<number | null>(null);
+  const speedRef = useRef(FAST_SPEED_SCALE);
+  const targetSpeedRef = useRef(FAST_SPEED_SCALE);
+  const pausedRef = useRef(false);
+  const widthsRef = useRef({ top: 0, bottom: 0 });
+  const offsetsRef = useRef({ top: 0, bottom: 0 });
   const items = useMemo(
     () =>
       attendees
@@ -73,6 +88,82 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
     } as CSSProperties;
   };
 
+  useEffect(() => {
+    targetSpeedRef.current = isHovered ? SLOW_SPEED_SCALE : FAST_SPEED_SCALE;
+  }, [isHovered]);
+
+  useEffect(() => {
+    pausedRef.current = isPaused;
+  }, [isPaused]);
+
+  useEffect(() => {
+    const updateWidths = () => {
+      if (topTrackRef.current) {
+        widthsRef.current.top = topTrackRef.current.scrollWidth / 2;
+      }
+      if (bottomTrackRef.current) {
+        widthsRef.current.bottom = bottomTrackRef.current.scrollWidth / 2;
+      }
+    };
+
+    updateWidths();
+
+    const observer = new ResizeObserver(updateWidths);
+    if (topTrackRef.current) observer.observe(topTrackRef.current);
+    if (bottomTrackRef.current) observer.observe(bottomTrackRef.current);
+
+    return () => observer.disconnect();
+  }, [loopItems.length]);
+
+  useEffect(() => {
+    const tick = (time: number) => {
+      const marquee = marqueeRef.current;
+      const topTrack = topTrackRef.current;
+      const bottomTrack = bottomTrackRef.current;
+      if (!marquee || !topTrack || !bottomTrack) {
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+
+      const lastTime = lastTimeRef.current ?? time;
+      const delta = Math.min(0.05, (time - lastTime) / 1000);
+      lastTimeRef.current = time;
+
+      const currentSpeed = speedRef.current;
+      const targetSpeed = targetSpeedRef.current;
+      const nextSpeed = currentSpeed + (targetSpeed - currentSpeed) * SPEED_SMOOTHING;
+      speedRef.current = nextSpeed;
+
+      const slowFactor = nextSpeed > 0 ? 1 / nextSpeed : 1;
+      marquee.style.setProperty('--float-speed', slowFactor.toFixed(3));
+
+      if (!pausedRef.current) {
+        const topWidth = widthsRef.current.top;
+        if (topWidth > 0) {
+          const topSpeed = (topWidth / TOP_BASE_DURATION) * nextSpeed;
+          offsetsRef.current.top = (offsetsRef.current.top + topSpeed * delta) % topWidth;
+          topTrack.style.transform = `translate3d(${-offsetsRef.current.top}px, 0, 0)`;
+        }
+
+        const bottomWidth = widthsRef.current.bottom;
+        if (bottomWidth > 0) {
+          const bottomSpeed = (bottomWidth / BOTTOM_BASE_DURATION) * nextSpeed;
+          offsetsRef.current.bottom = (offsetsRef.current.bottom + bottomSpeed * delta) % bottomWidth;
+          bottomTrack.style.transform = `translate3d(${offsetsRef.current.bottom}px, 0, 0)`;
+        }
+      }
+
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+    };
+  }, []);
+
   const handleBubbleClick = (bubbleId: string) => (event: MouseEvent<HTMLDivElement>) => {
     event.stopPropagation();
     setActiveBubbleId((prev) => {
@@ -100,14 +191,18 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
 
   return (
     <div
-      className={`marquee${isPaused ? ' marquee--paused' : ''}${isHovered ? ' marquee--hover' : ''}`}
+      ref={marqueeRef}
+      className={`marquee marquee--js${isPaused ? ' marquee--paused' : ''}`}
       onClick={handleSectionClick}
       onMouseEnter={handleSectionEnter}
       onMouseLeave={handleSectionLeave}
+      onTouchStart={() => setIsHovered(true)}
+      onTouchEnd={() => setIsHovered(false)}
+      onTouchCancel={() => setIsHovered(false)}
     >
       <div
+        ref={topTrackRef}
         className="marquee-track marquee-track-top"
-        style={{ '--marquee-duration': isHovered ? '45s' : '36s' } as CSSProperties}
       >
         {loopItems.map((attendee, index) => {
           const keyBase = attendee.name || attendee.photoUrl || 'attendee';
@@ -182,8 +277,8 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
         })}
       </div>
       <div
+        ref={bottomTrackRef}
         className="marquee-track marquee-track-bottom marquee-track-reverse"
-        style={{ '--marquee-duration': isHovered ? '60s' : '48s' } as CSSProperties}
       >
         {reverseItems.map((attendee, index) => {
           const keyBase = attendee.name || attendee.photoUrl || 'attendee';
