@@ -229,6 +229,7 @@ export default async function HomePage() {
                 </a>
               ) : null}
             </div>
+            <p className="text-lg font-semibold text-white md:text-xl">Deadline to Register is March 15, 2026.</p>
           </div>
           <div>
             <div className="hero-panel">
