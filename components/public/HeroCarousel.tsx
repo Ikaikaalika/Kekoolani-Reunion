@@ -37,7 +37,6 @@ export default function HeroCarousel({ images, intervalMs = 7000 }: HeroCarousel
           <img src={src} alt="" className="h-full w-full object-cover" />
         </div>
       ))}
-      <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-emerald-900/50 to-emerald-700/30" />
     </div>
   );
 }
