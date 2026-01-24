@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { checkoutSchema } from '@/lib/validators';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getStripeClient } from '@/lib/stripe';
-import { getParticipantAge, getPeopleFromAnswers } from '@/lib/orderUtils';
+import { getParticipantAge, getPeopleFromAnswers, selectTicketForAge } from '@/lib/orderUtils';
 import type { Database } from '@/types/supabase';
 
 type TicketRow = Database['public']['Tables']['ticket_types']['Row'];
@@ -79,13 +79,7 @@ export async function POST(request: Request) {
       if (age === null) {
         return NextResponse.json({ error: 'Age is required for every participant.' }, { status: 400 });
       }
-      const ticket = ageBasedTickets.find((candidate) => {
-        const min = typeof candidate.age_min === 'number' ? candidate.age_min : null;
-        const max = typeof candidate.age_max === 'number' ? candidate.age_max : null;
-        if (min !== null && age < min) return false;
-        if (max !== null && age > max) return false;
-        return true;
-      });
+      const ticket = selectTicketForAge(ageBasedTickets, age);
       if (!ticket) {
         return NextResponse.json({ error: `No ticket is configured for age ${age}.` }, { status: 400 });
       }

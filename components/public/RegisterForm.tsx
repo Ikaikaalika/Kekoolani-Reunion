@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { formatCurrency } from '@/lib/utils';
 import { uploadRegistrationImage } from '@/lib/actions/blob';
 import type { RegistrationField } from '@/lib/registrationFields';
-import { getParticipantAge } from '@/lib/orderUtils';
+import { getParticipantAge, selectTicketForAge } from '@/lib/orderUtils';
 
 const PRIMARY_NAME_KEY = 'full_name';
 const PRIMARY_EMAIL_KEY = 'email';
@@ -77,14 +77,6 @@ type Question = {
 };
 
 const isAgeBasedTicket = (ticket: Ticket) => typeof ticket.age_min === 'number' || typeof ticket.age_max === 'number';
-
-const ticketMatchesAge = (ticket: Ticket, age: number) => {
-  const min = typeof ticket.age_min === 'number' ? ticket.age_min : null;
-  const max = typeof ticket.age_max === 'number' ? ticket.age_max : null;
-  if (min !== null && age < min) return false;
-  if (max !== null && age > max) return false;
-  return true;
-};
 
 function preprocessNumber(value: unknown) {
   if (value === '' || value === null || value === undefined) {
@@ -376,13 +368,12 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
     );
   }, [tickets]);
   const personTicketDetails = useMemo(() => {
-    const matchTicket = (age: number) => ageBasedTickets.find((ticket) => ticketMatchesAge(ticket, age)) ?? null;
     return peopleRecords.map((person) => {
       const age = getParticipantAge(person);
       if (age === null) {
         return { age: null, ticket: null };
       }
-      return { age, ticket: matchTicket(age) };
+      return { age, ticket: selectTicketForAge(ageBasedTickets, age) };
     });
   }, [peopleRecords, ageBasedTickets]);
   const ageTicketCounts = useMemo(() => {

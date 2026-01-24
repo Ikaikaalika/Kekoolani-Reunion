@@ -10,6 +10,12 @@ export type OrderParticipant = {
   hasPhoto: boolean;
 };
 
+type AgeBoundedTicket = {
+  age_min?: number | null;
+  age_max?: number | null;
+  price_cents?: number | null;
+};
+
 type OrderItemWithTicket = {
   quantity: number;
   ticket_types?: { price_cents?: number | null; age_min?: number | null; age_max?: number | null } | null;
@@ -103,6 +109,36 @@ export function getParticipantAge(person: PersonRecord): number | null {
   const parsed = typeof raw === 'number' ? raw : typeof raw === 'string' ? Number(raw) : NaN;
   if (Number.isNaN(parsed)) return null;
   return parsed;
+}
+
+export function matchesAgeRange(ticket: AgeBoundedTicket, age: number): boolean {
+  const min = typeof ticket.age_min === 'number' ? ticket.age_min : null;
+  const max = typeof ticket.age_max === 'number' ? ticket.age_max : null;
+  if (min !== null && age < min) return false;
+  if (max !== null && age > max) return false;
+  return true;
+}
+
+export function selectTicketForAge<T extends AgeBoundedTicket>(tickets: T[], age: number): T | null {
+  let selected: T | null = null;
+  let selectedPrice = Number.POSITIVE_INFINITY;
+  let selectedSpan = Number.POSITIVE_INFINITY;
+
+  for (const ticket of tickets) {
+    if (!matchesAgeRange(ticket, age)) continue;
+    const price = typeof ticket.price_cents === 'number' ? ticket.price_cents : 0;
+    const min = typeof ticket.age_min === 'number' ? ticket.age_min : Number.NEGATIVE_INFINITY;
+    const max = typeof ticket.age_max === 'number' ? ticket.age_max : Number.POSITIVE_INFINITY;
+    const span = max - min;
+
+    if (!selected || price < selectedPrice || (price === selectedPrice && span < selectedSpan)) {
+      selected = ticket;
+      selectedPrice = price;
+      selectedSpan = span;
+    }
+  }
+
+  return selected;
 }
 
 export function countParticipantsInAgeRange(

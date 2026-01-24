@@ -47,7 +47,7 @@ const DEFAULT_COST_INTRO = 'Ticket pricing is based on age. T-shirts are $25 eac
 const DEFAULT_COST_TOTAL = '';
 
 const DEFAULT_COSTS: CostItem[] = [
-  { label: 'Keiki (0-3)', detail: 'Free' },
+  { label: 'Keiki (0-3)', detail: '$0' },
   { label: 'Keiki (3-10)', detail: '$25.00' },
   { label: 'General (11+)', detail: '$35.00' },
   { label: 'Reunion T-Shirt', detail: '$25.00' }
