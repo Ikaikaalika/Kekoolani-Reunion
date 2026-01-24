@@ -105,7 +105,7 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
     if (bottomTrackRef.current) observer.observe(bottomTrackRef.current);
 
     return () => observer.disconnect();
-  }, [loopItems.length]);
+  }, [loopItems.length, isEmpty]);
 
   useEffect(() => {
     if (isEmpty) return;
@@ -160,7 +160,7 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
         cancelAnimationFrame(rafRef.current);
       }
     };
-  }, []);
+  }, [isEmpty]);
 
   const startSpeedTransition = (nextSpeed: number) => {
     const start = typeof performance !== 'undefined' ? performance.now() : Date.now();
