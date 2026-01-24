@@ -24,6 +24,8 @@ const SAME_CONTACT_KEY = 'same_contact';
 const SHOW_NAME_KEY = 'show_name';
 const SHOW_PHOTO_KEY = 'show_photo';
 const PHOTO_UPLOAD_KEY = 'photo_upload';
+const TSHIRT_CATEGORY_KEY = 'tshirt_category';
+const TSHIRT_STYLE_KEY = 'tshirt_style';
 const TSHIRT_SIZE_KEY = 'tshirt_size';
 const TSHIRT_QUANTITY_KEY = 'tshirt_quantity';
 const CONTACT_KEYS = ['email', 'phone', 'address'];
@@ -47,6 +49,87 @@ const TSHIRT_SIZES: Record<string, string[]> = {
   adult: ['S', 'M', 'L', 'XL', '2X', '3X', '4X', '5X'],
   youth: ['YS', 'YM', 'YL']
 };
+
+const DEFAULT_TSHIRT_FIELDS: RegistrationField[] = [
+  {
+    id: TSHIRT_CATEGORY_KEY,
+    field_key: TSHIRT_CATEGORY_KEY,
+    label: 'T-shirt category',
+    field_type: 'select',
+    options: TSHIRT_CATEGORIES.map((option) => ({ value: option.value, label: option.label })),
+    required: false,
+    position: 70,
+    scope: 'person',
+    enabled: true,
+    help_text: null,
+    placeholder: null,
+    locked: false,
+    section: 'Participation'
+  },
+  {
+    id: TSHIRT_STYLE_KEY,
+    field_key: TSHIRT_STYLE_KEY,
+    label: 'T-shirt style',
+    field_type: 'select',
+    options: [
+      { value: 'T-shirt', label: 'T-shirt' },
+      { value: 'Long sleeve', label: 'Long sleeve' },
+      { value: 'Tank top', label: 'Tank top' },
+      { value: 'V-neck', label: 'V-neck' },
+      { value: 'Crew neck', label: 'Crew neck' }
+    ],
+    required: false,
+    position: 71,
+    scope: 'person',
+    enabled: true,
+    help_text: null,
+    placeholder: null,
+    locked: false,
+    section: 'Participation'
+  },
+  {
+    id: TSHIRT_SIZE_KEY,
+    field_key: TSHIRT_SIZE_KEY,
+    label: 'T-shirt size',
+    field_type: 'select',
+    options: [
+      { value: 'YS', label: 'Youth S' },
+      { value: 'YM', label: 'Youth M' },
+      { value: 'YL', label: 'Youth L' },
+      { value: 'S', label: 'S' },
+      { value: 'M', label: 'M' },
+      { value: 'L', label: 'L' },
+      { value: 'XL', label: 'XL' },
+      { value: '2X', label: '2X' },
+      { value: '3X', label: '3X' },
+      { value: '4X', label: '4X' },
+      { value: '5X', label: '5X' }
+    ],
+    required: false,
+    position: 72,
+    scope: 'person',
+    enabled: true,
+    help_text: null,
+    placeholder: null,
+    locked: false,
+    section: 'Participation'
+  },
+  {
+    id: TSHIRT_QUANTITY_KEY,
+    field_key: TSHIRT_QUANTITY_KEY,
+    label: 'T-shirt quantity',
+    field_type: 'number',
+    options: [],
+    required: false,
+    position: 73,
+    scope: 'person',
+    enabled: true,
+    help_text: null,
+    placeholder: null,
+    locked: false,
+    section: 'Participation'
+  }
+];
 
 type FormSchema = {
   tickets: { ticket_type_id: string; quantity: number }[];
@@ -92,7 +175,11 @@ function buildFieldSchema(field: RegistrationField) {
   if (field.field_type === 'photo') {
     return null;
   }
-  const isTshirtField = field.field_key === TSHIRT_SIZE_KEY || field.field_key === TSHIRT_QUANTITY_KEY;
+  const isTshirtField =
+    field.field_key === TSHIRT_CATEGORY_KEY ||
+    field.field_key === TSHIRT_STYLE_KEY ||
+    field.field_key === TSHIRT_SIZE_KEY ||
+    field.field_key === TSHIRT_QUANTITY_KEY;
   const required = !isTshirtField && (ALWAYS_REQUIRED_KEYS.has(field.field_key) || field.required);
   const isOptionalCheckbox = OPTIONAL_CHECKBOX_KEYS.has(field.field_key);
   const requiredMessage = `${field.label} is required`;
@@ -147,6 +234,8 @@ function buildPersonSchema(fields: RegistrationField[]) {
 
   const lineageField = fieldMap.get(LINEAGE_KEY);
   const lineageOtherField = fieldMap.get(LINEAGE_OTHER_KEY);
+  const tshirtCategoryField = fieldMap.get(TSHIRT_CATEGORY_KEY);
+  const tshirtStyleField = fieldMap.get(TSHIRT_STYLE_KEY);
   const tshirtSizeField = fieldMap.get(TSHIRT_SIZE_KEY);
   const tshirtQuantityField = fieldMap.get(TSHIRT_QUANTITY_KEY);
 
@@ -179,26 +268,46 @@ function buildPersonSchema(fields: RegistrationField[]) {
       }
     }
 
-    if (tshirtSizeField && tshirtQuantityField) {
+    if (tshirtQuantityField) {
+      const categoryValue = typeof data[TSHIRT_CATEGORY_KEY] === 'string' ? data[TSHIRT_CATEGORY_KEY].trim() : '';
+      const styleValue = typeof data[TSHIRT_STYLE_KEY] === 'string' ? data[TSHIRT_STYLE_KEY].trim() : '';
       const sizeValue = typeof data[TSHIRT_SIZE_KEY] === 'string' ? data[TSHIRT_SIZE_KEY].trim() : '';
       const rawQuantity = data[TSHIRT_QUANTITY_KEY];
       const quantity = typeof rawQuantity === 'number' ? rawQuantity : 0;
-      const hasSize = Boolean(sizeValue);
+      const hasCategory = Boolean(categoryValue) && Boolean(tshirtCategoryField);
+      const hasStyle = Boolean(styleValue) && Boolean(tshirtStyleField);
+      const hasSize = Boolean(sizeValue) && Boolean(tshirtSizeField);
       const hasQuantity = Number.isFinite(quantity) && quantity > 0;
+
+      if ((hasCategory || hasStyle || hasSize) && !hasQuantity) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Enter a T-shirt quantity',
+          path: [TSHIRT_QUANTITY_KEY]
+        });
+      }
+
+      if (hasQuantity && !hasCategory) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Select a T-shirt category',
+          path: [TSHIRT_CATEGORY_KEY]
+        });
+      }
+
+      if (hasQuantity && !hasStyle) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Select a T-shirt style',
+          path: [TSHIRT_STYLE_KEY]
+        });
+      }
 
       if (hasQuantity && !hasSize) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'Select a T-shirt size',
           path: [TSHIRT_SIZE_KEY]
-        });
-      }
-
-      if (hasSize && !hasQuantity) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Enter a T-shirt quantity',
-          path: [TSHIRT_QUANTITY_KEY]
         });
       }
     }
@@ -243,6 +352,10 @@ function createEmptyPerson(fields: RegistrationField[]) {
         person[field.field_key] = field.field_key === TSHIRT_QUANTITY_KEY ? 0 : '';
         return;
       default:
+        if (field.field_key === TSHIRT_CATEGORY_KEY) {
+          person[field.field_key] = 'mens';
+          return;
+        }
         person[field.field_key] = '';
     }
   });
@@ -297,17 +410,34 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
 
   const allowNavigationRef = useRef(false);
   const isDirtyRef = useRef(false);
-  const personFields = useMemo(
-    () =>
-      registrationFields.filter((field) => field.scope === 'person' && field.enabled).sort((a, b) => a.position - b.position),
-    [registrationFields]
-  );
+  const personFields = useMemo(() => {
+    const fields = [...registrationFields];
+    const fieldKeys = new Set(fields.map((field) => field.field_key));
+    DEFAULT_TSHIRT_FIELDS.forEach((field) => {
+      if (!fieldKeys.has(field.field_key)) {
+        fields.push(field);
+      }
+    });
+    return fields.filter((field) => field.scope === 'person' && field.enabled).sort((a, b) => a.position - b.position);
+  }, [registrationFields]);
   const personFieldMap = useMemo(
     () => new Map(personFields.map((field) => [field.field_key, field] as const)),
     [personFields]
   );
   const coreFields = useMemo(
-    () => personFields.filter((field) => ![PHOTO_UPLOAD_KEY, SHOW_NAME_KEY, SHOW_PHOTO_KEY].includes(field.field_key)),
+    () =>
+      personFields.filter(
+        (field) =>
+          ![
+            PHOTO_UPLOAD_KEY,
+            SHOW_NAME_KEY,
+            SHOW_PHOTO_KEY,
+            TSHIRT_CATEGORY_KEY,
+            TSHIRT_STYLE_KEY,
+            TSHIRT_SIZE_KEY,
+            TSHIRT_QUANTITY_KEY
+          ].includes(field.field_key)
+      ),
     [personFields]
   );
   const sectionGroups = useMemo(() => {
@@ -503,6 +633,24 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
       }
     });
   }, [tshirtOrders, setValue]);
+
+  useEffect(() => {
+    if (!people?.length) return;
+    people.forEach((person, index) => {
+      const category = typeof person?.[TSHIRT_CATEGORY_KEY] === 'string' ? person[TSHIRT_CATEGORY_KEY] : 'mens';
+      const styles = TSHIRT_STYLES[category] ?? [];
+      const sizes = category === 'youth' ? TSHIRT_SIZES.youth : TSHIRT_SIZES.adult;
+      const style = typeof person?.[TSHIRT_STYLE_KEY] === 'string' ? person[TSHIRT_STYLE_KEY] : '';
+      const size = typeof person?.[TSHIRT_SIZE_KEY] === 'string' ? person[TSHIRT_SIZE_KEY] : '';
+
+      if (style && !styles.includes(style)) {
+        setValue(`people.${index}.${TSHIRT_STYLE_KEY}` as const, '', { shouldValidate: true, shouldDirty: true });
+      }
+      if (size && !sizes.includes(size)) {
+        setValue(`people.${index}.${TSHIRT_SIZE_KEY}` as const, '', { shouldValidate: true, shouldDirty: true });
+      }
+    });
+  }, [people, setValue]);
 
   const updatePhotoUrl = (index: number, url: string | null) => {
     const next = [...(photoUrls ?? [])];
@@ -844,6 +992,10 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
             const showPhotoField = personFieldMap.get(SHOW_PHOTO_KEY);
             const photoField = personFieldMap.get(PHOTO_UPLOAD_KEY);
             const ticketDetail = personTicketDetails[index];
+            const tshirtCategoryValue = (people?.[index]?.[TSHIRT_CATEGORY_KEY] as string | undefined) ?? 'mens';
+            const tshirtQuantityValue = people?.[index]?.[TSHIRT_QUANTITY_KEY] as number | string | undefined;
+            const tshirtStyles = TSHIRT_STYLES[tshirtCategoryValue] ?? [];
+            const tshirtSizes = tshirtCategoryValue === 'youth' ? TSHIRT_SIZES.youth : TSHIRT_SIZES.adult;
 
             const renderField = (fieldItem: RegistrationField) => {
               if (fieldItem.field_key === SAME_CONTACT_KEY) {
@@ -1039,6 +1191,83 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
                     <div className="grid gap-6 md:grid-cols-2">{section.fields.map((fieldItem) => renderField(fieldItem))}</div>
                   </div>
                 ))}
+
+                <div className="mt-6 space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h4 className="text-sm font-semibold text-black">Participant T-shirt Order</h4>
+                    <p className="mono text-xs uppercase tracking-[0.2em] text-koa">{formatCurrency(TSHIRT_PRICE_CENTS)} each</p>
+                  </div>
+                  <p className="text-sm text-koa">All apparel is black cotton. Women&apos;s styles are lightweight.</p>
+                  <div className="grid gap-4 md:grid-cols-4">
+                    <div className="space-y-2">
+                      <Label>Category</Label>
+                      <select
+                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brandBlue focus:outline-none focus:ring-2 focus:ring-brandBlueLight/40"
+                        {...register(`people.${index}.${TSHIRT_CATEGORY_KEY}` as const)}
+                      >
+                        {TSHIRT_CATEGORIES.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      {personErrors?.[TSHIRT_CATEGORY_KEY] && (
+                        <p className="text-xs text-red-500">{personErrors[TSHIRT_CATEGORY_KEY].message}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Style</Label>
+                      <select
+                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brandBlue focus:outline-none focus:ring-2 focus:ring-brandBlueLight/40"
+                        {...register(`people.${index}.${TSHIRT_STYLE_KEY}` as const)}
+                      >
+                        <option value="">Select a style</option>
+                        {tshirtStyles.map((style) => (
+                          <option key={style} value={style}>
+                            {style}
+                          </option>
+                        ))}
+                      </select>
+                      {personErrors?.[TSHIRT_STYLE_KEY] && (
+                        <p className="text-xs text-red-500">{personErrors[TSHIRT_STYLE_KEY].message}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Size</Label>
+                      <select
+                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brandBlue focus:outline-none focus:ring-2 focus:ring-brandBlueLight/40"
+                        {...register(`people.${index}.${TSHIRT_SIZE_KEY}` as const)}
+                      >
+                        <option value="">Select a size</option>
+                        {tshirtSizes.map((size) => (
+                          <option key={size} value={size}>
+                            {size.startsWith('Y') ? `Youth ${size.slice(1)}` : size}
+                          </option>
+                        ))}
+                      </select>
+                      {personErrors?.[TSHIRT_SIZE_KEY] && (
+                        <p className="text-xs text-red-500">{personErrors[TSHIRT_SIZE_KEY].message}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Quantity</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        className="w-full"
+                        {...register(`people.${index}.${TSHIRT_QUANTITY_KEY}` as const, { valueAsNumber: true })}
+                      />
+                      {personErrors?.[TSHIRT_QUANTITY_KEY] && (
+                        <p className="text-xs text-red-500">{personErrors[TSHIRT_QUANTITY_KEY].message}</p>
+                      )}
+                    </div>
+                  </div>
+                  {tshirtQuantityValue && Number(tshirtQuantityValue) > 0 && (
+                    <p className="text-xs text-koa">
+                      Subtotal: {formatCurrency(TSHIRT_PRICE_CENTS * Number(tshirtQuantityValue))}
+                    </p>
+                  )}
+                </div>
 
                 {(photoField || showNameField || showPhotoField) && (
                   <div className="mt-6 space-y-4">
