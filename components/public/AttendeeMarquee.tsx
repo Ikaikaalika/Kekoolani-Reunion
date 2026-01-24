@@ -23,7 +23,7 @@ const FAST_SPEED_SCALE = 1;
 const SLOW_SPEED_SCALE = 0.8;
 const TOP_BASE_DURATION = 36;
 const BOTTOM_BASE_DURATION = 48;
-const SPEED_SMOOTHING = 0.12;
+const SPEED_TRANSITION_MS = 650;
 
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -33,7 +33,6 @@ function getInitials(name: string) {
 }
 
 export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
-  const [isHovered, setIsHovered] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [activeBubbleId, setActiveBubbleId] = useState<string | null>(null);
   const marqueeRef = useRef<HTMLDivElement | null>(null);
@@ -42,8 +41,9 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
   const rafRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
   const speedRef = useRef(FAST_SPEED_SCALE);
-  const targetSpeedRef = useRef(FAST_SPEED_SCALE);
+  const transitionRef = useRef<{ from: number; to: number; start: number } | null>(null);
   const pausedRef = useRef(false);
+  const hoverRef = useRef(false);
   const widthsRef = useRef({ top: 0, bottom: 0 });
   const offsetsRef = useRef({ top: 0, bottom: 0 });
   const items = useMemo(
@@ -89,10 +89,6 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
   };
 
   useEffect(() => {
-    targetSpeedRef.current = isHovered ? SLOW_SPEED_SCALE : FAST_SPEED_SCALE;
-  }, [isHovered]);
-
-  useEffect(() => {
     pausedRef.current = isPaused;
   }, [isPaused]);
 
@@ -129,10 +125,18 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
       const delta = Math.min(0.05, (time - lastTime) / 1000);
       lastTimeRef.current = time;
 
-      const currentSpeed = speedRef.current;
-      const targetSpeed = targetSpeedRef.current;
-      const nextSpeed = currentSpeed + (targetSpeed - currentSpeed) * SPEED_SMOOTHING;
-      speedRef.current = nextSpeed;
+      if (transitionRef.current) {
+        const elapsed = time - transitionRef.current.start;
+        const progress = Math.min(1, elapsed / SPEED_TRANSITION_MS);
+        const eased = progress * (2 - progress);
+        const nextSpeed = transitionRef.current.from + (transitionRef.current.to - transitionRef.current.from) * eased;
+        speedRef.current = nextSpeed;
+        if (progress >= 1) {
+          transitionRef.current = null;
+        }
+      }
+
+      const nextSpeed = speedRef.current;
 
       if (!pausedRef.current) {
         const topWidth = widthsRef.current.top;
@@ -161,6 +165,15 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
     };
   }, []);
 
+  const startSpeedTransition = (nextSpeed: number) => {
+    const start = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    transitionRef.current = {
+      from: speedRef.current,
+      to: nextSpeed,
+      start
+    };
+  };
+
   const handleBubbleClick = (bubbleId: string) => (event: MouseEvent<HTMLDivElement>) => {
     event.stopPropagation();
     setActiveBubbleId((prev) => {
@@ -177,11 +190,14 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
   };
 
   const handleSectionEnter = () => {
-    setIsHovered(true);
+    if (hoverRef.current) return;
+    hoverRef.current = true;
+    startSpeedTransition(SLOW_SPEED_SCALE);
   };
 
   const handleSectionLeave = () => {
-    setIsHovered(false);
+    hoverRef.current = false;
+    startSpeedTransition(FAST_SPEED_SCALE);
     setIsPaused(false);
     setActiveBubbleId(null);
   };
@@ -193,9 +209,18 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
       onClick={handleSectionClick}
       onMouseEnter={handleSectionEnter}
       onMouseLeave={handleSectionLeave}
-      onTouchStart={() => setIsHovered(true)}
-      onTouchEnd={() => setIsHovered(false)}
-      onTouchCancel={() => setIsHovered(false)}
+      onTouchStart={() => {
+        hoverRef.current = true;
+        startSpeedTransition(SLOW_SPEED_SCALE);
+      }}
+      onTouchEnd={() => {
+        hoverRef.current = false;
+        startSpeedTransition(FAST_SPEED_SCALE);
+      }}
+      onTouchCancel={() => {
+        hoverRef.current = false;
+        startSpeedTransition(FAST_SPEED_SCALE);
+      }}
     >
       <div
         ref={topTrackRef}
