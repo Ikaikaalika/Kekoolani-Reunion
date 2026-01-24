@@ -66,14 +66,7 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
         .filter(Boolean) as Array<Attendee & { name: string }>,
     [attendees]
   );
-
-  if (!items.length) {
-    return (
-      <div className="marquee-empty">
-        No registrants yet. Be the first to register and share your family.
-      </div>
-    );
-  }
+  const isEmpty = items.length === 0;
 
   const loopItems = items.length > 8 ? items : [...items, ...items];
   const reverseItems = [...loopItems].reverse();
@@ -95,6 +88,7 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
   }, [isPaused]);
 
   useEffect(() => {
+    if (isEmpty) return;
     const updateWidths = () => {
       if (topTrackRef.current) {
         widthsRef.current.top = topTrackRef.current.scrollWidth / 2;
@@ -114,6 +108,7 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
   }, [loopItems.length]);
 
   useEffect(() => {
+    if (isEmpty) return;
     const tick = (time: number) => {
       const marquee = marqueeRef.current;
       const topTrack = topTrackRef.current;
@@ -214,7 +209,11 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
     setActiveBubbleId(null);
   };
 
-  return (
+  return isEmpty ? (
+    <div className="marquee-empty">
+      No registrants yet. Be the first to register and share your family.
+    </div>
+  ) : (
     <div
       ref={marqueeRef}
       className={`marquee marquee--js${isPaused ? ' marquee--paused' : ''}`}
@@ -238,10 +237,7 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
         startSpeedTransition(FAST_SPEED_SCALE);
       }}
     >
-      <div
-        ref={topTrackRef}
-        className="marquee-track marquee-track-top"
-      >
+      <div ref={topTrackRef} className="marquee-track marquee-track-top">
         {loopItems.map((attendee, index) => {
           const keyBase = attendee.name || attendee.photoUrl || 'attendee';
           const bubbleId = `top-${index}-${keyBase}`;
@@ -314,10 +310,7 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
           );
         })}
       </div>
-      <div
-        ref={bottomTrackRef}
-        className="marquee-track marquee-track-bottom marquee-track-reverse"
-      >
+      <div ref={bottomTrackRef} className="marquee-track marquee-track-bottom marquee-track-reverse">
         {reverseItems.map((attendee, index) => {
           const keyBase = attendee.name || attendee.photoUrl || 'attendee';
           const bubbleId = `bottom-${index}-${keyBase}`;
