@@ -24,6 +24,7 @@ const SLOW_SPEED_SCALE = 0.8;
 const TOP_BASE_DURATION = 36;
 const BOTTOM_BASE_DURATION = 48;
 const SPEED_TRANSITION_MS = 650;
+const HOVER_DELAY_MS = 200;
 
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -44,6 +45,7 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
   const transitionRef = useRef<{ from: number; to: number; start: number } | null>(null);
   const pausedRef = useRef(false);
   const hoverRef = useRef(false);
+  const hoverDelayRef = useRef<number | null>(null);
   const widthsRef = useRef({ top: 0, bottom: 0 });
   const offsetsRef = useRef({ top: 0, bottom: 0 });
   const items = useMemo(
@@ -191,11 +193,21 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
 
   const handleSectionEnter = () => {
     if (hoverRef.current) return;
-    hoverRef.current = true;
-    startSpeedTransition(SLOW_SPEED_SCALE);
+    if (hoverDelayRef.current) {
+      window.clearTimeout(hoverDelayRef.current);
+    }
+    hoverDelayRef.current = window.setTimeout(() => {
+      hoverRef.current = true;
+      startSpeedTransition(SLOW_SPEED_SCALE);
+      hoverDelayRef.current = null;
+    }, HOVER_DELAY_MS);
   };
 
   const handleSectionLeave = () => {
+    if (hoverDelayRef.current) {
+      window.clearTimeout(hoverDelayRef.current);
+      hoverDelayRef.current = null;
+    }
     hoverRef.current = false;
     startSpeedTransition(FAST_SPEED_SCALE);
     setIsPaused(false);
@@ -211,6 +223,10 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
       onMouseLeave={handleSectionLeave}
       onTouchStart={() => {
         hoverRef.current = true;
+        if (hoverDelayRef.current) {
+          window.clearTimeout(hoverDelayRef.current);
+          hoverDelayRef.current = null;
+        }
         startSpeedTransition(SLOW_SPEED_SCALE);
       }}
       onTouchEnd={() => {

@@ -85,10 +85,10 @@ export default async function PublicLayout({ children }: { children: ReactNode }
                 </div>
               </div>
               <p className="mb-6 max-w-xl text-white/80">
-                Contact Pumehana Silva for registration help, genealogy submissions, or reunion updates.
+                Contact Jade Silva for registration help, genealogy submissions, or reunion updates.
               </p>
               <div className="space-y-2 text-white/70">
-                <p>Pumehana Silva</p>
+                <p>Jade Silva</p>
                 <p>pumehanasilva@mac.com</p>
                 <p>808-895-6883 (Hawaiʻi time)</p>
                 <p>Mailing: PO Box 10124, Hilo, HI 96721</p>
