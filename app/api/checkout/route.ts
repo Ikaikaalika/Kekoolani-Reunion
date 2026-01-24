@@ -138,7 +138,7 @@ export async function POST(request: Request) {
     const forwardedProto = request.headers.get('x-forwarded-proto') ?? 'https';
     const fallbackHost = forwardedHost ? `${forwardedProto}://${forwardedHost}` : 'http://localhost:3000';
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? origin ?? fallbackHost;
-    const redirectUrl = `${baseUrl}/success?order=${orderRecord.id}&status=pending&method=${paymentMethod}`;
+    const redirectUrl = `${baseUrl}/success?order=${orderRecord.id}&status=pending&method=${paymentMethod}&amount=${totalCents}`;
     const stripeEnabled = paymentMethod === 'stripe' && process.env.STRIPE_CHECKOUT_ENABLED === 'true';
 
     if (!stripeEnabled) {
@@ -160,7 +160,7 @@ export async function POST(request: Request) {
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
-      success_url: `${baseUrl}/success?order=${orderRecord.id}&status=paid&method=stripe`,
+      success_url: `${baseUrl}/success?order=${orderRecord.id}&status=paid&method=stripe&amount=${totalCents}`,
       cancel_url: `${baseUrl}/register?canceled=1`,
       customer_email: parsed.purchaser_email,
       metadata: {

@@ -8,14 +8,46 @@ const PAYMENT_LABELS: Record<string, string> = {
 
 const PAYPAL_LINK = process.env.NEXT_PUBLIC_PAYPAL_LINK ?? '';
 
+function buildPayPalLink(baseLink: string, amountCents?: number | null) {
+  if (!baseLink) return '';
+  if (!amountCents || amountCents <= 0) return baseLink;
+  const amount = (amountCents / 100).toFixed(2);
+
+  try {
+    const url = new URL(baseLink);
+    if (!url.hostname.includes('paypal.me')) {
+      return baseLink;
+    }
+    const parts = url.pathname.split('/').filter(Boolean);
+    if (!parts.length) {
+      return baseLink;
+    }
+    const last = parts[parts.length - 1];
+    const hasAmount = /^\d+(\.\d+)?$/.test(last);
+    const username = hasAmount ? parts.slice(0, -1).join('/') : parts.join('/');
+    url.pathname = `/${username}/${amount}`;
+    if (!url.searchParams.has('currencyCode')) {
+      url.searchParams.set('currencyCode', 'USD');
+    }
+    return url.toString();
+  } catch (error) {
+    if (baseLink.includes('paypal.me')) {
+      return `${baseLink.replace(/\/+$/, '')}/${amount}`;
+    }
+    return baseLink;
+  }
+}
+
 export default function SuccessPage({
   searchParams
 }: {
-  searchParams: { order?: string; status?: string; method?: string };
+  searchParams: { order?: string; status?: string; method?: string; amount?: string };
 }) {
-  const { order, status, method } = searchParams;
+  const { order, status, method, amount } = searchParams;
   const paymentLabel = method ? PAYMENT_LABELS[method] ?? method : null;
   const isPending = status === 'pending';
+  const amountCents = amount ? Number(amount) : null;
+  const paypalLink = method === 'paypal' ? buildPayPalLink(PAYPAL_LINK, amountCents) : '';
   const showPayPalLink = method === 'paypal' && Boolean(PAYPAL_LINK);
   const headline = isPending ? 'Registration received' : 'Mahalo nui loa!';
   const message = isPending
@@ -41,7 +73,12 @@ export default function SuccessPage({
         <div className="max-w-xl space-y-3 text-lg text-koa">
           <p>{message}</p>
           <p>{receiptMessage}</p>
-          {showPayPalLink && <p>Use the PayPal link below to complete your payment.</p>}
+          {showPayPalLink && (
+            <p>
+              Use the PayPal link below to complete your payment
+              {amountCents ? ` ($${(amountCents / 100).toFixed(2)} USD).` : '.'}
+            </p>
+          )}
           <p className="text-base">
             Genealogy submissions and questions: email{' '}
             <a href={`mailto:${genealogyEmail}`} className="text-brandBlue underline">
@@ -53,7 +90,7 @@ export default function SuccessPage({
         {showPayPalLink && (
           <div className="card shadow-soft flex flex-col items-center gap-3 px-6 py-5 text-sm text-koa">
             <p className="font-semibold text-black">Pay with PayPal</p>
-            <a href={PAYPAL_LINK} target="_blank" rel="noreferrer" className="btn">
+            <a href={paypalLink || PAYPAL_LINK} target="_blank" rel="noreferrer" className="btn">
               Open PayPal Link
             </a>
           </div>
