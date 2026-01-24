@@ -43,16 +43,13 @@ export type SiteExtras = {
   genealogy_image?: GalleryItem | null;
 };
 
-const DEFAULT_COST_INTRO = 'We are trying our best to keep the cost as low as possible.';
-const DEFAULT_COST_TOTAL = 'Total cost each person: $60.00';
+const DEFAULT_COST_INTRO = 'Ticket pricing is based on age. T-shirts are $25 each.';
+const DEFAULT_COST_TOTAL = '';
 
 const DEFAULT_COSTS: CostItem[] = [
-  {
-    label: 'Meals',
-    detail: '$25.00',
-    notes: ['Lunch: Friday, Saturday, Sunday', 'Dinner: Sunday', 'All other meals are on your own']
-  },
-  { label: 'General fund', detail: '$10.00' },
+  { label: 'Keiki (0-3)', detail: 'Free' },
+  { label: 'Keiki (3-10)', detail: '$25.00' },
+  { label: 'General (11+)', detail: '$35.00' },
   { label: 'Reunion T-Shirt', detail: '$25.00' }
 ];
 

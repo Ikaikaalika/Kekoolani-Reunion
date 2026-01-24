@@ -16,7 +16,7 @@ type OrderWithRelations = Database['public']['Tables']['orders']['Row'] & {
   order_items: Array<{
     ticket_type_id: string;
     quantity: number;
-    ticket_types: { name: string | null; currency: string | null; price_cents: number | null } | null;
+    ticket_types: { name: string | null; currency: string | null; price_cents: number | null; age_min: number | null; age_max: number | null } | null;
   }>;
 };
 
@@ -28,7 +28,7 @@ async function getOrders(): Promise<{ orders: OrderWithRelations[]; questions: Q
   const [{ data: ordersData }, { data: questionsData }] = await Promise.all([
     supabase
       .from('orders')
-      .select('*, order_items(ticket_type_id, quantity, ticket_types(name, currency, price_cents))')
+      .select('*, order_items(ticket_type_id, quantity, ticket_types(name, currency, price_cents, age_min, age_max))')
       .order('created_at', { ascending: false })
       .limit(200),
     supabase.from('registration_questions').select('*').order('position', { ascending: true })

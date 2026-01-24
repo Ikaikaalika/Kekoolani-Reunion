@@ -16,14 +16,14 @@ type QuestionRow = Database['public']['Tables']['registration_questions']['Row']
 type SectionRow = Database['public']['Tables']['content_sections']['Row'];
 type QuestionTicketRow = Database['public']['Tables']['registration_question_tickets']['Row'];
 type OrderItemRow = Database['public']['Tables']['order_items']['Row'] & {
-  ticket_types: { price_cents: number | null } | null;
+  ticket_types: { price_cents: number | null; age_min: number | null; age_max: number | null } | null;
 };
 
 async function loadOverview() {
   const supabase = createSupabaseServerClient();
   const [ordersRes, itemsRes, ticketsRes, questionsRes, sectionsRes, linksRes] = await Promise.all([
     supabase.from('orders').select('*').order('created_at', { ascending: false }),
-    supabase.from('order_items').select('order_id, quantity, ticket_types(price_cents)'),
+    supabase.from('order_items').select('order_id, quantity, ticket_types(price_cents, age_min, age_max)'),
     supabase.from('ticket_types').select('*').order('position', { ascending: true }).order('created_at', { ascending: true }),
     supabase.from('registration_questions').select('*').order('position', { ascending: true }).order('created_at', { ascending: true }),
     supabase.from('content_sections').select('*'),

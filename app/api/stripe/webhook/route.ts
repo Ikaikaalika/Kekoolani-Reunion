@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getStripeClient } from '@/lib/stripe';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { getPeopleFromAnswers } from '@/lib/orderUtils';
 import type { Database } from '@/types/supabase';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
@@ -92,9 +93,11 @@ export async function POST(request: Request) {
       }
     }
 
-    const attendeeInserts: AttendeeInsert[] = orderItemRecords.flatMap((item) =>
-      Array.from({ length: item.quantity }).map(() => ({ order_id: orderId, answers: orderRecord.form_answers ?? {} }))
-    );
+    const people = getPeopleFromAnswers(orderRecord.form_answers ?? {});
+    const attendeeInserts: AttendeeInsert[] = Array.from({ length: people.length }).map(() => ({
+      order_id: orderId,
+      answers: orderRecord.form_answers ?? {}
+    }));
 
     if (attendeeInserts.length) {
       await (supabaseAdmin.from('attendees') as any).insert(attendeeInserts);

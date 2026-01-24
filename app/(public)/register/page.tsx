@@ -55,8 +55,7 @@ async function getRegistrationConfig() {
   return { tickets, questions, extras, registrationFields, eventDates };
 }
 
-export default async function RegisterPage({ searchParams }: { searchParams: { ticket?: string; canceled?: string } }) {
-  const presetTicket = searchParams.ticket;
+export default async function RegisterPage({ searchParams }: { searchParams: { canceled?: string } }) {
   const canceled = searchParams.canceled === '1';
   const { tickets, questions, extras, registrationFields, eventDates } = await getRegistrationConfig();
   const costSummary = extras.costs;
@@ -113,7 +112,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: { t
             .
           </p>
         </aside>
-        <RegisterForm tickets={tickets} questions={questions} registrationFields={registrationFields} presetTicket={presetTicket} />
+        <RegisterForm tickets={tickets} questions={questions} registrationFields={registrationFields} />
       </div>
     </div>
   );

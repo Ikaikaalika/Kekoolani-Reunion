@@ -13,26 +13,44 @@ import { Label } from '@/components/ui/label';
 import { formatCurrency } from '@/lib/utils';
 import { uploadRegistrationImage } from '@/lib/actions/blob';
 import type { RegistrationField } from '@/lib/registrationFields';
-import { countParticipantsInAgeRange } from '@/lib/orderUtils';
+import { getParticipantAge } from '@/lib/orderUtils';
 
 const PRIMARY_NAME_KEY = 'full_name';
 const PRIMARY_EMAIL_KEY = 'email';
 const LINEAGE_KEY = 'lineage';
 const LINEAGE_OTHER_KEY = 'lineage_other';
+const AGE_KEY = 'age';
 const SAME_CONTACT_KEY = 'same_contact';
 const SHOW_NAME_KEY = 'show_name';
 const SHOW_PHOTO_KEY = 'show_photo';
 const PHOTO_UPLOAD_KEY = 'photo_upload';
 const CONTACT_KEYS = ['email', 'phone', 'address'];
 
-const ALWAYS_REQUIRED_KEYS = new Set([PRIMARY_NAME_KEY, PRIMARY_EMAIL_KEY]);
+const ALWAYS_REQUIRED_KEYS = new Set([PRIMARY_NAME_KEY, PRIMARY_EMAIL_KEY, AGE_KEY]);
 const OPTIONAL_CHECKBOX_KEYS = new Set([SAME_CONTACT_KEY, SHOW_NAME_KEY, SHOW_PHOTO_KEY]);
 const HIDDEN_KEYS = new Set([PHOTO_UPLOAD_KEY]);
+
+const TSHIRT_PRICE_CENTS = 2500;
+const TSHIRT_CATEGORIES = [
+  { value: 'mens', label: "Men's" },
+  { value: 'womens', label: "Women's" },
+  { value: 'youth', label: 'Youth' }
+];
+const TSHIRT_STYLES: Record<string, string[]> = {
+  mens: ['T-shirt', 'Long sleeve', 'Tank top'],
+  womens: ['V-neck', 'Tank top', 'Crew neck'],
+  youth: ['T-shirt', 'Long sleeve']
+};
+const TSHIRT_SIZES: Record<string, string[]> = {
+  adult: ['S', 'M', 'L', 'XL', '2X', '3X', '4X', '5X'],
+  youth: ['YS', 'YM', 'YL']
+};
 
 type FormSchema = {
   tickets: { ticket_type_id: string; quantity: number }[];
   people: Array<Record<string, any>>;
   photo_urls?: Array<string | null>;
+  tshirt_orders?: Array<{ category: string; style: string; size: string; quantity: number }>;
   payment_method: 'stripe' | 'paypal' | 'check';
   donation_note?: string;
 };
@@ -56,6 +74,16 @@ type Question = {
   options: any;
   required: boolean;
   ticket_ids?: string[];
+};
+
+const isAgeBasedTicket = (ticket: Ticket) => typeof ticket.age_min === 'number' || typeof ticket.age_max === 'number';
+
+const ticketMatchesAge = (ticket: Ticket, age: number) => {
+  const min = typeof ticket.age_min === 'number' ? ticket.age_min : null;
+  const max = typeof ticket.age_max === 'number' ? ticket.age_max : null;
+  if (min !== null && age < min) return false;
+  if (max !== null && age > max) return false;
+  return true;
 };
 
 function preprocessNumber(value: unknown) {
@@ -156,6 +184,13 @@ function buildPersonSchema(fields: RegistrationField[]) {
   });
 }
 
+const tshirtOrderSchema = z.object({
+  category: z.enum(['mens', 'womens', 'youth']),
+  style: z.string().min(1, 'Select a style'),
+  size: z.string().min(1, 'Select a size'),
+  quantity: z.preprocess(preprocessNumber, z.number().int().min(1, 'Quantity is required'))
+});
+
 function buildFormSchema(personSchema: z.ZodTypeAny) {
   return z.object({
     tickets: z.array(
@@ -166,6 +201,7 @@ function buildFormSchema(personSchema: z.ZodTypeAny) {
     ),
     people: z.array(personSchema).min(1).max(30),
     photo_urls: z.array(z.string().url().nullable()).optional(),
+    tshirt_orders: z.array(tshirtOrderSchema).optional(),
     payment_method: z.enum(['stripe', 'paypal', 'check']),
     donation_note: z.string().optional()
   });
@@ -225,12 +261,11 @@ interface RegisterFormProps {
   tickets: Ticket[];
   questions: Question[];
   registrationFields: RegistrationField[];
-  presetTicket?: string;
 }
 
 type PendingNavigation = { type: 'link'; href: string } | { type: 'back' } | null;
 
-export default function RegisterForm({ tickets, questions, registrationFields, presetTicket }: RegisterFormProps) {
+export default function RegisterForm({ tickets, questions, registrationFields }: RegisterFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -241,12 +276,15 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
 
   const allowNavigationRef = useRef(false);
   const isDirtyRef = useRef(false);
-  const manualTicketOverridesRef = useRef<Record<string, boolean>>({});
-
   const personFields = useMemo(
     () =>
       registrationFields
-        .filter((field) => field.scope === 'person' && field.enabled)
+        .filter(
+          (field) =>
+            field.scope === 'person' &&
+            field.enabled &&
+            !['tshirt_size', 'tshirt_quantity'].includes(field.field_key)
+        )
         .sort((a, b) => a.position - b.position),
     [registrationFields]
   );
@@ -280,9 +318,9 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
     () =>
       tickets.map((ticket) => ({
         ticket_type_id: ticket.id,
-        quantity: ticket.id === presetTicket ? 1 : 0
+        quantity: 0
       })),
-    [tickets, presetTicket]
+    [tickets]
   );
 
   const {
@@ -299,22 +337,87 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
       tickets: defaultTickets,
       people: [createPerson()],
       photo_urls: [],
+      tshirt_orders: [],
       payment_method: 'check',
       donation_note: ''
     }
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields: participantFields, append: appendPerson, remove: removePerson } = useFieldArray({
     control,
     name: 'people'
+  });
+
+  const {
+    fields: tshirtFields,
+    append: appendTshirt,
+    remove: removeTshirt
+  } = useFieldArray({
+    control,
+    name: 'tshirt_orders'
   });
 
   const people = useWatch({ control, name: 'people' });
   const quantities = watch('tickets');
   const photoUrls = watch('photo_urls') as Array<string | null> | undefined;
+  const tshirtOrders = useWatch({ control, name: 'tshirt_orders' });
+  const peopleRecords = useMemo(
+    () => (Array.isArray(people) ? (people as Record<string, unknown>[]) : []),
+    [people]
+  );
+  const ageBasedTickets = useMemo(() => tickets.filter(isAgeBasedTicket), [tickets]);
+  const tshirtTicket = useMemo(() => {
+    return (
+      tickets.find((ticket) => {
+        if (isAgeBasedTicket(ticket)) return false;
+        const name = ticket.name.toLowerCase();
+        return name.includes('shirt') && ticket.price_cents === TSHIRT_PRICE_CENTS;
+      }) ?? null
+    );
+  }, [tickets]);
+  const personTicketDetails = useMemo(() => {
+    const matchTicket = (age: number) => ageBasedTickets.find((ticket) => ticketMatchesAge(ticket, age)) ?? null;
+    return peopleRecords.map((person) => {
+      const age = getParticipantAge(person);
+      if (age === null) {
+        return { age: null, ticket: null };
+      }
+      return { age, ticket: matchTicket(age) };
+    });
+  }, [peopleRecords, ageBasedTickets]);
+  const ageTicketCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    ageBasedTickets.forEach((ticket) => counts.set(ticket.id, 0));
+    personTicketDetails.forEach(({ ticket }) => {
+      if (!ticket) return;
+      counts.set(ticket.id, (counts.get(ticket.id) ?? 0) + 1);
+    });
+    return counts;
+  }, [ageBasedTickets, personTicketDetails]);
+  const tshirtQuantity = useMemo(
+    () =>
+      (tshirtOrders ?? []).reduce((sum, order) => {
+        const quantity = typeof order?.quantity === 'number' ? order.quantity : Number(order?.quantity ?? 0);
+        return sum + (Number.isFinite(quantity) ? quantity : 0);
+      }, 0),
+    [tshirtOrders]
+  );
+  const derivedTickets = useMemo(
+    () =>
+      tickets.map((ticket) => {
+        let quantity = 0;
+        if (isAgeBasedTicket(ticket)) {
+          quantity = ageTicketCounts.get(ticket.id) ?? 0;
+        } else if (tshirtTicket && ticket.id === tshirtTicket.id) {
+          quantity = tshirtQuantity;
+        }
+        return { ticket_type_id: ticket.id, quantity };
+      }),
+    [tickets, ageTicketCounts, tshirtTicket, tshirtQuantity]
+  );
   const selectedTicketIds = useMemo(
-    () => quantities.filter((item) => item.quantity > 0).map((item) => item.ticket_type_id),
-    [quantities]
+    () => derivedTickets.filter((item) => item.quantity > 0).map((item) => item.ticket_type_id),
+    [derivedTickets]
   );
   const activeQuestions = useMemo(() => {
     if (!questions.length) return [];
@@ -330,100 +433,50 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
       return ticketIds.some((ticketId) => selected.has(ticketId));
     });
   }, [questions, selectedTicketIds]);
-
-  const ageTicketRequirements = useMemo(() => {
-    if (!tickets.length) return [];
-    const peopleRecords = Array.isArray(people) ? (people as Record<string, unknown>[]) : [];
-    return tickets
-      .filter((ticket) => typeof ticket.age_min === 'number' || typeof ticket.age_max === 'number')
-      .map((ticket) => {
-        const requiredCount = countParticipantsInAgeRange(peopleRecords, ticket.age_min ?? null, ticket.age_max ?? null);
-        return {
-          id: ticket.id,
-          name: ticket.name,
-          requiredCount,
-          ageMin: ticket.age_min ?? null,
-          ageMax: ticket.age_max ?? null
-        };
-      });
-  }, [people, tickets]);
-
-  const ticketQuantitiesById = useMemo(() => {
-    const map = new Map<string, number>();
-    quantities.forEach((item) => {
-      map.set(item.ticket_type_id, Number.isFinite(item.quantity) ? item.quantity : 0);
-    });
-    return map;
-  }, [quantities]);
-
-  const ageTicketIssues = useMemo(() => {
-    return ageTicketRequirements
-      .map((ticket) => {
-        const selected = ticketQuantitiesById.get(ticket.id) ?? 0;
-        if (ticket.requiredCount > selected) {
-          return {
-            id: ticket.id,
-            name: ticket.name,
-            required: ticket.requiredCount,
-            selected
-          };
-        }
-        return null;
-      })
-      .filter(Boolean) as Array<{ id: string; name: string; required: number; selected: number }>;
-  }, [ageTicketRequirements, ticketQuantitiesById]);
-
   const ageTicketInventoryIssues = useMemo(() => {
-    return ageTicketRequirements
+    return ageBasedTickets
       .map((ticket) => {
-        const ticketRecord = tickets.find((item) => item.id === ticket.id);
-        if (!ticketRecord || typeof ticketRecord.inventory !== 'number') return null;
-        if (ticket.requiredCount <= ticketRecord.inventory) return null;
+        if (typeof ticket.inventory !== 'number') return null;
+        const required = ageTicketCounts.get(ticket.id) ?? 0;
+        if (required <= ticket.inventory) return null;
         return {
           id: ticket.id,
           name: ticket.name,
-          required: ticket.requiredCount,
-          inventory: ticketRecord.inventory
+          required,
+          inventory: ticket.inventory
         };
       })
       .filter(Boolean) as Array<{ id: string; name: string; required: number; inventory: number }>;
-  }, [ageTicketRequirements, tickets]);
-
-  const getAgeRangeLabel = (ageMin: number | null, ageMax: number | null) => {
-    if (typeof ageMin === 'number' && typeof ageMax === 'number') {
-      return `Ages ${ageMin}-${ageMax}`;
-    }
-    if (typeof ageMax === 'number') {
-      return `Age ${ageMax} and younger`;
-    }
-    if (typeof ageMin === 'number') {
-      return `Age ${ageMin} and older`;
-    }
-    return '';
-  };
+  }, [ageBasedTickets, ageTicketCounts]);
 
   useEffect(() => {
-    if (!ageTicketRequirements.length) return;
-    ageTicketRequirements.forEach((ticket) => {
-      const index = quantities.findIndex((item) => item.ticket_type_id === ticket.id);
-      if (index < 0) return;
-      const currentValue = Number.isFinite(quantities[index].quantity) ? quantities[index].quantity : 0;
-      if (currentValue < ticket.requiredCount) {
-        setValue(`tickets.${index}.quantity` as const, ticket.requiredCount, {
-          shouldValidate: true,
-          shouldDirty: false
-        });
-        manualTicketOverridesRef.current[ticket.id] = false;
-        return;
+    if (!derivedTickets.length) return;
+    const hasDiff =
+      derivedTickets.length !== quantities.length ||
+      derivedTickets.some((ticket, index) => {
+        const current = quantities[index];
+        return (
+          !current || current.ticket_type_id !== ticket.ticket_type_id || current.quantity !== ticket.quantity
+        );
+      });
+    if (!hasDiff) return;
+    setValue('tickets', derivedTickets, { shouldValidate: true, shouldDirty: false });
+  }, [derivedTickets, quantities, setValue]);
+
+  useEffect(() => {
+    if (!tshirtOrders?.length) return;
+    tshirtOrders.forEach((order, index) => {
+      const category = order?.category ?? 'mens';
+      const styles = TSHIRT_STYLES[category] ?? [];
+      const sizes = category === 'youth' ? TSHIRT_SIZES.youth : TSHIRT_SIZES.adult;
+      if (styles.length && !styles.includes(order?.style ?? '')) {
+        setValue(`tshirt_orders.${index}.style` as const, styles[0], { shouldValidate: true, shouldDirty: true });
       }
-      if (!manualTicketOverridesRef.current[ticket.id] && currentValue !== ticket.requiredCount) {
-        setValue(`tickets.${index}.quantity` as const, ticket.requiredCount, {
-          shouldValidate: true,
-          shouldDirty: false
-        });
+      if (sizes.length && !sizes.includes(order?.size ?? '')) {
+        setValue(`tshirt_orders.${index}.size` as const, sizes[0], { shouldValidate: true, shouldDirty: true });
       }
     });
-  }, [ageTicketRequirements, quantities, setValue]);
+  }, [tshirtOrders, setValue]);
 
   const updatePhotoUrl = (index: number, url: string | null) => {
     const next = [...(photoUrls ?? [])];
@@ -550,23 +603,50 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
     };
   }, []);
 
-  const totalCents = quantities.reduce((sum, item) => {
-    const ticket = tickets.find((ticket) => ticket.id === item.ticket_type_id);
+  const ticketById = useMemo(() => new Map(tickets.map((ticket) => [ticket.id, ticket])), [tickets]);
+  const tshirtTotalCents = tshirtQuantity * TSHIRT_PRICE_CENTS;
+  const ticketTotalCents = derivedTickets.reduce((sum, item) => {
+    const ticket = ticketById.get(item.ticket_type_id);
     if (!ticket) return sum;
     return sum + ticket.price_cents * (Number.isFinite(item.quantity) ? item.quantity : 0);
   }, 0);
+  const totalCents = tshirtTicket ? ticketTotalCents : ticketTotalCents + tshirtTotalCents;
+  const hasAgeTickets = ageBasedTickets.length > 0;
+  const missingAgeEntry = personTicketDetails.find((detail) => detail.age === null);
+  const unmatchedAgeEntry = personTicketDetails.find((detail) => detail.age !== null && !detail.ticket);
 
   const onSubmit = handleSubmit(async (data) => {
     setError(null);
     setLoading(true);
     try {
+      if (!hasAgeTickets) {
+        setError('Registration tickets are not available yet. Please check back soon.');
+        setLoading(false);
+        return;
+      }
+      if (missingAgeEntry) {
+        setError('Please enter an age for every participant.');
+        setLoading(false);
+        return;
+      }
+      if (unmatchedAgeEntry) {
+        setError(`No ticket is configured for age ${unmatchedAgeEntry.age}. Please contact the reunion team.`);
+        setLoading(false);
+        return;
+      }
       if (ageTicketInventoryIssues.length) {
         setError('Not enough tickets remain to cover the age-based requirements. Please adjust participant ages or contact the reunion team.');
         setLoading(false);
         return;
       }
-      if (ageTicketIssues.length) {
-        setError('Please update ticket quantities to match age-based requirements.');
+      if (tshirtQuantity > 0 && !tshirtTicket) {
+        setError('T-shirt orders are unavailable right now. Please contact the reunion team.');
+        setLoading(false);
+        return;
+      }
+      const derivedTicketPayload = derivedTickets.filter((item) => item.quantity > 0);
+      if (!derivedTicketPayload.length) {
+        setError('Select at least one ticket.');
         setLoading(false);
         return;
       }
@@ -610,6 +690,7 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
             return record;
           }),
           photo_urls: data.photo_urls ?? [],
+          tshirt_orders: data.tshirt_orders ?? [],
           donation_note: data.donation_note || null
         }
       );
@@ -618,7 +699,7 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
         purchaser_name: purchaserName,
         purchaser_email: purchaserEmail,
         payment_method: data.payment_method,
-        tickets: data.tickets,
+        tickets: derivedTicketPayload,
         answers
       };
 
@@ -716,7 +797,7 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
         </div>
 
         <div className="space-y-6">
-          {fields.map((field, index) => {
+          {participantFields.map((field, index) => {
             const personErrors = errors.people?.[index] as Record<string, any> | undefined;
             const sameContact = Boolean(people?.[index]?.[SAME_CONTACT_KEY]);
             const personLabel = index === 0 ? 'Primary Contact' : `Participant ${index + 1}`;
@@ -735,6 +816,7 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
             const showNameField = personFieldMap.get(SHOW_NAME_KEY);
             const showPhotoField = personFieldMap.get(SHOW_PHOTO_KEY);
             const photoField = personFieldMap.get(PHOTO_UPLOAD_KEY);
+            const ticketDetail = personTicketDetails[index];
 
             const renderField = (fieldItem: RegistrationField) => {
               if (fieldItem.field_key === SAME_CONTACT_KEY) {
@@ -908,7 +990,7 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
                     <button
                       type="button"
                       onClick={() => {
-                        remove(index);
+                        removePerson(index);
                         const next = [...(photoUrls ?? [])];
                         if (next.length) {
                           next.splice(index, 1);
@@ -1000,6 +1082,21 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
                     )}
                   </div>
                 )}
+                <div className="mt-6 rounded-2xl border border-slate-200 bg-sand-50 px-5 py-4">
+                  <p className="mono text-xs uppercase tracking-[0.3em] text-koa">Ticket</p>
+                  {!ticketDetail || ticketDetail.age === null ? (
+                    <p className="mt-2 text-sm text-koa">Enter an age to see the ticket type and price.</p>
+                  ) : ticketDetail?.ticket ? (
+                    <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm text-sand-700">
+                      <p className="font-semibold text-black">{ticketDetail.ticket.name}</p>
+                      <p className="font-semibold">{ticketDetail.ticket.priceFormatted}</p>
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-sm text-red-500">
+                      No ticket is configured for age {ticketDetail?.age}. Please contact the reunion team.
+                    </p>
+                  )}
+                </div>
               </div>
             );
           })}
@@ -1010,8 +1107,8 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
             type="button"
             variant="secondary"
             className="w-full sm:w-auto"
-            onClick={() => append(createPerson())}
-            disabled={fields.length >= 30}
+            onClick={() => appendPerson(createPerson())}
+            disabled={participantFields.length >= 30}
           >
             Add Person
           </Button>
@@ -1019,79 +1116,125 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
         </div>
 
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-black">Ticket Packages</h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-lg font-semibold text-black">Additional T-Shirt Orders</h2>
+            <p className="mono text-xs uppercase tracking-[0.2em] text-koa">{formatCurrency(TSHIRT_PRICE_CENTS)} each</p>
+          </div>
+          <div className="grid gap-3 text-sm text-koa md:grid-cols-3">
+            <div className="rounded-2xl border border-slate-100 bg-white p-4">
+              <p className="font-semibold text-black">Men&apos;s</p>
+              <p className="mt-1">T-shirt, Long sleeve, Tank top</p>
+              <p className="mt-1">Sizes S - 5X</p>
+            </div>
+            <div className="rounded-2xl border border-slate-100 bg-white p-4">
+              <p className="font-semibold text-black">Women&apos;s</p>
+              <p className="mt-1">V-neck, Tank top, Crew neck</p>
+              <p className="mt-1">Sizes S - 5X, lightweight fabric</p>
+            </div>
+            <div className="rounded-2xl border border-slate-100 bg-white p-4">
+              <p className="font-semibold text-black">Youth</p>
+              <p className="mt-1">T-shirt, Long sleeve</p>
+              <p className="mt-1">Sizes Youth S - L</p>
+            </div>
+          </div>
+          <p className="text-sm text-koa">All apparel is black cotton.</p>
           <div className="space-y-4">
-            {tickets.length ? (
-              tickets.map((ticket, index) => {
-                const hasAgeRule = typeof ticket.age_min === 'number' || typeof ticket.age_max === 'number';
-                const quantityField = register(`tickets.${index}.quantity` as const, {
-                  valueAsNumber: true,
-                  onChange: () => {
-                    if (hasAgeRule) {
-                      manualTicketOverridesRef.current[ticket.id] = true;
-                    }
-                  }
-                });
-                return (
-                  <div
-                    key={ticket.id}
-                    className="flex flex-col gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm md:flex-row md:items-center md:justify-between"
-                  >
-                    <div>
-                      <p className="mono text-xs font-semibold uppercase tracking-[0.2em] text-koa">{ticket.name}</p>
-                      <p className="mt-2 text-2xl font-semibold text-black">{ticket.priceFormatted}</p>
-                      <p className="mt-1 text-sm text-koa">{ticket.description}</p>
-                      {hasAgeRule && (
-                        <div className="mt-2 space-y-1 text-xs text-brandBlue">
-                          <p className="font-semibold uppercase tracking-[0.2em]">
-                            {getAgeRangeLabel(ticket.age_min ?? null, ticket.age_max ?? null)}
-                          </p>
-                          <p className="text-koa">Auto-filled from participant ages. Adjust if needed.</p>
-                        </div>
-                      )}
-                      {ageTicketInventoryIssues.some((issue) => issue.id === ticket.id) && (
-                        <p className="mt-2 text-xs text-red-500">
-                          {(() => {
-                            const issue = ageTicketInventoryIssues.find((item) => item.id === ticket.id);
-                            if (!issue) return null;
-                            return `Only ${issue.inventory} remain for this age group. Please adjust participants or contact the reunion team.`;
-                          })()}
-                        </p>
-                      )}
-                      {ageTicketIssues.some((issue) => issue.id === ticket.id) && (
-                        <p className="mt-2 text-xs text-red-500">
-                          {(() => {
-                            const issue = ageTicketIssues.find((item) => item.id === ticket.id);
-                            if (!issue) return null;
-                            return `Ticket quantity must be at least ${issue.required} to cover ages in this range (selected ${issue.selected}).`;
-                          })()}
-                        </p>
-                      )}
-                      {typeof ticket.inventory === 'number' && (
-                        <p className="mono mt-2 text-xs uppercase tracking-[0.2em] text-brandBlue">
-                          {ticket.inventory} remaining
-                        </p>
-                      )}
+            {!tshirtFields.length && <p className="text-sm text-koa">No T-shirts added yet.</p>}
+            {tshirtFields.map((field, index) => {
+              const order = tshirtOrders?.[index];
+              const category = order?.category ?? 'mens';
+              const styles = TSHIRT_STYLES[category] ?? [];
+              const sizes = category === 'youth' ? TSHIRT_SIZES.youth : TSHIRT_SIZES.adult;
+              const orderErrors = errors.tshirt_orders?.[index] as Record<string, any> | undefined;
+              return (
+                <div key={field.id} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                  <div className="grid gap-4 md:grid-cols-4">
+                    <div className="space-y-2">
+                      <Label>Category</Label>
+                      <select
+                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brandBlue focus:outline-none focus:ring-2 focus:ring-brandBlueLight/40"
+                        {...register(`tshirt_orders.${index}.category` as const)}
+                      >
+                        {TSHIRT_CATEGORIES.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      {orderErrors?.category && <p className="text-xs text-red-500">{orderErrors.category.message}</p>}
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Label htmlFor={`tickets.${index}.quantity`} className="mono text-xs uppercase text-slate-500">
-                        Qty
-                      </Label>
+                    <div className="space-y-2">
+                      <Label>Style</Label>
+                      <select
+                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brandBlue focus:outline-none focus:ring-2 focus:ring-brandBlueLight/40"
+                        {...register(`tshirt_orders.${index}.style` as const)}
+                      >
+                        <option value="">Select a style</option>
+                        {styles.map((style) => (
+                          <option key={style} value={style}>
+                            {style}
+                          </option>
+                        ))}
+                      </select>
+                      {orderErrors?.style && <p className="text-xs text-red-500">{orderErrors.style.message}</p>}
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Size</Label>
+                      <select
+                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brandBlue focus:outline-none focus:ring-2 focus:ring-brandBlueLight/40"
+                        {...register(`tshirt_orders.${index}.size` as const)}
+                      >
+                        <option value="">Select a size</option>
+                        {sizes.map((size) => (
+                          <option key={size} value={size}>
+                            {size.startsWith('Y') ? `Youth ${size.slice(1)}` : size}
+                          </option>
+                        ))}
+                      </select>
+                      {orderErrors?.size && <p className="text-xs text-red-500">{orderErrors.size.message}</p>}
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Quantity</Label>
                       <Input
-                        id={`tickets.${index}.quantity`}
                         type="number"
-                        min={0}
-                        max={ticket.inventory ?? undefined}
-                        className={`w-20 text-center ${hasAgeRule ? 'bg-sand-50' : ''}`}
-                        {...quantityField}
+                        min={1}
+                        className="w-full"
+                        {...register(`tshirt_orders.${index}.quantity` as const, { valueAsNumber: true })}
                       />
+                      {orderErrors?.quantity && <p className="text-xs text-red-500">{orderErrors.quantity.message}</p>}
                     </div>
                   </div>
-                );
-              })
-            ) : (
-              <p className="text-sm text-koa">Tickets will be available soon.</p>
-            )}
+                  <div className="mt-4 flex items-center justify-between">
+                    <p className="text-xs text-koa">
+                      Subtotal: {formatCurrency(TSHIRT_PRICE_CENTS * (order?.quantity ? Number(order.quantity) : 0))}
+                    </p>
+                    <button type="button" className="text-xs font-semibold text-red-500 underline" onClick={() => removeTshirt(index)}>
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full sm:w-auto"
+                onClick={() =>
+                  appendTshirt({
+                    category: 'mens',
+                    style: TSHIRT_STYLES.mens[0],
+                    size: TSHIRT_SIZES.adult[0],
+                    quantity: 1
+                  })
+                }
+              >
+                Add T-shirt
+              </Button>
+              {tshirtQuantity > 0 && (
+                <p className="text-sm text-koa">T-shirt total: {formatCurrency(tshirtTotalCents)}</p>
+              )}
+            </div>
           </div>
         </div>
 
@@ -1182,7 +1325,7 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
 
         {error && <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
 
-        <Button type="submit" size="lg" loading={loading} disabled={!tickets.length} className="w-full">
+        <Button type="submit" size="lg" loading={loading} disabled={!hasAgeTickets} className="w-full">
           Submit Registration
         </Button>
       </form>

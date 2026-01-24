@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { checkoutSchema } from '@/lib/validators';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getStripeClient } from '@/lib/stripe';
-import { countParticipantsInAgeRange, getPeopleFromAnswers } from '@/lib/orderUtils';
+import { getParticipantAge, getPeopleFromAnswers } from '@/lib/orderUtils';
 import type { Database } from '@/types/supabase';
 
 type TicketRow = Database['public']['Tables']['ticket_types']['Row'];
@@ -66,15 +66,38 @@ export async function POST(request: Request) {
 
     const people = getPeopleFromAnswers(parsed.answers ?? {});
     const ticketQuantitiesById = new Map(lineItems.map((item) => [item.ticket_type_id, item.quantity]));
-    for (const ticket of ticketRecords) {
-      const hasAgeRule = typeof ticket.age_min === 'number' || typeof ticket.age_max === 'number';
-      if (!hasAgeRule) continue;
-      const requiredCount = countParticipantsInAgeRange(people, ticket.age_min ?? null, ticket.age_max ?? null);
+    const ageBasedTickets = ticketRecords.filter(
+      (ticket) => typeof ticket.age_min === 'number' || typeof ticket.age_max === 'number'
+    );
+    if (!ageBasedTickets.length && people.length) {
+      return NextResponse.json({ error: 'Registration tickets are not available yet.' }, { status: 400 });
+    }
+    const ageTicketCounts = new Map<string, number>();
+    ageBasedTickets.forEach((ticket) => ageTicketCounts.set(ticket.id, 0));
+    for (const person of people) {
+      const age = getParticipantAge(person);
+      if (age === null) {
+        return NextResponse.json({ error: 'Age is required for every participant.' }, { status: 400 });
+      }
+      const ticket = ageBasedTickets.find((candidate) => {
+        const min = typeof candidate.age_min === 'number' ? candidate.age_min : null;
+        const max = typeof candidate.age_max === 'number' ? candidate.age_max : null;
+        if (min !== null && age < min) return false;
+        if (max !== null && age > max) return false;
+        return true;
+      });
+      if (!ticket) {
+        return NextResponse.json({ error: `No ticket is configured for age ${age}.` }, { status: 400 });
+      }
+      ageTicketCounts.set(ticket.id, (ageTicketCounts.get(ticket.id) ?? 0) + 1);
+    }
+    for (const ticket of ageBasedTickets) {
+      const requiredCount = ageTicketCounts.get(ticket.id) ?? 0;
       const selectedCount = ticketQuantitiesById.get(ticket.id) ?? 0;
-      if (requiredCount > selectedCount) {
+      if (requiredCount !== selectedCount) {
         return NextResponse.json(
           {
-            error: `Ticket quantity for ${ticket.name} must be at least ${requiredCount} to cover all attendees in that age range.`
+            error: `Ticket quantity for ${ticket.name} must be ${requiredCount} to cover all attendees in that age range.`
           },
           { status: 400 }
         );
@@ -125,9 +148,10 @@ export async function POST(request: Request) {
     const stripeEnabled = paymentMethod === 'stripe' && process.env.STRIPE_CHECKOUT_ENABLED === 'true';
 
     if (!stripeEnabled) {
-      const attendeeInserts: AttendeeInsert[] = orderItems.flatMap((item) =>
-        Array.from({ length: item.quantity }).map(() => ({ order_id: orderRecord.id, answers: orderRecord.form_answers ?? {} }))
-      );
+      const attendeeInserts: AttendeeInsert[] = Array.from({ length: people.length }).map(() => ({
+        order_id: orderRecord.id,
+        answers: orderRecord.form_answers ?? {}
+      }));
       if (attendeeInserts.length) {
         await (supabaseAdmin.from('attendees') as any).insert(attendeeInserts);
       }

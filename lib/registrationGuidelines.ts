@@ -28,7 +28,7 @@ export const REGISTRATION_GUIDELINES: RegistrationGuideline[] = [
   {
     key: 'tshirt',
     label: 'T-shirt Order',
-    description: 'Sizes and quantities for each attendee.'
+    description: 'Optional: choose category, style, size, and quantity for each shirt (youth sizes S-L, adult sizes S-5X).'
   },
   {
     key: 'donation_note',
@@ -40,5 +40,6 @@ export const REGISTRATION_GUIDELINES: RegistrationGuideline[] = [
 export const REGISTRATION_FORM_FIELDS = [
   { key: 'people', label: 'Participants (details)' },
   { key: 'photo_urls', label: 'Photo URLs' },
+  { key: 'tshirt_orders', label: 'T-shirt Orders' },
   { key: 'donation_note', label: 'Donation Note' }
 ];

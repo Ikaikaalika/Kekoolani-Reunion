@@ -12,7 +12,7 @@ export type OrderParticipant = {
 
 type OrderItemWithTicket = {
   quantity: number;
-  ticket_types?: { price_cents?: number | null } | null;
+  ticket_types?: { price_cents?: number | null; age_min?: number | null; age_max?: number | null } | null;
 };
 
 export function getPeopleFromAnswers(answers: unknown): PersonRecord[] {
@@ -63,8 +63,11 @@ export function normalizeOrderParticipants(answers: unknown): OrderParticipant[]
 export function buildTicketPriceSlots(items: OrderItemWithTicket[]): number[] {
   const slots: number[] = [];
   items.forEach((item) => {
+    const ticket = item.ticket_types ?? null;
+    const isAdmission = typeof ticket?.age_min === 'number' || typeof ticket?.age_max === 'number';
+    if (!isAdmission) return;
     const quantity = Number.isFinite(item.quantity) ? Math.max(0, item.quantity) : 0;
-    const price = typeof item.ticket_types?.price_cents === 'number' ? item.ticket_types.price_cents : 0;
+    const price = typeof ticket?.price_cents === 'number' ? ticket.price_cents : 0;
     for (let i = 0; i < quantity; i += 1) {
       slots.push(price);
     }
