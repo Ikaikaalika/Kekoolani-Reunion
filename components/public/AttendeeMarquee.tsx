@@ -19,9 +19,10 @@ type AttendeeMarqueeProps = {
 const BUBBLE_SIZES = [112, 120, 128, 136];
 const BUBBLE_OFFSETS = [-28, -12, 8, 20, -18, 14];
 const BUBBLE_DRIFTS = [5.5, 6.5, 7.2, 8.4, 9.1];
-const FAST_SPEED_SCALE = 1;
+const FAST_SPEED_SCALE = 0.75;
 const TOP_BASE_DURATION = 36;
 const BOTTOM_BASE_DURATION = 48;
+const MIN_BUBBLES_PER_ROW = 12;
 const DRAG_THRESHOLD_PX = 6;
 
 function getInitials(name: string) {
@@ -106,12 +107,16 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
       if (container && track) {
         const unitWidth = track.scrollWidth / (2 * repeatCount);
         if (unitWidth > 0) {
-          const needed = Math.max(2, Math.ceil((container.offsetWidth * 2) / unitWidth));
+          const minRepeat = Math.max(2, Math.ceil(MIN_BUBBLES_PER_ROW / items.length));
+          const neededByWidth = Math.max(2, Math.ceil((container.offsetWidth * 2) / unitWidth));
+          const needed = Math.max(minRepeat, neededByWidth);
           if (needed > repeatCount) {
             setRepeatCount(needed);
           }
         }
       }
+      offsetsRef.current.top = wrapOffset(offsetsRef.current.top, widthsRef.current.top);
+      offsetsRef.current.bottom = wrapOffset(offsetsRef.current.bottom, widthsRef.current.bottom);
     };
 
     updateWidths();
@@ -122,7 +127,7 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
     if (marqueeRef.current) observer.observe(marqueeRef.current);
 
     return () => observer.disconnect();
-  }, [loopItems.length, isEmpty, repeatCount]);
+  }, [loopItems.length, isEmpty, repeatCount, items.length]);
 
   useEffect(() => {
     if (isEmpty) return;
@@ -205,9 +210,6 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
     };
     dragMovedRef.current = false;
     lastDragEndRef.current = 0;
-    setIsDragging(true);
-    setIsPaused(true);
-    event.currentTarget.setPointerCapture(event.pointerId);
   };
 
   const handlePointerMove: PointerEventHandler<HTMLDivElement> = (event) => {
@@ -216,6 +218,9 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
     const deltaX = event.clientX - dragStartRef.current.x;
     if (!dragMovedRef.current && Math.abs(deltaX) > DRAG_THRESHOLD_PX) {
       dragMovedRef.current = true;
+      setIsDragging(true);
+      setIsPaused(true);
+      event.currentTarget.setPointerCapture(event.pointerId);
     }
     if (!dragMovedRef.current) return;
 
@@ -236,9 +241,11 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
 
   const handlePointerUp: PointerEventHandler<HTMLDivElement> = (event) => {
     if (pointerIdRef.current !== event.pointerId) return;
+    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
     pointerIdRef.current = null;
     dragStartRef.current = null;
-    event.currentTarget.releasePointerCapture(event.pointerId);
     const wasDragging = dragMovedRef.current;
     dragMovedRef.current = false;
     setIsDragging(false);
