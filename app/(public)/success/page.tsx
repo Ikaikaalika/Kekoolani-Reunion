@@ -6,6 +6,8 @@ const PAYMENT_LABELS: Record<string, string> = {
   check: 'Mail-in check'
 };
 
+const PAYPAL_LINK = process.env.NEXT_PUBLIC_PAYPAL_LINK ?? '';
+
 export default function SuccessPage({
   searchParams
 }: {
@@ -14,6 +16,7 @@ export default function SuccessPage({
   const { order, status, method } = searchParams;
   const paymentLabel = method ? PAYMENT_LABELS[method] ?? method : null;
   const isPending = status === 'pending';
+  const showPayPalLink = method === 'paypal' && Boolean(PAYPAL_LINK);
   const headline = isPending ? 'Registration received' : 'Mahalo nui loa!';
   const message = isPending
     ? `Your registration is confirmed. We have recorded your payment preference${
@@ -38,6 +41,7 @@ export default function SuccessPage({
         <div className="max-w-xl space-y-3 text-lg text-koa">
           <p>{message}</p>
           <p>{receiptMessage}</p>
+          {showPayPalLink && <p>Use the PayPal link below to complete your payment.</p>}
           <p className="text-base">
             Genealogy submissions and questions: email{' '}
             <a href={`mailto:${genealogyEmail}`} className="text-brandBlue underline">
@@ -46,6 +50,14 @@ export default function SuccessPage({
             .
           </p>
         </div>
+        {showPayPalLink && (
+          <div className="card shadow-soft flex flex-col items-center gap-3 px-6 py-5 text-sm text-koa">
+            <p className="font-semibold text-black">Pay with PayPal</p>
+            <a href={PAYPAL_LINK} target="_blank" rel="noreferrer" className="btn">
+              Open PayPal Link
+            </a>
+          </div>
+        )}
         {order && (
           <div className="card shadow-soft px-6 py-4 text-sm text-koa">
             Order reference: <span className="font-semibold text-black">{order}</span>

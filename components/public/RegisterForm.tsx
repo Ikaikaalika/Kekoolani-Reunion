@@ -24,6 +24,8 @@ const SAME_CONTACT_KEY = 'same_contact';
 const SHOW_NAME_KEY = 'show_name';
 const SHOW_PHOTO_KEY = 'show_photo';
 const PHOTO_UPLOAD_KEY = 'photo_upload';
+const TSHIRT_SIZE_KEY = 'tshirt_size';
+const TSHIRT_QUANTITY_KEY = 'tshirt_quantity';
 const CONTACT_KEYS = ['email', 'phone', 'address'];
 
 const ALWAYS_REQUIRED_KEYS = new Set([PRIMARY_NAME_KEY, PRIMARY_EMAIL_KEY, AGE_KEY]);
@@ -90,7 +92,8 @@ function buildFieldSchema(field: RegistrationField) {
   if (field.field_type === 'photo') {
     return null;
   }
-  const required = ALWAYS_REQUIRED_KEYS.has(field.field_key) || field.required;
+  const isTshirtField = field.field_key === TSHIRT_SIZE_KEY || field.field_key === TSHIRT_QUANTITY_KEY;
+  const required = !isTshirtField && (ALWAYS_REQUIRED_KEYS.has(field.field_key) || field.required);
   const isOptionalCheckbox = OPTIONAL_CHECKBOX_KEYS.has(field.field_key);
   const requiredMessage = `${field.label} is required`;
 
@@ -108,7 +111,7 @@ function buildFieldSchema(field: RegistrationField) {
       return schema.optional();
     }
     case 'number': {
-      const minValue = field.field_key === 'tshirt_quantity' ? 1 : 0;
+      const minValue = field.field_key === TSHIRT_QUANTITY_KEY ? 0 : 0;
       const schema = z.preprocess(
         preprocessNumber,
         z.number().int().min(minValue, required ? requiredMessage : undefined)
@@ -144,6 +147,8 @@ function buildPersonSchema(fields: RegistrationField[]) {
 
   const lineageField = fieldMap.get(LINEAGE_KEY);
   const lineageOtherField = fieldMap.get(LINEAGE_OTHER_KEY);
+  const tshirtSizeField = fieldMap.get(TSHIRT_SIZE_KEY);
+  const tshirtQuantityField = fieldMap.get(TSHIRT_QUANTITY_KEY);
 
   return z.object(shape).superRefine((data, ctx) => {
     if (lineageField && lineageOtherField) {
@@ -170,6 +175,30 @@ function buildPersonSchema(fields: RegistrationField[]) {
           code: z.ZodIssueCode.custom,
           message: "Select name or photo for the Who's Coming section",
           path: [SHOW_NAME_KEY]
+        });
+      }
+    }
+
+    if (tshirtSizeField && tshirtQuantityField) {
+      const sizeValue = typeof data[TSHIRT_SIZE_KEY] === 'string' ? data[TSHIRT_SIZE_KEY].trim() : '';
+      const rawQuantity = data[TSHIRT_QUANTITY_KEY];
+      const quantity = typeof rawQuantity === 'number' ? rawQuantity : 0;
+      const hasSize = Boolean(sizeValue);
+      const hasQuantity = Number.isFinite(quantity) && quantity > 0;
+
+      if (hasQuantity && !hasSize) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Select a T-shirt size',
+          path: [TSHIRT_SIZE_KEY]
+        });
+      }
+
+      if (hasSize && !hasQuantity) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Enter a T-shirt quantity',
+          path: [TSHIRT_QUANTITY_KEY]
         });
       }
     }
@@ -211,7 +240,7 @@ function createEmptyPerson(fields: RegistrationField[]) {
         person[field.field_key] = [];
         return;
       case 'number':
-        person[field.field_key] = field.field_key === 'tshirt_quantity' ? 1 : '';
+        person[field.field_key] = field.field_key === TSHIRT_QUANTITY_KEY ? 0 : '';
         return;
       default:
         person[field.field_key] = '';
@@ -270,14 +299,7 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
   const isDirtyRef = useRef(false);
   const personFields = useMemo(
     () =>
-      registrationFields
-        .filter(
-          (field) =>
-            field.scope === 'person' &&
-            field.enabled &&
-            !['tshirt_size', 'tshirt_quantity'].includes(field.field_key)
-        )
-        .sort((a, b) => a.position - b.position),
+      registrationFields.filter((field) => field.scope === 'person' && field.enabled).sort((a, b) => a.position - b.position),
     [registrationFields]
   );
   const personFieldMap = useMemo(
@@ -385,7 +407,7 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
     });
     return counts;
   }, [ageBasedTickets, personTicketDetails]);
-  const tshirtQuantity = useMemo(
+  const additionalTshirtQuantity = useMemo(
     () =>
       (tshirtOrders ?? []).reduce((sum, order) => {
         const quantity = typeof order?.quantity === 'number' ? order.quantity : Number(order?.quantity ?? 0);
@@ -393,6 +415,19 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
       }, 0),
     [tshirtOrders]
   );
+  const participantTshirtQuantity = useMemo(
+    () =>
+      peopleRecords.reduce((sum, person) => {
+        const raw = person[TSHIRT_QUANTITY_KEY];
+        const quantity = typeof raw === 'number' ? raw : typeof raw === 'string' ? Number(raw) : 0;
+        if (!Number.isFinite(quantity) || quantity <= 0) {
+          return sum;
+        }
+        return sum + quantity;
+      }, 0),
+    [peopleRecords]
+  );
+  const totalTshirtQuantity = additionalTshirtQuantity + participantTshirtQuantity;
   const derivedTickets = useMemo(
     () =>
       tickets.map((ticket) => {
@@ -400,11 +435,11 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
         if (isAgeBasedTicket(ticket)) {
           quantity = ageTicketCounts.get(ticket.id) ?? 0;
         } else if (tshirtTicket && ticket.id === tshirtTicket.id) {
-          quantity = tshirtQuantity;
+          quantity = totalTshirtQuantity;
         }
         return { ticket_type_id: ticket.id, quantity };
       }),
-    [tickets, ageTicketCounts, tshirtTicket, tshirtQuantity]
+    [tickets, ageTicketCounts, tshirtTicket, totalTshirtQuantity]
   );
   const selectedTicketIds = useMemo(
     () => derivedTickets.filter((item) => item.quantity > 0).map((item) => item.ticket_type_id),
@@ -595,13 +630,14 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
   }, []);
 
   const ticketById = useMemo(() => new Map(tickets.map((ticket) => [ticket.id, ticket])), [tickets]);
-  const tshirtTotalCents = tshirtQuantity * TSHIRT_PRICE_CENTS;
+  const additionalTshirtTotalCents = additionalTshirtQuantity * TSHIRT_PRICE_CENTS;
+  const totalTshirtCents = totalTshirtQuantity * TSHIRT_PRICE_CENTS;
   const ticketTotalCents = derivedTickets.reduce((sum, item) => {
     const ticket = ticketById.get(item.ticket_type_id);
     if (!ticket) return sum;
     return sum + ticket.price_cents * (Number.isFinite(item.quantity) ? item.quantity : 0);
   }, 0);
-  const totalCents = tshirtTicket ? ticketTotalCents : ticketTotalCents + tshirtTotalCents;
+  const totalCents = tshirtTicket ? ticketTotalCents : ticketTotalCents + totalTshirtCents;
   const hasAgeTickets = ageBasedTickets.length > 0;
   const missingAgeEntry = personTicketDetails.find((detail) => detail.age === null);
   const unmatchedAgeEntry = personTicketDetails.find((detail) => detail.age !== null && !detail.ticket);
@@ -630,7 +666,7 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
         setLoading(false);
         return;
       }
-      if (tshirtQuantity > 0 && !tshirtTicket) {
+      if (totalTshirtQuantity > 0 && !tshirtTicket) {
         setError('T-shirt orders are unavailable right now. Please contact the reunion team.');
         setLoading(false);
         return;
@@ -834,10 +870,12 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
 
               const fieldName = `people.${index}.${fieldItem.field_key}` as const;
               const error = personErrors?.[fieldItem.field_key];
+              const isTshirtField = fieldItem.field_key === TSHIRT_SIZE_KEY || fieldItem.field_key === TSHIRT_QUANTITY_KEY;
               const isRequired =
-                ALWAYS_REQUIRED_KEYS.has(fieldItem.field_key) ||
-                fieldItem.required ||
-                (fieldItem.field_key === LINEAGE_OTHER_KEY && showLineageOther);
+                !isTshirtField &&
+                (ALWAYS_REQUIRED_KEYS.has(fieldItem.field_key) ||
+                  fieldItem.required ||
+                  (fieldItem.field_key === LINEAGE_OTHER_KEY && showLineageOther));
               const options = Array.isArray(fieldItem.options) ? fieldItem.options : [];
               const isReadOnly = sameContact && CONTACT_KEYS.includes(fieldItem.field_key);
               const wrapperClass =
@@ -954,8 +992,8 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
                     type={inputType}
                     min={
                       fieldItem.field_type === 'number'
-                        ? fieldItem.field_key === 'tshirt_quantity'
-                          ? 1
+                        ? fieldItem.field_key === TSHIRT_QUANTITY_KEY
+                          ? 0
                           : 0
                         : undefined
                     }
@@ -1222,8 +1260,10 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
               >
                 Add T-shirt
               </Button>
-              {tshirtQuantity > 0 && (
-                <p className="text-sm text-koa">T-shirt total: {formatCurrency(tshirtTotalCents)}</p>
+              {additionalTshirtQuantity > 0 && (
+                <p className="text-sm text-koa">
+                  Additional T-shirt total: {formatCurrency(additionalTshirtTotalCents)}
+                </p>
               )}
             </div>
           </div>
