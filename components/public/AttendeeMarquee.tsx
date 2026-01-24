@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { CSSProperties, MouseEvent } from 'react';
+import type { CSSProperties, MouseEvent, PointerEventHandler } from 'react';
 
 type Attendee = {
   name?: string | null;
@@ -20,11 +20,9 @@ const BUBBLE_SIZES = [112, 120, 128, 136];
 const BUBBLE_OFFSETS = [-28, -12, 8, 20, -18, 14];
 const BUBBLE_DRIFTS = [5.5, 6.5, 7.2, 8.4, 9.1];
 const FAST_SPEED_SCALE = 1;
-const SLOW_SPEED_SCALE = 0.8;
 const TOP_BASE_DURATION = 36;
 const BOTTOM_BASE_DURATION = 48;
-const SPEED_TRANSITION_MS = 650;
-const HOVER_DELAY_MS = 200;
+const DRAG_THRESHOLD_PX = 6;
 
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -36,16 +34,19 @@ function getInitials(name: string) {
 export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
   const [isPaused, setIsPaused] = useState(false);
   const [activeBubbleId, setActiveBubbleId] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [repeatCount, setRepeatCount] = useState(2);
   const marqueeRef = useRef<HTMLDivElement | null>(null);
   const topTrackRef = useRef<HTMLDivElement | null>(null);
   const bottomTrackRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
   const speedRef = useRef(FAST_SPEED_SCALE);
-  const transitionRef = useRef<{ from: number; to: number; start: number } | null>(null);
   const pausedRef = useRef(false);
-  const hoverRef = useRef(false);
-  const hoverDelayRef = useRef<number | null>(null);
+  const pointerIdRef = useRef<number | null>(null);
+  const dragStartRef = useRef<{ x: number; top: number; bottom: number } | null>(null);
+  const dragMovedRef = useRef(false);
+  const lastDragEndRef = useRef(0);
   const widthsRef = useRef({ top: 0, bottom: 0 });
   const offsetsRef = useRef({ top: 0, bottom: 0 });
   const items = useMemo(
@@ -68,8 +69,12 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
   );
   const isEmpty = items.length === 0;
 
-  const loopItems = items.length > 8 ? items : [...items, ...items];
-  const reverseItems = [...loopItems].reverse();
+  const loopItems = useMemo(() => {
+    if (!items.length) return [];
+    const repeats = Math.max(2, repeatCount);
+    return Array.from({ length: repeats }, () => items).flat();
+  }, [items, repeatCount]);
+  const reverseItems = useMemo(() => [...loopItems].reverse(), [loopItems]);
 
   const getBubbleStyle = (index: number, rowOffset: number) => {
     const size = BUBBLE_SIZES[(index + rowOffset) % BUBBLE_SIZES.length];
@@ -96,6 +101,17 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
       if (bottomTrackRef.current) {
         widthsRef.current.bottom = bottomTrackRef.current.scrollWidth / 2;
       }
+      const container = marqueeRef.current;
+      const track = topTrackRef.current;
+      if (container && track) {
+        const unitWidth = track.scrollWidth / (2 * repeatCount);
+        if (unitWidth > 0) {
+          const needed = Math.max(2, Math.ceil((container.offsetWidth * 2) / unitWidth));
+          if (needed > repeatCount) {
+            setRepeatCount(needed);
+          }
+        }
+      }
     };
 
     updateWidths();
@@ -103,9 +119,10 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
     const observer = new ResizeObserver(updateWidths);
     if (topTrackRef.current) observer.observe(topTrackRef.current);
     if (bottomTrackRef.current) observer.observe(bottomTrackRef.current);
+    if (marqueeRef.current) observer.observe(marqueeRef.current);
 
     return () => observer.disconnect();
-  }, [loopItems.length, isEmpty]);
+  }, [loopItems.length, isEmpty, repeatCount]);
 
   useEffect(() => {
     if (isEmpty) return;
@@ -121,17 +138,6 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
       const lastTime = lastTimeRef.current ?? time;
       const delta = Math.min(0.05, (time - lastTime) / 1000);
       lastTimeRef.current = time;
-
-      if (transitionRef.current) {
-        const elapsed = time - transitionRef.current.start;
-        const progress = Math.min(1, elapsed / SPEED_TRANSITION_MS);
-        const eased = progress * (2 - progress);
-        const nextSpeed = transitionRef.current.from + (transitionRef.current.to - transitionRef.current.from) * eased;
-        speedRef.current = nextSpeed;
-        if (progress >= 1) {
-          transitionRef.current = null;
-        }
-      }
 
       const nextSpeed = speedRef.current;
 
@@ -162,16 +168,16 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
     };
   }, [isEmpty]);
 
-  const startSpeedTransition = (nextSpeed: number) => {
-    const start = typeof performance !== 'undefined' ? performance.now() : Date.now();
-    transitionRef.current = {
-      from: speedRef.current,
-      to: nextSpeed,
-      start
-    };
+  const wrapOffset = (value: number, width: number) => {
+    if (width <= 0) return 0;
+    const wrapped = value % width;
+    return wrapped < 0 ? wrapped + width : wrapped;
   };
 
   const handleBubbleClick = (bubbleId: string) => (event: MouseEvent<HTMLDivElement>) => {
+    if (Date.now() - lastDragEndRef.current < 200) {
+      return;
+    }
     event.stopPropagation();
     setActiveBubbleId((prev) => {
       const next = prev === bubbleId ? null : bubbleId;
@@ -181,32 +187,66 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
   };
 
   const handleSectionClick = () => {
+    if (Date.now() - lastDragEndRef.current < 200) {
+      return;
+    }
     if (!activeBubbleId && !isPaused) return;
     setActiveBubbleId(null);
     setIsPaused(false);
   };
 
-  const handleSectionEnter = () => {
-    if (hoverRef.current) return;
-    if (hoverDelayRef.current) {
-      window.clearTimeout(hoverDelayRef.current);
-    }
-    hoverDelayRef.current = window.setTimeout(() => {
-      hoverRef.current = true;
-      startSpeedTransition(SLOW_SPEED_SCALE);
-      hoverDelayRef.current = null;
-    }, HOVER_DELAY_MS);
+  const handlePointerDown: PointerEventHandler<HTMLDivElement> = (event) => {
+    if (event.button !== 0) return;
+    pointerIdRef.current = event.pointerId;
+    dragStartRef.current = {
+      x: event.clientX,
+      top: offsetsRef.current.top,
+      bottom: offsetsRef.current.bottom
+    };
+    dragMovedRef.current = false;
+    lastDragEndRef.current = 0;
+    setIsDragging(true);
+    setIsPaused(true);
+    event.currentTarget.setPointerCapture(event.pointerId);
   };
 
-  const handleSectionLeave = () => {
-    if (hoverDelayRef.current) {
-      window.clearTimeout(hoverDelayRef.current);
-      hoverDelayRef.current = null;
+  const handlePointerMove: PointerEventHandler<HTMLDivElement> = (event) => {
+    if (pointerIdRef.current !== event.pointerId) return;
+    if (!dragStartRef.current) return;
+    const deltaX = event.clientX - dragStartRef.current.x;
+    if (!dragMovedRef.current && Math.abs(deltaX) > DRAG_THRESHOLD_PX) {
+      dragMovedRef.current = true;
     }
-    hoverRef.current = false;
-    startSpeedTransition(FAST_SPEED_SCALE);
+    if (!dragMovedRef.current) return;
+
+    const topWidth = widthsRef.current.top;
+    if (topTrackRef.current && topWidth > 0) {
+      const nextTop = wrapOffset(dragStartRef.current.top - deltaX, topWidth);
+      offsetsRef.current.top = nextTop;
+      topTrackRef.current.style.transform = `translate3d(${-nextTop}px, 0, 0)`;
+    }
+
+    const bottomWidth = widthsRef.current.bottom;
+    if (bottomTrackRef.current && bottomWidth > 0) {
+      const nextBottom = wrapOffset(dragStartRef.current.bottom + deltaX, bottomWidth);
+      offsetsRef.current.bottom = nextBottom;
+      bottomTrackRef.current.style.transform = `translate3d(${nextBottom}px, 0, 0)`;
+    }
+  };
+
+  const handlePointerUp: PointerEventHandler<HTMLDivElement> = (event) => {
+    if (pointerIdRef.current !== event.pointerId) return;
+    pointerIdRef.current = null;
+    dragStartRef.current = null;
+    event.currentTarget.releasePointerCapture(event.pointerId);
+    const wasDragging = dragMovedRef.current;
+    dragMovedRef.current = false;
+    setIsDragging(false);
+    if (wasDragging) {
+      lastDragEndRef.current = Date.now();
+      setActiveBubbleId(null);
+    }
     setIsPaused(false);
-    setActiveBubbleId(null);
   };
 
   return isEmpty ? (
@@ -216,26 +256,12 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
   ) : (
     <div
       ref={marqueeRef}
-      className={`marquee marquee--js${isPaused ? ' marquee--paused' : ''}`}
+      className={`marquee marquee--js${isPaused ? ' marquee--paused' : ''}${isDragging ? ' marquee--dragging' : ''}`}
       onClick={handleSectionClick}
-      onMouseEnter={handleSectionEnter}
-      onMouseLeave={handleSectionLeave}
-      onTouchStart={() => {
-        hoverRef.current = true;
-        if (hoverDelayRef.current) {
-          window.clearTimeout(hoverDelayRef.current);
-          hoverDelayRef.current = null;
-        }
-        startSpeedTransition(SLOW_SPEED_SCALE);
-      }}
-      onTouchEnd={() => {
-        hoverRef.current = false;
-        startSpeedTransition(FAST_SPEED_SCALE);
-      }}
-      onTouchCancel={() => {
-        hoverRef.current = false;
-        startSpeedTransition(FAST_SPEED_SCALE);
-      }}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
     >
       <div ref={topTrackRef} className="marquee-track marquee-track-top">
         {loopItems.map((attendee, index) => {

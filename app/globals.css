@@ -154,6 +154,8 @@ main {
 .marquee {
   @apply relative overflow-hidden py-10;
   min-height: 400px;
+  touch-action: pan-y;
+  cursor: grab;
 }
 
 .marquee-empty {
@@ -166,6 +168,11 @@ main {
 
 .marquee--paused .animate-float {
   animation-play-state: paused;
+}
+
+.marquee--dragging {
+  cursor: grabbing;
+  user-select: none;
 }
 
 .marquee--js .marquee-track {
