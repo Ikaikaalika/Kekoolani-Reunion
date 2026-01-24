@@ -19,7 +19,7 @@ type AttendeeMarqueeProps = {
 const BUBBLE_SIZES = [112, 120, 128, 136];
 const BUBBLE_OFFSETS = [-28, -12, 8, 20, -18, 14];
 const BUBBLE_DRIFTS = [5.5, 6.5, 7.2, 8.4, 9.1];
-const FAST_SPEED_SCALE = 0.75;
+const FAST_SPEED_SCALE = 0.375;
 const TOP_BASE_DURATION = 36;
 const BOTTOM_BASE_DURATION = 48;
 const MIN_BUBBLES_PER_ROW = 12;
@@ -156,9 +156,10 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
 
         const bottomWidth = widthsRef.current.bottom;
         if (bottomWidth > 0) {
-          const bottomSpeed = (bottomWidth / BOTTOM_BASE_DURATION) * nextSpeed;
-          offsetsRef.current.bottom = (offsetsRef.current.bottom + bottomSpeed * delta) % bottomWidth;
-          bottomTrack.style.transform = `translate3d(${offsetsRef.current.bottom}px, 0, 0)`;
+        const bottomSpeed = (bottomWidth / BOTTOM_BASE_DURATION) * nextSpeed;
+        const nextBottom = wrapOffset(offsetsRef.current.bottom - bottomSpeed * delta, bottomWidth);
+        offsetsRef.current.bottom = nextBottom;
+        bottomTrack.style.transform = `translate3d(${-nextBottom}px, 0, 0)`;
         }
       }
 
@@ -233,9 +234,9 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
 
     const bottomWidth = widthsRef.current.bottom;
     if (bottomTrackRef.current && bottomWidth > 0) {
-      const nextBottom = wrapOffset(dragStartRef.current.bottom + deltaX, bottomWidth);
+      const nextBottom = wrapOffset(dragStartRef.current.bottom - deltaX, bottomWidth);
       offsetsRef.current.bottom = nextBottom;
-      bottomTrackRef.current.style.transform = `translate3d(${nextBottom}px, 0, 0)`;
+      bottomTrackRef.current.style.transform = `translate3d(${-nextBottom}px, 0, 0)`;
     }
   };
 
