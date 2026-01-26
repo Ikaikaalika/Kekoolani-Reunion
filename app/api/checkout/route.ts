@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { checkoutSchema } from '@/lib/validators';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getStripeClient } from '@/lib/stripe';
-import { getParticipantAge, getPeopleFromAnswers, selectTicketForAge } from '@/lib/orderUtils';
+import { getParticipantAge, getPeopleFromAnswers, isParticipantAttending, selectTicketForAge } from '@/lib/orderUtils';
 import type { Database } from '@/types/supabase';
 
 type TicketRow = Database['public']['Tables']['ticket_types']['Row'];
@@ -19,31 +19,16 @@ export async function POST(request: Request) {
     const paymentMethod = parsed.payment_method;
 
     const lineItems = parsed.tickets.filter((ticket) => ticket.quantity > 0);
-    if (!lineItems.length) {
+
+    const people = getPeopleFromAnswers(parsed.answers ?? {});
+    const attendingPeople = people.filter((person) => isParticipantAttending(person));
+
+    if (!lineItems.length && attendingPeople.length > 0) {
       return NextResponse.json({ error: 'Select at least one ticket.' }, { status: 400 });
     }
 
-    const { data: ticketTypes, error: ticketError } = await supabaseAdmin
-      .from('ticket_types')
-      .select('*')
-      .in(
-        'id',
-        lineItems.map((item) => item.ticket_type_id)
-      )
-      .eq('active', true);
-
-    if (ticketError) {
-      console.error(ticketError);
-      throw new Error('Unable to fetch tickets');
-    }
-
-    if (!ticketTypes || ticketTypes.length === 0) {
-      return NextResponse.json({ error: 'Tickets not available.' }, { status: 400 });
-    }
-
-    const ticketRecords = ticketTypes as TicketRow[];
-    const ticketsById = new Map(ticketRecords.map((ticket) => [ticket.id, ticket] as const));
-
+    let ticketRecords: TicketRow[] = [];
+    let ticketsById = new Map<string, TicketRow>();
     let totalCents = 0;
     const orderItems: Array<{
       ticket_type_id: string;
@@ -52,29 +37,56 @@ export async function POST(request: Request) {
       name: string;
     }> = [];
 
-    for (const item of lineItems) {
-      const ticket = ticketsById.get(item.ticket_type_id);
-      if (!ticket) {
-        return NextResponse.json({ error: 'A selected ticket is unavailable.' }, { status: 400 });
+    if (lineItems.length) {
+      const { data: ticketTypes, error: ticketError } = await supabaseAdmin
+        .from('ticket_types')
+        .select('*')
+        .in(
+          'id',
+          lineItems.map((item) => item.ticket_type_id)
+        )
+        .eq('active', true);
+
+      if (ticketError) {
+        console.error(ticketError);
+        throw new Error('Unable to fetch tickets');
       }
-      if (typeof ticket.inventory === 'number' && item.quantity > ticket.inventory) {
-        return NextResponse.json({ error: `${ticket.name} only has ${ticket.inventory} left.` }, { status: 400 });
+
+      if (!ticketTypes || ticketTypes.length === 0) {
+        return NextResponse.json({ error: 'Tickets not available.' }, { status: 400 });
       }
-      totalCents += ticket.price_cents * item.quantity;
-      orderItems.push({ ticket_type_id: ticket.id, quantity: item.quantity, unit_amount: ticket.price_cents, name: ticket.name });
+
+      ticketRecords = ticketTypes as TicketRow[];
+      ticketsById = new Map(ticketRecords.map((ticket) => [ticket.id, ticket] as const));
+
+      for (const item of lineItems) {
+        const ticket = ticketsById.get(item.ticket_type_id);
+        if (!ticket) {
+          return NextResponse.json({ error: 'A selected ticket is unavailable.' }, { status: 400 });
+        }
+        if (typeof ticket.inventory === 'number' && item.quantity > ticket.inventory) {
+          return NextResponse.json({ error: `${ticket.name} only has ${ticket.inventory} left.` }, { status: 400 });
+        }
+        totalCents += ticket.price_cents * item.quantity;
+        orderItems.push({
+          ticket_type_id: ticket.id,
+          quantity: item.quantity,
+          unit_amount: ticket.price_cents,
+          name: ticket.name
+        });
+      }
     }
 
-    const people = getPeopleFromAnswers(parsed.answers ?? {});
     const ticketQuantitiesById = new Map(lineItems.map((item) => [item.ticket_type_id, item.quantity]));
     const ageBasedTickets = ticketRecords.filter(
       (ticket) => typeof ticket.age_min === 'number' || typeof ticket.age_max === 'number'
     );
-    if (!ageBasedTickets.length && people.length) {
+    if (!ageBasedTickets.length && attendingPeople.length) {
       return NextResponse.json({ error: 'Registration tickets are not available yet.' }, { status: 400 });
     }
     const ageTicketCounts = new Map<string, number>();
     ageBasedTickets.forEach((ticket) => ageTicketCounts.set(ticket.id, 0));
-    for (const person of people) {
+    for (const person of attendingPeople) {
       const age = getParticipantAge(person);
       if (age === null) {
         return NextResponse.json({ error: 'Age is required for every participant.' }, { status: 400 });
@@ -142,13 +154,17 @@ export async function POST(request: Request) {
     const stripeEnabled = paymentMethod === 'stripe' && process.env.STRIPE_CHECKOUT_ENABLED === 'true';
 
     if (!stripeEnabled) {
-      const attendeeInserts: AttendeeInsert[] = Array.from({ length: people.length }).map(() => ({
+      const attendeeInserts: AttendeeInsert[] = Array.from({ length: attendingPeople.length }).map(() => ({
         order_id: orderRecord.id,
         answers: orderRecord.form_answers ?? {}
       }));
       if (attendeeInserts.length) {
         await (supabaseAdmin.from('attendees') as any).insert(attendeeInserts);
       }
+      return NextResponse.json({ redirectUrl });
+    }
+
+    if (!orderItems.length) {
       return NextResponse.json({ redirectUrl });
     }
 

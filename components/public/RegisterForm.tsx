@@ -20,6 +20,7 @@ const PRIMARY_EMAIL_KEY = 'email';
 const LINEAGE_KEY = 'lineage';
 const LINEAGE_OTHER_KEY = 'lineage_other';
 const AGE_KEY = 'age';
+const ATTENDING_KEY = 'attending';
 const SAME_CONTACT_KEY = 'same_contact';
 const SHOW_NAME_KEY = 'show_name';
 const SHOW_PHOTO_KEY = 'show_photo';
@@ -368,6 +369,9 @@ function createEmptyPerson(fields: RegistrationField[]) {
   if (!(SAME_CONTACT_KEY in person)) {
     person[SAME_CONTACT_KEY] = false;
   }
+  if (!(ATTENDING_KEY in person)) {
+    person[ATTENDING_KEY] = true;
+  }
   return person;
 }
 
@@ -509,6 +513,10 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
     () => (Array.isArray(people) ? (people as Record<string, unknown>[]) : []),
     [people]
   );
+  const attendingPeople = useMemo(
+    () => peopleRecords.filter((person) => person[ATTENDING_KEY] !== false),
+    [peopleRecords]
+  );
   const ageBasedTickets = useMemo(() => tickets.filter(isAgeBasedTicket), [tickets]);
   const tshirtTicket = useMemo(() => {
     return (
@@ -531,12 +539,15 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
   const ageTicketCounts = useMemo(() => {
     const counts = new Map<string, number>();
     ageBasedTickets.forEach((ticket) => counts.set(ticket.id, 0));
-    personTicketDetails.forEach(({ ticket }) => {
+    attendingPeople.forEach((person) => {
+      const age = getParticipantAge(person);
+      if (age === null) return;
+      const ticket = selectTicketForAge(ageBasedTickets, age);
       if (!ticket) return;
       counts.set(ticket.id, (counts.get(ticket.id) ?? 0) + 1);
     });
     return counts;
-  }, [ageBasedTickets, personTicketDetails]);
+  }, [ageBasedTickets, attendingPeople]);
   const additionalTshirtQuantity = useMemo(
     () =>
       (tshirtOrders ?? []).reduce((sum, order) => {
@@ -787,14 +798,19 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
   }, 0);
   const totalCents = tshirtTicket ? ticketTotalCents : ticketTotalCents + totalTshirtCents;
   const hasAgeTickets = ageBasedTickets.length > 0;
-  const missingAgeEntry = personTicketDetails.find((detail) => detail.age === null);
-  const unmatchedAgeEntry = personTicketDetails.find((detail) => detail.age !== null && !detail.ticket);
+  const missingAgeEntry = attendingPeople.find((person) => getParticipantAge(person) === null);
+  const unmatchedAgeEntry = attendingPeople.find((person) => {
+    const age = getParticipantAge(person);
+    if (age === null) return false;
+    return !selectTicketForAge(ageBasedTickets, age);
+  });
+  const isZeroBalance = totalCents === 0;
 
   const onSubmit = handleSubmit(async (data) => {
     setError(null);
     setLoading(true);
     try {
-      if (!hasAgeTickets) {
+      if (attendingPeople.length > 0 && !hasAgeTickets) {
         setError('Registration tickets are not available yet. Please check back soon.');
         setLoading(false);
         return;
@@ -805,7 +821,8 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
         return;
       }
       if (unmatchedAgeEntry) {
-        setError(`No ticket is configured for age ${unmatchedAgeEntry.age}. Please contact the reunion team.`);
+        const age = getParticipantAge(unmatchedAgeEntry as Record<string, unknown>);
+        setError(`No ticket is configured for age ${age}. Please contact the reunion team.`);
         setLoading(false);
         return;
       }
@@ -820,7 +837,7 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
         return;
       }
       const derivedTicketPayload = derivedTickets.filter((item) => item.quantity > 0);
-      if (!derivedTicketPayload.length) {
+      if (!derivedTicketPayload.length && !isZeroBalance) {
         setError('Select at least one ticket.');
         setLoading(false);
         return;
@@ -856,9 +873,8 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
               }
               record[field.field_key] = normalizeFieldValue(field, value);
             });
-            if (typeof record.attending !== 'boolean') {
-              record.attending = true;
-            }
+            const rawPerson = (rawValues as any)?.people?.[index] ?? {};
+            record.attending = rawPerson[ATTENDING_KEY] !== false;
             if (typeof record.refunded !== 'boolean') {
               record.refunded = false;
             }
@@ -1167,22 +1183,28 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
                     <p className="mono text-xs uppercase tracking-[0.3em] text-koa">{personLabel}</p>
                     <h3 className="mt-2 text-xl font-semibold text-black">Personal Details</h3>
                   </div>
-                  {index > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        removePerson(index);
-                        const next = [...(photoUrls ?? [])];
-                        if (next.length) {
-                          next.splice(index, 1);
-                          setValue('photo_urls', next, { shouldDirty: true, shouldValidate: true });
-                        }
-                      }}
-                      className="text-xs font-semibold text-red-500 underline"
-                    >
-                      Remove
-                    </button>
-                  )}
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 text-xs font-semibold text-koa">
+                      <input type="checkbox" className="h-4 w-4" {...register(`people.${index}.${ATTENDING_KEY}` as const)} />
+                      Attending in person
+                    </label>
+                    {index > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          removePerson(index);
+                          const next = [...(photoUrls ?? [])];
+                          if (next.length) {
+                            next.splice(index, 1);
+                            setValue('photo_urls', next, { shouldDirty: true, shouldValidate: true });
+                          }
+                        }}
+                        className="text-xs font-semibold text-red-500 underline"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {sectionGroups.map((section) => (
@@ -1342,7 +1364,9 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
                 )}
                 <div className="mt-6 rounded-2xl border border-slate-200 bg-sand-50 px-5 py-4">
                   <p className="mono text-xs uppercase tracking-[0.3em] text-koa">Ticket</p>
-                  {!ticketDetail || ticketDetail.age === null ? (
+                  {people?.[index]?.[ATTENDING_KEY] === false ? (
+                    <p className="mt-2 text-sm text-koa">Marked as not attending. No reunion ticket required.</p>
+                  ) : !ticketDetail || ticketDetail.age === null ? (
                     <p className="mt-2 text-sm text-koa">Enter an age to see the ticket type and price.</p>
                   ) : ticketDetail?.ticket ? (
                     <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm text-sand-700">
@@ -1504,19 +1528,32 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
             We are recording your preferred payment method. No payment will be collected yet.
           </p>
           <div className="grid gap-3 sm:grid-cols-3">
-            <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
-              <input type="radio" value="stripe" className="h-4 w-4" {...register('payment_method')} />
+            <label
+              className={`flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm ${
+                isZeroBalance ? 'cursor-not-allowed opacity-60' : ''
+              }`}
+            >
+              <input type="radio" value="stripe" className="h-4 w-4" disabled={isZeroBalance} {...register('payment_method')} />
               <span>Stripe</span>
             </label>
-            <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
-              <input type="radio" value="paypal" className="h-4 w-4" {...register('payment_method')} />
+            <label
+              className={`flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm ${
+                isZeroBalance ? 'cursor-not-allowed opacity-60' : ''
+              }`}
+            >
+              <input type="radio" value="paypal" className="h-4 w-4" disabled={isZeroBalance} {...register('payment_method')} />
               <span>PayPal</span>
             </label>
-            <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
-              <input type="radio" value="check" className="h-4 w-4" {...register('payment_method')} />
+            <label
+              className={`flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm ${
+                isZeroBalance ? 'cursor-not-allowed opacity-60' : ''
+              }`}
+            >
+              <input type="radio" value="check" className="h-4 w-4" disabled={isZeroBalance} {...register('payment_method')} />
               <span>Mail-in check</span>
             </label>
           </div>
+          {isZeroBalance && <p className="text-xs text-koa">No payment is required for this registration.</p>}
           {errors.payment_method && <p className="text-xs text-red-500">{errors.payment_method.message}</p>}
         </div>
 
