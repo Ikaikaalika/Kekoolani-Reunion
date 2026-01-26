@@ -33,7 +33,7 @@ export async function upsertQuestion(formData: FormData) {
     field_type: String(data.field_type ?? 'text') as any,
     options,
     required: data.required === 'on' || data.required === 'true',
-    position: data.position ? Number(data.position) : null
+    position: data.position ? Number(data.position) : undefined
   };
 
   const parsed = questionSchema.safeParse(payload);

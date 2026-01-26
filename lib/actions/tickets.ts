@@ -16,7 +16,7 @@ export async function upsertTicket(formData: FormData) {
     age_min: data.age_min ? Number(data.age_min) : null,
     age_max: data.age_max ? Number(data.age_max) : null,
     active: data.active === 'on' || data.active === 'true',
-    position: data.position ? Number(data.position) : null
+    position: data.position ? Number(data.position) : undefined
   };
 
   const parsed = ticketTypeSchema.safeParse(payload);
