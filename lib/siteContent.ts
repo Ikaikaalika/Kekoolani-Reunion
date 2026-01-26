@@ -113,38 +113,38 @@ const DEFAULT_SCHEDULE: ScheduleEntry[] = [
     time: 'Friday, 7/10/26 · 10:00 am – 3:30 pm',
     title: 'Jade & Meleʻs home in Kaʻūmana',
     items: [
-      '10:00 am – 10:30 am Hoʻolauna (Meet & greet)',
-      '10:30 am – 11:15 am Genealogy session',
-      '11:15 am – 12:00 pm Keiki activities',
-      '12:00 pm – 12:45 pm Lunch',
-      '12:45 pm – 1:30 pm Moʻolelo with our kūpuna',
-      '1:30 pm – 2:15 pm Hula workshops',
-      '2:15 pm – 2:45 pm Kanikapila',
-      '2:45 pm – 3:30 pm Makahiki games'
+      '10:00 am Hoʻolauna (Meet & greet)',
+      '10:30 am Genealogy session',
+      '11:15 am Keiki activities',
+      '12:00 pm Lunch',
+      '12:45 pm Moʻolelo with our kūpuna',
+      '1:30 pm Hula workshops',
+      '2:15 pm Kanikapila',
+      '2:45 pm Makahiki games'
     ]
   },
   {
     time: 'Saturday, 7/11/26 · 8:00 am – 3:00 pm',
     title: 'Huakaʻi to Waipiʻo',
     items: [
-      '8:00 am – 10:30 am Visit into Waipiʻo valley',
-      '11:00 am – 12:30 pm Lunch at Kukuihaele Park',
-      '1:00 pm – 2:30 pm Visit Kalopa family graves'
+      '8:00 am Visit into Waipiʻo valley',
+      '11:00 am Lunch at Kukuihaele Park',
+      '1:00 pm Visit Kalopa family graves'
     ]
   },
   {
     time: 'Sunday, 7/12/26 · 9:00 am – 1:00 pm • 4:00 pm – 9:00 pm',
-    title: 'Jade & Meleʻs home in Kaʻūmana',
+    title: 'Jade & Meleʻs home in Kaʻūmana · The Arc of Hilo',
     items: [
-      '9:00 am – 10:00 am Visit Alae Cemetery',
-      '10:15 am – 11:30 am Hula Workshops / Kanikapila',
-      '11:30 am – 12:15 pm Family activities',
-      '12:15 pm – 1:00 pm Lunch',
-      '4:00 pm – 5:00 pm Family lūʻau',
-      '5:30 pm – 6:15 pm Dinner',
-      '6:30 pm – 7:15 pm Entertainment',
-      '7:15 pm – 8:15 pm Family sharing',
-      '8:15 pm – 9:00 pm Closing / A hui hou'
+      '9:00 am Visit Alae Cemetery',
+      '10:15 am Hula Workshops / Kanikapila',
+      '11:30 am Family activities',
+      '12:15 pm Lunch',
+      '4:00 pm Family lūʻau — The Arc of Hilo',
+      '5:30 pm Dinner — The Arc of Hilo',
+      '6:30 pm Entertainment — The Arc of Hilo',
+      '7:15 pm Family sharing — The Arc of Hilo',
+      '8:15 pm Closing / A hui hou — The Arc of Hilo'
     ]
   }
 ];

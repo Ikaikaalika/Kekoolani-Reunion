@@ -316,11 +316,19 @@ export default async function HomePage() {
                 const agendaItems = entry.items?.length ? entry.items : entry.description ? [entry.description] : [];
                 const parsedAgenda = agendaItems.map((item) => splitScheduleItem(item));
                 const hasTimes = parsedAgenda.some((item) => item.time);
+                const isSundayArc = entry.time.toLowerCase().includes('sunday');
 
                 return (
                   <div key={`${entry.time}-${idx}`} className="card shadow-soft p-6 transition hover:-translate-y-1">
                     <p className="section-title">{entry.time}</p>
                     <h3 className="mt-3 text-xl font-semibold text-sand-900">{entry.title}</h3>
+                    {isSundayArc && (
+                      <div className="mt-3 text-sm text-sand-700">
+                        <p className="font-semibold text-sand-900">The Arc of Hilo</p>
+                        <p>1099 Waianuenue Ave.</p>
+                        <p>Hilo, HI 96720-2019</p>
+                      </div>
+                    )}
                     <div className="mt-4 space-y-3 text-sm text-sand-700">
                       {parsedAgenda.map((item, itemIdx) =>
                         hasTimes ? (
@@ -339,6 +347,17 @@ export default async function HomePage() {
                         )
                       )}
                     </div>
+                    {isSundayArc && (
+                      <div className="mt-6 overflow-hidden rounded-2xl border border-sand-200 bg-white/80">
+                        <iframe
+                          title="The Arc of Hilo map"
+                          src="https://www.google.com/maps?q=The%20Arc%20of%20Hilo%2C%201099%20Waianuenue%20Ave.%2C%20Hilo%2C%20HI%2096720-2019&output=embed"
+                          className="h-64 w-full"
+                          loading="lazy"
+                          referrerPolicy="no-referrer-when-downgrade"
+                        />
+                      </div>
+                    )}
                   </div>
                 );
               })}
