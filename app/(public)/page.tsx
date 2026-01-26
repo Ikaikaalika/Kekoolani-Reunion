@@ -316,7 +316,9 @@ export default async function HomePage() {
                 const agendaItems = entry.items?.length ? entry.items : entry.description ? [entry.description] : [];
                 const parsedAgenda = agendaItems.map((item) => splitScheduleItem(item));
                 const hasTimes = parsedAgenda.some((item) => item.time);
-                const isSundayArc = entry.time.toLowerCase().includes('sunday');
+                const lowerTime = entry.time.toLowerCase();
+                const isSundayArc = lowerTime.includes('sunday');
+                const isSaturday = lowerTime.includes('saturday');
 
                 return (
                   <div key={`${entry.time}-${idx}`} className="card shadow-soft p-6 transition hover:-translate-y-1">
@@ -356,6 +358,28 @@ export default async function HomePage() {
                           loading="lazy"
                           referrerPolicy="no-referrer-when-downgrade"
                         />
+                      </div>
+                    )}
+                    {isSaturday && (
+                      <div className="mt-6 grid gap-4 md:grid-cols-2">
+                        <div className="overflow-hidden rounded-2xl border border-sand-200 bg-white/80">
+                          <iframe
+                            title="Waipio Valley Lookout map"
+                            src="https://www.google.com/maps?q=Waipi%CA%BBo%20Valley%20Lookout%2C%20Kukuihaele%2C%20HI&output=embed"
+                            className="h-56 w-full"
+                            loading="lazy"
+                            referrerPolicy="no-referrer-when-downgrade"
+                          />
+                        </div>
+                        <div className="overflow-hidden rounded-2xl border border-sand-200 bg-white/80">
+                          <iframe
+                            title="Kukuihaele Park map"
+                            src="https://www.google.com/maps?q=Kukuihaele%20Park%2C%20Kukuihaele%2C%20HI&output=embed"
+                            className="h-56 w-full"
+                            loading="lazy"
+                            referrerPolicy="no-referrer-when-downgrade"
+                          />
+                        </div>
                       </div>
                     )}
                   </div>
