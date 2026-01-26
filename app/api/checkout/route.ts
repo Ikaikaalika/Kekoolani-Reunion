@@ -18,10 +18,25 @@ export async function POST(request: Request) {
     const parsed = checkoutSchema.parse(body);
     const paymentMethod = parsed.payment_method;
 
-    const lineItems = parsed.tickets.filter((ticket) => ticket.quantity > 0);
+    const lineItems = (parsed.tickets ?? []).filter((ticket) => ticket.quantity > 0);
 
-    const people = getPeopleFromAnswers(parsed.answers ?? {});
+    const answers = parsed.answers ?? {};
+    const people = getPeopleFromAnswers(answers);
     const attendingPeople = people.filter((person) => isParticipantAttending(person));
+    const tshirtOrders = Array.isArray((answers as Record<string, unknown>)?.tshirt_orders)
+      ? ((answers as Record<string, unknown>).tshirt_orders as Array<Record<string, unknown>>)
+      : [];
+    const personTshirtQuantity = people.reduce((sum, person) => {
+      const raw = person.tshirt_quantity;
+      const quantity = typeof raw === 'number' ? raw : typeof raw === 'string' ? Number(raw) : 0;
+      return sum + (Number.isFinite(quantity) && quantity > 0 ? quantity : 0);
+    }, 0);
+    const additionalTshirtQuantity = tshirtOrders.reduce((sum, order) => {
+      const raw = order?.quantity;
+      const quantity = typeof raw === 'number' ? raw : typeof raw === 'string' ? Number(raw) : 0;
+      return sum + (Number.isFinite(quantity) && quantity > 0 ? quantity : 0);
+    }, 0);
+    const totalTshirtQuantity = personTshirtQuantity + additionalTshirtQuantity;
 
     if (!lineItems.length && attendingPeople.length > 0) {
       return NextResponse.json({ error: 'Select at least one ticket.' }, { status: 400 });
@@ -36,6 +51,7 @@ export async function POST(request: Request) {
       unit_amount: number;
       name: string;
     }> = [];
+    const isTshirtTicketName = (name: string) => name.toLowerCase().includes('shirt');
 
     if (lineItems.length) {
       const { data: ticketTypes, error: ticketError } = await supabaseAdmin
@@ -73,6 +89,57 @@ export async function POST(request: Request) {
           quantity: item.quantity,
           unit_amount: ticket.price_cents,
           name: ticket.name
+        });
+      }
+    }
+
+    if (totalTshirtQuantity > 0 && !orderItems.some((item) => isTshirtTicketName(item.name))) {
+      const TSHIRT_PRICE_CENTS = 2500;
+      let tshirtTicket: TicketRow | null = null;
+
+      const { data: tshirtTickets } = await supabaseAdmin
+        .from('ticket_types')
+        .select('*')
+        .eq('active', true)
+        .eq('price_cents', TSHIRT_PRICE_CENTS)
+        .ilike('name', '%shirt%')
+        .limit(1);
+
+      if (tshirtTickets && tshirtTickets.length) {
+        tshirtTicket = tshirtTickets[0] as TicketRow;
+      }
+
+      if (!tshirtTicket) {
+        const { data: inserted, error: insertError } = await (supabaseAdmin
+          .from('ticket_types') as any)
+          .insert([
+            {
+              name: 'Reunion T-Shirt',
+              description: 'Reunion T-Shirt',
+              price_cents: TSHIRT_PRICE_CENTS,
+              currency: 'usd',
+              active: true,
+              position: 99
+            }
+          ])
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error(insertError);
+          throw new Error('Unable to create T-shirt ticket');
+        }
+
+        tshirtTicket = inserted as TicketRow;
+      }
+
+      if (tshirtTicket) {
+        totalCents += tshirtTicket.price_cents * totalTshirtQuantity;
+        orderItems.push({
+          ticket_type_id: tshirtTicket.id,
+          quantity: totalTshirtQuantity,
+          unit_amount: tshirtTicket.price_cents,
+          name: tshirtTicket.name
         });
       }
     }

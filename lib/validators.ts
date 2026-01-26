@@ -69,7 +69,8 @@ export const checkoutSchema = z.object({
         quantity: z.number().int().min(0)
       })
     )
-    .min(1),
+    .optional()
+    .default([]),
   answers: z.record(z.string(), z.any()).optional().default({})
 });
 

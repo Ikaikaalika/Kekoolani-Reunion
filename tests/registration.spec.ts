@@ -1,0 +1,114 @@
+import { test, expect } from '@playwright/test';
+
+async function fillPrimaryParticipant(page: any) {
+  await page.locator('input[name="people.0.full_name"]').fill('Test Attendee');
+  await page.locator('input[name="people.0.age"]').fill('25');
+  await page.locator('input[name="people.0.relationship"]').fill('Cousin');
+  await page.locator('select[name="people.0.lineage"]').selectOption('Nawai');
+  await page.locator('input[name="people.0.attendance_days"][value="Friday"]').check();
+  await page.locator('input[name="people.0.attendance_days"][value="Saturday"]').check();
+  await page.locator('input[name="people.0.attendance_days"][value="Sunday"]').check();
+  await page.locator('input[name="people.0.email"]').fill('test@example.com');
+  await page.locator('input[name="people.0.phone"]').fill('808-555-1111');
+  await page.locator('textarea[name="people.0.address"]').fill('123 Test St, Hilo, HI');
+}
+
+test('registration: paid attendee with t-shirt and paypal link', async ({ page }) => {
+  await page.route('**/api/checkout', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        redirectUrl: '/success?order=order-123&status=pending&method=paypal&amount=6000'
+      })
+    });
+  });
+
+  await page.goto('/register');
+  await fillPrimaryParticipant(page);
+
+  await page.locator('select[name="people.0.tshirt_category"]').selectOption('mens');
+  await page.locator('select[name="people.0.tshirt_style"]').selectOption('T-shirt');
+  await page.locator('select[name="people.0.tshirt_size"]').selectOption('M');
+  await page.locator('input[name="people.0.tshirt_quantity"]').fill('1');
+
+  await page.getByRole('button', { name: 'Add T-shirt' }).click();
+  await page.locator('select[name="tshirt_orders.0.category"]').selectOption('womens');
+  await page.locator('select[name="tshirt_orders.0.style"]').selectOption('V-neck');
+  await page.locator('select[name="tshirt_orders.0.size"]').selectOption('S');
+  await page.locator('input[name="tshirt_orders.0.quantity"]').fill('1');
+
+  await page.getByLabel('PayPal').check();
+  await page.getByRole('button', { name: 'Submit Registration' }).click();
+
+  await expect(page).toHaveURL(/\/success\?/);
+  await expect(page.getByText('Pay with PayPal')).toBeVisible();
+  await expect(page.getByText('($60.00 USD)')).toBeVisible();
+});
+
+test('registration: free attendee disables payment options', async ({ page }) => {
+  await page.route('**/api/checkout', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        redirectUrl: '/success?order=order-124&status=pending&method=check&amount=0'
+      })
+    });
+  });
+
+  await page.goto('/register');
+  await page.locator('input[name="people.0.full_name"]').fill('Free Keiki');
+  await page.locator('input[name="people.0.age"]').fill('2');
+  await page.locator('input[name="people.0.relationship"]').fill('Grandchild');
+  await page.locator('select[name="people.0.lineage"]').selectOption('Amy');
+  await page.locator('input[name="people.0.attendance_days"][value="Friday"]').check();
+  await page.locator('input[name="people.0.email"]').fill('free@example.com');
+  await page.locator('input[name="people.0.phone"]').fill('808-555-2222');
+  await page.locator('textarea[name="people.0.address"]').fill('456 Test Rd, Hilo, HI');
+
+  const stripe = page.getByLabel('Stripe');
+  const paypal = page.getByLabel('PayPal');
+  const check = page.getByLabel('Mail-in check');
+
+  await expect(stripe).toBeDisabled();
+  await expect(paypal).toBeDisabled();
+  await expect(check).toBeDisabled();
+
+  await page.getByRole('button', { name: 'Submit Registration' }).click();
+  await expect(page).toHaveURL(/\/success\?/);
+});
+
+test('registration: not attending allows t-shirt only', async ({ page }) => {
+  await page.route('**/api/checkout', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        redirectUrl: '/success?order=order-125&status=pending&method=check&amount=2500'
+      })
+    });
+  });
+
+  await page.goto('/register');
+  await page.locator('input[name="people.0.full_name"]').fill('No Show');
+  await page.locator('input[name="people.0.age"]').fill('30');
+  await page.locator('input[name="people.0.relationship"]').fill('Cousin');
+  await page.locator('select[name="people.0.lineage"]').selectOption('Katherine');
+  await page.locator('input[name="people.0.attendance_days"][value="Friday"]').check();
+  await page.locator('input[name="people.0.email"]').fill('noshow@example.com');
+  await page.locator('input[name="people.0.phone"]').fill('808-555-3333');
+  await page.locator('textarea[name="people.0.address"]').fill('789 Test Ave, Hilo, HI');
+
+  await page.getByLabel('Attending in person').uncheck();
+
+  await page.locator('select[name="people.0.tshirt_category"]').selectOption('womens');
+  await page.locator('select[name="people.0.tshirt_style"]').selectOption('Tank top');
+  await page.locator('select[name="people.0.tshirt_size"]').selectOption('S');
+  await page.locator('input[name="people.0.tshirt_quantity"]').fill('1');
+
+  await page.getByLabel('Mail-in check').check();
+  await page.getByRole('button', { name: 'Submit Registration' }).click();
+
+  await expect(page).toHaveURL(/\/success\?/);
+});

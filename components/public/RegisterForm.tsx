@@ -354,7 +354,7 @@ function createEmptyPerson(fields: RegistrationField[]) {
         return;
       default:
         if (field.field_key === TSHIRT_CATEGORY_KEY) {
-          person[field.field_key] = 'mens';
+          person[field.field_key] = '';
           return;
         }
         person[field.field_key] = '';
@@ -648,8 +648,8 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
   useEffect(() => {
     if (!people?.length) return;
     people.forEach((person, index) => {
-      const category = typeof person?.[TSHIRT_CATEGORY_KEY] === 'string' ? person[TSHIRT_CATEGORY_KEY] : 'mens';
-      const styles = TSHIRT_STYLES[category] ?? [];
+      const category = typeof person?.[TSHIRT_CATEGORY_KEY] === 'string' ? person[TSHIRT_CATEGORY_KEY] : '';
+      const styles = TSHIRT_STYLES[category] ?? TSHIRT_STYLES.mens;
       const sizes = category === 'youth' ? TSHIRT_SIZES.youth : TSHIRT_SIZES.adult;
       const style = typeof person?.[TSHIRT_STYLE_KEY] === 'string' ? person[TSHIRT_STYLE_KEY] : '';
       const size = typeof person?.[TSHIRT_SIZE_KEY] === 'string' ? person[TSHIRT_SIZE_KEY] : '';
@@ -831,13 +831,8 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
         setLoading(false);
         return;
       }
-      if (totalTshirtQuantity > 0 && !tshirtTicket) {
-        setError('T-shirt orders are unavailable right now. Please contact the reunion team.');
-        setLoading(false);
-        return;
-      }
       const derivedTicketPayload = derivedTickets.filter((item) => item.quantity > 0);
-      if (!derivedTicketPayload.length && !isZeroBalance) {
+      if (!derivedTicketPayload.length && totalTshirtQuantity === 0 && !isZeroBalance) {
         setError('Select at least one ticket.');
         setLoading(false);
         return;
@@ -1008,9 +1003,9 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
             const showPhotoField = personFieldMap.get(SHOW_PHOTO_KEY);
             const photoField = personFieldMap.get(PHOTO_UPLOAD_KEY);
             const ticketDetail = personTicketDetails[index];
-            const tshirtCategoryValue = (people?.[index]?.[TSHIRT_CATEGORY_KEY] as string | undefined) ?? 'mens';
+            const tshirtCategoryValue = (people?.[index]?.[TSHIRT_CATEGORY_KEY] as string | undefined) ?? '';
             const tshirtQuantityValue = people?.[index]?.[TSHIRT_QUANTITY_KEY] as number | string | undefined;
-            const tshirtStyles = TSHIRT_STYLES[tshirtCategoryValue] ?? [];
+            const tshirtStyles = TSHIRT_STYLES[tshirtCategoryValue] ?? TSHIRT_STYLES.mens;
             const tshirtSizes = tshirtCategoryValue === 'youth' ? TSHIRT_SIZES.youth : TSHIRT_SIZES.adult;
 
             const renderField = (fieldItem: RegistrationField) => {
@@ -1227,6 +1222,7 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
                         className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brandBlue focus:outline-none focus:ring-2 focus:ring-brandBlueLight/40"
                         {...register(`people.${index}.${TSHIRT_CATEGORY_KEY}` as const)}
                       >
+                        <option value="">Select a category</option>
                         {TSHIRT_CATEGORIES.map((option) => (
                           <option key={option.value} value={option.value}>
                             {option.label}
