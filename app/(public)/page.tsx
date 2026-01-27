@@ -1,5 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from 'next/link';
+import path from 'path';
+import { readdirSync } from 'fs';
 import Countdown from '@/components/public/Countdown';
 import HeroCarousel from '@/components/public/HeroCarousel';
 import AttendeeMarquee from '@/components/public/AttendeeMarquee';
@@ -163,9 +165,23 @@ async function getSiteContent() {
   };
 }
 
+function getPublicGalleryAssets() {
+  const assetsDir = path.join(process.cwd(), 'public', 'assets');
+  const supported = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.mp4', '.webm', '.mov']);
+  try {
+    return readdirSync(assetsDir)
+      .filter((file) => supported.has(path.extname(file).toLowerCase()))
+      .sort((a, b) => a.localeCompare(b))
+      .map((file) => ({ src: `/assets/${file}` }));
+  } catch (error) {
+    return [];
+  }
+}
+
 export default async function HomePage() {
   const [attendeeHighlights, siteContent] = await Promise.all([getAttendeeHighlights(), getSiteContent()]);
   const { site, extras, schedule, welcomeParagraphs, sections } = siteContent;
+  const galleryAssets = getPublicGalleryAssets();
 
   const heroTitle = site?.hero_title ?? SITE_DEFAULTS.hero_title;
   const heroSubtitle = site?.hero_subtitle ?? SITE_DEFAULTS.hero_subtitle ?? '';
@@ -270,10 +286,10 @@ export default async function HomePage() {
               <p key={paragraph}>{paragraph}</p>
             ))}
           </div>
-          {showCarousel && extras.gallery.length ? (
+          {showCarousel && galleryAssets.length ? (
             <div className="mt-10 overflow-hidden rounded-3xl border border-sand-200 bg-white/80 shadow-soft">
               <div className="relative h-64 md:h-80">
-                <HeroCarousel images={extras.gallery.map((item) => item.src)} />
+                <HeroCarousel images={galleryAssets.map((item) => item.src)} />
               </div>
             </div>
           ) : null}
