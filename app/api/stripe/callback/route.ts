@@ -57,8 +57,8 @@ export async function GET(request: Request) {
     stripe_account_id: stripeAccountId
   };
 
-  await supabaseAdmin
-    .from('site_settings')
+  await (supabaseAdmin
+    .from('site_settings') as any)
     .update({ gallery_json: updatedExtras })
     .eq('id', SITE_SETTINGS_ID);
 
