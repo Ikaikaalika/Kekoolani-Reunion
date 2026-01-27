@@ -1215,6 +1215,23 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
                     <p className="mono text-xs uppercase tracking-[0.2em] text-koa">{formatCurrency(TSHIRT_PRICE_CENTS)} each</p>
                   </div>
                   <p className="text-sm text-koa">All apparel is black cotton. Women&apos;s styles are lightweight.</p>
+                  <div className="grid gap-3 text-sm text-koa md:grid-cols-3">
+                    <div className="rounded-2xl border border-slate-100 bg-white p-4">
+                      <p className="font-semibold text-black">Men&apos;s</p>
+                      <p className="mt-1">T-shirt, Long sleeve, Tank top</p>
+                      <p className="mt-1">Sizes S - 5X</p>
+                    </div>
+                    <div className="rounded-2xl border border-slate-100 bg-white p-4">
+                      <p className="font-semibold text-black">Women&apos;s</p>
+                      <p className="mt-1">V-neck, Tank top, Crew neck</p>
+                      <p className="mt-1">Sizes S - 5X, lightweight fabric</p>
+                    </div>
+                    <div className="rounded-2xl border border-slate-100 bg-white p-4">
+                      <p className="font-semibold text-black">Youth</p>
+                      <p className="mt-1">T-shirt, Long sleeve</p>
+                      <p className="mt-1">Sizes Youth S - L</p>
+                    </div>
+                  </div>
                   <div className="grid gap-4 md:grid-cols-4">
                     <div className="space-y-2">
                       <Label>Category</Label>
