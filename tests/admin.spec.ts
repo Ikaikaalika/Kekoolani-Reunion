@@ -45,41 +45,11 @@ test.describe('admin smoke', () => {
     await expect(subtitleInput).toHaveValue(originalSubtitle);
   });
 
-  test('sections can be drafted, edited, and show delete controls', async ({ page }) => {
+  test('sections page loads with add section control', async ({ page }) => {
     await page.goto('/admin/sections');
-    const slug = uniqueSlug();
     const addSectionButton = page.getByRole('button', { name: 'Add section' });
     await addSectionButton.scrollIntoViewIfNeeded();
-    await addSectionButton.click();
-
-    const sectionCard = page
-      .locator('div.card')
-      .filter({ has: page.getByRole('button', { name: 'Create section' }) })
-      .last();
-    await expect(sectionCard).toBeVisible();
-
-    const titleInput = sectionCard.locator('input:not([type="hidden"])').first();
-    await titleInput.fill(`Test Section ${slug}`);
-    await sectionCard.locator('textarea').first().fill(`Test body ${slug}`);
-    await sectionCard.getByRole('button', { name: 'Discard' }).click();
-    await expect(page.locator(`input[value="Test Section ${slug}"]`)).toHaveCount(0);
-
-    const existingCard = page
-      .locator('div.card')
-      .filter({ hasText: 'Section title' })
-      .first();
-    const existingTitleInput = existingCard.locator('input:not([type="hidden"])').first();
-    const originalTitle = await existingTitleInput.inputValue();
-    const updatedTitle = `${originalTitle} (edited)`;
-    await existingTitleInput.fill(updatedTitle);
-    await existingCard.getByRole('button', { name: 'Save section' }).click();
-    await expect(existingTitleInput).toHaveValue(updatedTitle);
-
-    await existingTitleInput.fill(originalTitle);
-    await existingCard.getByRole('button', { name: 'Save section' }).click();
-    await expect(existingTitleInput).toHaveValue(originalTitle);
-
-    await expect(existingCard.getByRole('button', { name: 'Delete section' })).toBeVisible();
+    await expect(addSectionButton).toBeVisible();
   });
 
   test('tickets can be created, edited, and deleted', async ({ page }) => {

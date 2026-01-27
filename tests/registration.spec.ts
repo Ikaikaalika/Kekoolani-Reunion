@@ -1,5 +1,50 @@
 import { test, expect } from '@playwright/test';
 
+async function fillExtraFields(page: any) {
+  const knownFields = new Set([
+    'people.0.full_name',
+    'people.0.age',
+    'people.0.relationship',
+    'people.0.lineage',
+    'people.0.attendance_days',
+    'people.0.email',
+    'people.0.phone',
+    'people.0.address',
+    'people.0.tshirt_category',
+    'people.0.tshirt_style',
+    'people.0.tshirt_size',
+    'people.0.tshirt_quantity',
+    'people.0.same_contact',
+    'people.0.show_name',
+    'people.0.show_photo',
+    'people.0.attending'
+  ]);
+
+  const extraInputs = page.locator('input[name^="people.0."]:not([type="checkbox"]):not([type="radio"])');
+  const inputCount = await extraInputs.count();
+  for (let i = 0; i < inputCount; i += 1) {
+    const input = extraInputs.nth(i);
+    const name = (await input.getAttribute('name')) ?? '';
+    if (!name || knownFields.has(name)) continue;
+    const currentValue = await input.inputValue();
+    if (!currentValue) {
+      await input.fill('Test');
+    }
+  }
+
+  const extraTextareas = page.locator('textarea[name^="people.0."]');
+  const textareaCount = await extraTextareas.count();
+  for (let i = 0; i < textareaCount; i += 1) {
+    const textarea = extraTextareas.nth(i);
+    const name = (await textarea.getAttribute('name')) ?? '';
+    if (!name || knownFields.has(name)) continue;
+    const currentValue = await textarea.inputValue();
+    if (!currentValue) {
+      await textarea.fill('Test');
+    }
+  }
+}
+
 async function fillPrimaryParticipant(page: any) {
   await page.locator('input[name="people.0.full_name"]').fill('Test Attendee');
   await page.locator('input[name="people.0.age"]').fill('25');
@@ -11,6 +56,7 @@ async function fillPrimaryParticipant(page: any) {
   await page.locator('input[name="people.0.email"]').fill('test@example.com');
   await page.locator('input[name="people.0.phone"]').fill('808-555-1111');
   await page.locator('textarea[name="people.0.address"]').fill('123 Test St, Hilo, HI');
+  await fillExtraFields(page);
 }
 
 test('registration: paid attendee with t-shirt and paypal link', async ({ page }) => {
@@ -66,6 +112,7 @@ test('registration: free attendee disables payment options', async ({ page }) =>
   await page.locator('input[name="people.0.email"]').fill('free@example.com');
   await page.locator('input[name="people.0.phone"]').fill('808-555-2222');
   await page.locator('textarea[name="people.0.address"]').fill('456 Test Rd, Hilo, HI');
+  await fillExtraFields(page);
 
   const stripe = page.getByLabel('Stripe');
   const paypal = page.getByLabel('PayPal');
@@ -99,6 +146,7 @@ test('registration: not attending allows t-shirt only', async ({ page }) => {
   await page.locator('input[name="people.0.email"]').fill('noshow@example.com');
   await page.locator('input[name="people.0.phone"]').fill('808-555-3333');
   await page.locator('textarea[name="people.0.address"]').fill('789 Test Ave, Hilo, HI');
+  await fillExtraFields(page);
 
   await page.getByLabel('Attending in person').uncheck();
 

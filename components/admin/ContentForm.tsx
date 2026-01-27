@@ -72,6 +72,7 @@ function normalizeExtras(extras: SiteExtras) {
     costs,
     costIntro: extras.cost_intro ?? DEFAULT_EXTRAS.cost_intro ?? '',
     costTotal: extras.cost_total ?? DEFAULT_EXTRAS.cost_total ?? '',
+    paypalHandle: extras.paypal_handle ?? DEFAULT_EXTRAS.paypal_handle ?? '',
     lodging: (extras.lodging.length ? extras.lodging : DEFAULT_EXTRAS.lodging).map((text) => ({ id: createId(), text })),
     lodgingLinks: (extras.lodging_links.length ? extras.lodging_links : DEFAULT_EXTRAS.lodging_links).map((item) => ({
       ...item,
@@ -101,6 +102,7 @@ function toExtrasPayload(params: {
   costs: CostFormItem[];
   costIntro: string;
   costTotal: string;
+  paypalHandle: string;
   lodging: TextItem[];
   lodgingLinks: LodgingLinkItem[];
   lodgingHotelsHeading: string;
@@ -129,6 +131,7 @@ function toExtrasPayload(params: {
 
   const costIntro = params.costIntro.trim();
   const costTotal = params.costTotal.trim();
+  const paypalHandle = params.paypalHandle.trim();
 
   const lodging = params.lodging.map((item) => item.text.trim()).filter(Boolean);
   const lodgingLinks = params.lodgingLinks
@@ -147,6 +150,7 @@ function toExtrasPayload(params: {
     costs,
     cost_intro: costIntro || DEFAULT_EXTRAS.cost_intro,
     cost_total: costTotal || DEFAULT_EXTRAS.cost_total,
+    paypal_handle: paypalHandle || DEFAULT_EXTRAS.paypal_handle,
     lodging,
     lodging_links: lodgingLinks,
     lodging_hotels_heading: lodgingHotelsHeading || DEFAULT_EXTRAS.lodging_hotels_heading,
@@ -177,6 +181,7 @@ export default function ContentForm({ site, action }: ContentFormProps) {
   const [costs, setCosts] = useState<CostFormItem[]>(initialExtras.costs);
   const [costIntro, setCostIntro] = useState(initialExtras.costIntro);
   const [costTotal, setCostTotal] = useState(initialExtras.costTotal);
+  const [paypalHandle, setPayPalHandle] = useState(initialExtras.paypalHandle);
   const [lodging, setLodging] = useState<TextItem[]>(initialExtras.lodging);
   const [lodgingLinks, setLodgingLinks] = useState<LodgingLinkItem[]>(initialExtras.lodgingLinks);
   const [lodgingHotelsHeading, setLodgingHotelsHeading] = useState(initialExtras.lodgingHotelsHeading);
@@ -195,6 +200,7 @@ export default function ContentForm({ site, action }: ContentFormProps) {
           costs,
           costIntro,
           costTotal,
+          paypalHandle,
           lodging,
           lodgingLinks,
           lodgingHotelsHeading,
@@ -204,7 +210,20 @@ export default function ContentForm({ site, action }: ContentFormProps) {
           genealogyImage
         })
       ),
-    [gallery, costs, costIntro, costTotal, lodging, lodgingLinks, lodgingHotelsHeading, lodgingHotels, transportation, genealogy, genealogyImage]
+    [
+      gallery,
+      costs,
+      costIntro,
+      costTotal,
+      paypalHandle,
+      lodging,
+      lodgingLinks,
+      lodgingHotelsHeading,
+      lodgingHotels,
+      transportation,
+      genealogy,
+      genealogyImage
+    ]
   );
   const aboutHtml = useMemo(() => textToAboutHtml(aboutText), [aboutText]);
 
@@ -604,6 +623,20 @@ export default function ContentForm({ site, action }: ContentFormProps) {
                 onChange={(event) => setCostTotal(event.target.value)}
                 placeholder="Total cost each person: $60.00"
               />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h4 className="font-semibold text-sand-900">Payment Links</h4>
+            <div className="space-y-2">
+              <Label htmlFor="paypal_handle">PayPal Handle</Label>
+              <Input
+                id="paypal_handle"
+                value={paypalHandle}
+                onChange={(event) => setPayPalHandle(event.target.value)}
+                placeholder="yourname"
+              />
+              <p className="text-xs text-koa">Use your PayPal.me handle (no https://). Example: <span className="font-semibold">kekoolani</span>.</p>
             </div>
           </div>
 

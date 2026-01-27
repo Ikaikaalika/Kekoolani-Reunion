@@ -10,7 +10,7 @@ import { aboutHtmlToText, getSiteExtras, getSiteSchedule, SITE_DEFAULTS } from '
 import { normalizeSectionList } from '@/lib/sections';
 import type { Database } from '@/types/supabase';
 
-const HERO_IMAGE = '/assets/IMG_0722.JPG';
+const HERO_IMAGE = '/assets/LoiKalo1.jpg';
 const COUNTDOWN_TARGET = '2026-07-10T10:00:00-10:00';
 
 const scheduleItemPattern =

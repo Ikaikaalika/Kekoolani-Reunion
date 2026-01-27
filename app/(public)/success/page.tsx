@@ -1,4 +1,8 @@
 import Link from 'next/link';
+import { createSupabaseServerClient } from '@/lib/supabaseClient';
+import { SITE_SETTINGS_ID } from '@/lib/constants';
+import { getSiteExtras } from '@/lib/siteContent';
+import type { Database } from '@/types/supabase';
 
 const PAYMENT_LABELS: Record<string, string> = {
   stripe: 'Stripe',
@@ -38,7 +42,28 @@ function buildPayPalLink(baseLink: string, amountCents?: number | null) {
   }
 }
 
-export default function SuccessPage({
+type SiteSettingsRow = Database['public']['Tables']['site_settings']['Row'];
+
+async function getPayPalBaseLink() {
+  const supabase = createSupabaseServerClient();
+  const { data } = await supabase
+    .from('site_settings')
+    .select('*')
+    .eq('id', SITE_SETTINGS_ID)
+    .maybeSingle<SiteSettingsRow>();
+
+  const extras = getSiteExtras(data ?? null);
+  const handle = extras.paypal_handle?.trim() ?? '';
+  if (!handle) {
+    return PAYPAL_LINK;
+  }
+  if (/^https?:\/\//i.test(handle)) {
+    return handle;
+  }
+  return `https://www.paypal.com/paypalme/${handle}`;
+}
+
+export default async function SuccessPage({
   searchParams
 }: {
   searchParams: { order?: string; status?: string; method?: string; amount?: string };
@@ -47,8 +72,9 @@ export default function SuccessPage({
   const paymentLabel = method ? PAYMENT_LABELS[method] ?? method : null;
   const isPending = status === 'pending';
   const amountCents = amount ? Number(amount) : null;
-  const paypalLink = method === 'paypal' ? buildPayPalLink(PAYPAL_LINK, amountCents) : '';
-  const showPayPalLink = method === 'paypal' && Boolean(PAYPAL_LINK);
+  const paypalBaseLink = await getPayPalBaseLink();
+  const paypalLink = method === 'paypal' ? buildPayPalLink(paypalBaseLink, amountCents) : '';
+  const showPayPalLink = method === 'paypal' && Boolean(paypalBaseLink);
   const headline = isPending ? 'Registration received' : 'Mahalo nui loa!';
   const message = isPending
     ? `Your registration is confirmed. We have recorded your payment preference${

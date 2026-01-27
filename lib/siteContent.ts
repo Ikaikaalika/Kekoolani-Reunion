@@ -34,6 +34,7 @@ export type SiteExtras = {
   costs: CostItem[];
   cost_intro?: string;
   cost_total?: string;
+  paypal_handle?: string;
   lodging: string[];
   lodging_links: LodgingLink[];
   lodging_hotels_heading?: string;
@@ -89,7 +90,6 @@ const DEFAULT_GENEALOGY_IMAGE: GalleryItem = {
 const DEFAULT_GALLERY: GalleryItem[] = [
   { src: '/assets/IMG_0644.JPG', alt: 'Kekoolani family gathering' },
   { src: '/assets/IMG_0647.JPG', alt: 'Family reunion moment' },
-  { src: '/assets/IMG_0721.JPG', alt: 'Waipiʻo gathering' },
   { src: '/assets/IMG_2937.JPG', alt: 'Hilo shoreline' },
   { src: '/assets/IMG_2972.JPG', alt: 'Family photo' },
   { src: '/assets/Hilo-1.jpg', alt: 'Hilo landscape' },
@@ -154,6 +154,7 @@ export const DEFAULT_EXTRAS: SiteExtras = {
   costs: DEFAULT_COSTS,
   cost_intro: DEFAULT_COST_INTRO,
   cost_total: DEFAULT_COST_TOTAL,
+  paypal_handle: '',
   lodging: DEFAULT_LODGING_PARAGRAPHS,
   lodging_links: DEFAULT_LODGING_LINKS,
   lodging_hotels_heading: DEFAULT_LODGING_HOTELS_HEADING,
@@ -263,6 +264,8 @@ export function parseExtras(raw: unknown): SiteExtras {
       : DEFAULT_EXTRAS.costs;
     const costIntro = typeof record.cost_intro === 'string' ? record.cost_intro : DEFAULT_EXTRAS.cost_intro;
     const costTotal = typeof record.cost_total === 'string' ? record.cost_total : DEFAULT_EXTRAS.cost_total;
+    const paypalHandle =
+      typeof record.paypal_handle === 'string' ? record.paypal_handle : DEFAULT_EXTRAS.paypal_handle;
 
     const lodging = Array.isArray(record.lodging)
       ? record.lodging.filter((item): item is string => typeof item === 'string')
@@ -302,6 +305,7 @@ export function parseExtras(raw: unknown): SiteExtras {
       costs: costs.length ? costs : DEFAULT_EXTRAS.costs,
       cost_intro: costIntro ?? DEFAULT_EXTRAS.cost_intro,
       cost_total: costTotal ?? DEFAULT_EXTRAS.cost_total,
+      paypal_handle: paypalHandle ?? DEFAULT_EXTRAS.paypal_handle,
       lodging: lodging.length ? lodging : DEFAULT_EXTRAS.lodging,
       lodging_links: lodgingLinks.length ? lodgingLinks : DEFAULT_EXTRAS.lodging_links,
       lodging_hotels_heading: lodgingHotelsHeading ?? DEFAULT_EXTRAS.lodging_hotels_heading,
