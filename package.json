@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:all": "npm run lint && npm run build && npx playwright test",
+    "test:ui": "npx playwright test --project=chromium --headed"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",
