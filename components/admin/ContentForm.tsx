@@ -73,6 +73,7 @@ function normalizeExtras(extras: SiteExtras) {
     costIntro: extras.cost_intro ?? DEFAULT_EXTRAS.cost_intro ?? '',
     costTotal: extras.cost_total ?? DEFAULT_EXTRAS.cost_total ?? '',
     paypalHandle: extras.paypal_handle ?? DEFAULT_EXTRAS.paypal_handle ?? '',
+    stripeAccountId: extras.stripe_account_id ?? DEFAULT_EXTRAS.stripe_account_id ?? '',
     lodging: (extras.lodging.length ? extras.lodging : DEFAULT_EXTRAS.lodging).map((text) => ({ id: createId(), text })),
     lodgingLinks: (extras.lodging_links.length ? extras.lodging_links : DEFAULT_EXTRAS.lodging_links).map((item) => ({
       ...item,
@@ -103,6 +104,7 @@ function toExtrasPayload(params: {
   costIntro: string;
   costTotal: string;
   paypalHandle: string;
+  stripeAccountId: string;
   lodging: TextItem[];
   lodgingLinks: LodgingLinkItem[];
   lodgingHotelsHeading: string;
@@ -132,6 +134,7 @@ function toExtrasPayload(params: {
   const costIntro = params.costIntro.trim();
   const costTotal = params.costTotal.trim();
   const paypalHandle = params.paypalHandle.trim();
+  const stripeAccountId = params.stripeAccountId.trim();
 
   const lodging = params.lodging.map((item) => item.text.trim()).filter(Boolean);
   const lodgingLinks = params.lodgingLinks
@@ -151,6 +154,7 @@ function toExtrasPayload(params: {
     cost_intro: costIntro || DEFAULT_EXTRAS.cost_intro,
     cost_total: costTotal || DEFAULT_EXTRAS.cost_total,
     paypal_handle: paypalHandle || DEFAULT_EXTRAS.paypal_handle,
+    stripe_account_id: stripeAccountId || DEFAULT_EXTRAS.stripe_account_id,
     lodging,
     lodging_links: lodgingLinks,
     lodging_hotels_heading: lodgingHotelsHeading || DEFAULT_EXTRAS.lodging_hotels_heading,
@@ -182,6 +186,7 @@ export default function ContentForm({ site, action }: ContentFormProps) {
   const [costIntro, setCostIntro] = useState(initialExtras.costIntro);
   const [costTotal, setCostTotal] = useState(initialExtras.costTotal);
   const [paypalHandle, setPayPalHandle] = useState(initialExtras.paypalHandle);
+  const [stripeAccountId, setStripeAccountId] = useState(initialExtras.stripeAccountId);
   const [lodging, setLodging] = useState<TextItem[]>(initialExtras.lodging);
   const [lodgingLinks, setLodgingLinks] = useState<LodgingLinkItem[]>(initialExtras.lodgingLinks);
   const [lodgingHotelsHeading, setLodgingHotelsHeading] = useState(initialExtras.lodgingHotelsHeading);
@@ -201,6 +206,7 @@ export default function ContentForm({ site, action }: ContentFormProps) {
           costIntro,
           costTotal,
           paypalHandle,
+          stripeAccountId,
           lodging,
           lodgingLinks,
           lodgingHotelsHeading,
@@ -216,6 +222,7 @@ export default function ContentForm({ site, action }: ContentFormProps) {
       costIntro,
       costTotal,
       paypalHandle,
+      stripeAccountId,
       lodging,
       lodgingLinks,
       lodgingHotelsHeading,
@@ -637,6 +644,35 @@ export default function ContentForm({ site, action }: ContentFormProps) {
                 placeholder="yourname"
               />
               <p className="text-xs text-koa">Use your PayPal.me handle (no https://). Example: <span className="font-semibold">kekoolani</span>.</p>
+            </div>
+            <div className="rounded-2xl border border-sand-200 bg-sand-50 p-4">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-sand-900">Stripe Connect</p>
+                  <p className="text-xs text-koa">
+                    {stripeAccountId ? `Connected account: ${stripeAccountId}` : 'No Stripe account connected yet.'}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    window.location.href = '/api/stripe/connect';
+                  }}
+                >
+                  {stripeAccountId ? 'Reconnect Stripe' : 'Connect Stripe'}
+                </Button>
+              </div>
+              <div className="mt-3 space-y-2">
+                <Label htmlFor="stripe_account_id">Stripe Account ID</Label>
+                <Input
+                  id="stripe_account_id"
+                  value={stripeAccountId}
+                  onChange={(event) => setStripeAccountId(event.target.value)}
+                  placeholder="acct_..."
+                />
+                <p className="text-xs text-koa">Leave blank to use the platform Stripe account.</p>
+              </div>
             </div>
           </div>
 

@@ -35,6 +35,7 @@ export type SiteExtras = {
   cost_intro?: string;
   cost_total?: string;
   paypal_handle?: string;
+  stripe_account_id?: string;
   lodging: string[];
   lodging_links: LodgingLink[];
   lodging_hotels_heading?: string;
@@ -155,6 +156,7 @@ export const DEFAULT_EXTRAS: SiteExtras = {
   cost_intro: DEFAULT_COST_INTRO,
   cost_total: DEFAULT_COST_TOTAL,
   paypal_handle: '',
+  stripe_account_id: '',
   lodging: DEFAULT_LODGING_PARAGRAPHS,
   lodging_links: DEFAULT_LODGING_LINKS,
   lodging_hotels_heading: DEFAULT_LODGING_HOTELS_HEADING,
@@ -266,6 +268,8 @@ export function parseExtras(raw: unknown): SiteExtras {
     const costTotal = typeof record.cost_total === 'string' ? record.cost_total : DEFAULT_EXTRAS.cost_total;
     const paypalHandle =
       typeof record.paypal_handle === 'string' ? record.paypal_handle : DEFAULT_EXTRAS.paypal_handle;
+    const stripeAccountId =
+      typeof record.stripe_account_id === 'string' ? record.stripe_account_id : DEFAULT_EXTRAS.stripe_account_id;
 
     const lodging = Array.isArray(record.lodging)
       ? record.lodging.filter((item): item is string => typeof item === 'string')
@@ -306,6 +310,7 @@ export function parseExtras(raw: unknown): SiteExtras {
       cost_intro: costIntro ?? DEFAULT_EXTRAS.cost_intro,
       cost_total: costTotal ?? DEFAULT_EXTRAS.cost_total,
       paypal_handle: paypalHandle ?? DEFAULT_EXTRAS.paypal_handle,
+      stripe_account_id: stripeAccountId ?? DEFAULT_EXTRAS.stripe_account_id,
       lodging: lodging.length ? lodging : DEFAULT_EXTRAS.lodging,
       lodging_links: lodgingLinks.length ? lodgingLinks : DEFAULT_EXTRAS.lodging_links,
       lodging_hotels_heading: lodgingHotelsHeading ?? DEFAULT_EXTRAS.lodging_hotels_heading,

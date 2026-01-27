@@ -4,6 +4,8 @@ import { checkoutSchema } from '@/lib/validators';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getStripeClient } from '@/lib/stripe';
 import { getParticipantAge, getPeopleFromAnswers, isParticipantAttending, selectTicketForAge } from '@/lib/orderUtils';
+import { SITE_SETTINGS_ID } from '@/lib/constants';
+import { getSiteExtras } from '@/lib/siteContent';
 import type { Database } from '@/types/supabase';
 
 type TicketRow = Database['public']['Tables']['ticket_types']['Row'];
@@ -239,27 +241,38 @@ export async function POST(request: Request) {
       return NextResponse.json({ redirectUrl });
     }
 
+    const { data: siteSettings } = await supabaseAdmin
+      .from('site_settings')
+      .select('gallery_json')
+      .eq('id', SITE_SETTINGS_ID)
+      .maybeSingle();
+    const extras = getSiteExtras(siteSettings ?? null);
+    const stripeAccountId = extras.stripe_account_id?.trim() || null;
+
     const stripe = getStripeClient();
 
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      success_url: `${baseUrl}/success?order=${orderRecord.id}&status=paid&method=stripe&amount=${totalCents}`,
-      cancel_url: `${baseUrl}/register?canceled=1`,
-      customer_email: parsed.purchaser_email,
-      metadata: {
-        order_id: orderRecord.id
-      },
-      line_items: orderItems.map((item) => ({
-        price_data: {
-          currency: ticketsById.get(item.ticket_type_id)!.currency,
-          unit_amount: item.unit_amount,
-          product_data: {
-            name: item.name
-          }
+    const session = await stripe.checkout.sessions.create(
+      {
+        mode: 'payment',
+        success_url: `${baseUrl}/success?order=${orderRecord.id}&status=paid&method=stripe&amount=${totalCents}`,
+        cancel_url: `${baseUrl}/register?canceled=1`,
+        customer_email: parsed.purchaser_email,
+        metadata: {
+          order_id: orderRecord.id
         },
-        quantity: item.quantity
-      }))
-    });
+        line_items: orderItems.map((item) => ({
+          price_data: {
+            currency: ticketsById.get(item.ticket_type_id)!.currency,
+            unit_amount: item.unit_amount,
+            product_data: {
+              name: item.name
+            }
+          },
+          quantity: item.quantity
+        }))
+      },
+      stripeAccountId ? { stripeAccount: stripeAccountId } : undefined
+    );
 
     await (supabaseAdmin
       .from('orders') as any)

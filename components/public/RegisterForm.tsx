@@ -399,11 +399,42 @@ interface RegisterFormProps {
   tickets: Ticket[];
   questions: Question[];
   registrationFields: RegistrationField[];
+  paypalHandle?: string | null;
 }
 
 type PendingNavigation = { type: 'link'; href: string } | { type: 'back' } | null;
 
-export default function RegisterForm({ tickets, questions, registrationFields }: RegisterFormProps) {
+function buildPayPalLink(baseLink: string, amountCents?: number | null) {
+  if (!baseLink) return '';
+  if (!amountCents || amountCents <= 0) return baseLink;
+  const amount = (amountCents / 100).toFixed(2);
+
+  try {
+    const url = new URL(baseLink);
+    if (!url.hostname.includes('paypal.me')) {
+      return baseLink;
+    }
+    const parts = url.pathname.split('/').filter(Boolean);
+    if (!parts.length) {
+      return baseLink;
+    }
+    const last = parts[parts.length - 1];
+    const hasAmount = /^\d+(\.\d+)?$/.test(last);
+    const username = hasAmount ? parts.slice(0, -1).join('/') : parts.join('/');
+    url.pathname = `/${username}/${amount}`;
+    if (!url.searchParams.has('currencyCode')) {
+      url.searchParams.set('currencyCode', 'USD');
+    }
+    return url.toString();
+  } catch (error) {
+    if (baseLink.includes('paypal.me')) {
+      return `${baseLink.replace(/\/+$/, '')}/${amount}`;
+    }
+    return baseLink;
+  }
+}
+
+export default function RegisterForm({ tickets, questions, registrationFields, paypalHandle }: RegisterFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -509,6 +540,7 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
   const quantities = watch('tickets');
   const photoUrls = watch('photo_urls') as Array<string | null> | undefined;
   const tshirtOrders = useWatch({ control, name: 'tshirt_orders' });
+  const paymentMethod = useWatch({ control, name: 'payment_method' });
   const peopleRecords = useMemo(
     () => (Array.isArray(people) ? (people as Record<string, unknown>[]) : []),
     [people]
@@ -805,6 +837,13 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
     return !selectTicketForAge(ageBasedTickets, age);
   });
   const isZeroBalance = totalCents === 0;
+  const paypalBaseLink = useMemo(() => {
+    const trimmed = typeof paypalHandle === 'string' ? paypalHandle.trim() : '';
+    if (!trimmed) return '';
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return `https://www.paypal.com/paypalme/${trimmed}`;
+  }, [paypalHandle]);
+  const paypalLink = useMemo(() => buildPayPalLink(paypalBaseLink, totalCents), [paypalBaseLink, totalCents]);
 
   const onSubmit = handleSubmit(async (data) => {
     setError(null);
@@ -1568,6 +1607,15 @@ export default function RegisterForm({ tickets, questions, registrationFields }:
           </div>
           {isZeroBalance && <p className="text-xs text-koa">No payment is required for this registration.</p>}
           {errors.payment_method && <p className="text-xs text-red-500">{errors.payment_method.message}</p>}
+          {paymentMethod === 'paypal' && paypalBaseLink && !isZeroBalance && (
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-koa">
+              <p className="font-semibold text-black">Pay with PayPal</p>
+              <p className="mt-1">We will generate your PayPal link after you submit registration.</p>
+              <a href={paypalLink || paypalBaseLink} target="_blank" rel="noreferrer" className="mt-3 inline-flex text-brandBlue underline">
+                Open PayPal link for {formatCurrency(totalCents)}
+              </a>
+            </div>
+          )}
         </div>
 
         {activeQuestions.length > 0 && (

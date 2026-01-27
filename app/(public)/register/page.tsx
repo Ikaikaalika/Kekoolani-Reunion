@@ -113,7 +113,12 @@ export default async function RegisterPage({ searchParams }: { searchParams: { c
             .
           </p>
         </aside>
-        <RegisterForm tickets={tickets} questions={questions} registrationFields={registrationFields} />
+        <RegisterForm
+          tickets={tickets}
+          questions={questions}
+          registrationFields={registrationFields}
+          paypalHandle={extras.paypal_handle ?? ''}
+        />
       </div>
     </div>
   );
