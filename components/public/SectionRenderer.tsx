@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import type { DynamicSection, SectionContentMap, SectionType } from '@/lib/sections';
+import { normalizeCopy } from '@/lib/copy';
 
 interface SectionRendererProps {
   section: DynamicSection;
@@ -15,7 +16,7 @@ function renderBodyCopy(text: string) {
     .split(/\n{2,}/)
     .map((paragraph, index) => (
       <p key={index} className="text-base leading-7 text-current">
-        {paragraph.trim()}
+        {normalizeCopy(paragraph.trim())}
       </p>
     ));
 }
@@ -72,7 +73,7 @@ function AgendaSection({ section }: { section: DynamicSection<'agenda'> }) {
         {section.content.items.map((item, index) => (
           <div key={`${item.time}-${index}`} className="card shadow-soft p-5">
             <p className="mono text-xs uppercase tracking-[0.3em] text-koa">{item.time}</p>
-            <p className="mt-2 text-lg font-semibold text-black">{item.description}</p>
+            <p className="mt-2 text-lg font-semibold text-black">{normalizeCopy(item.description)}</p>
           </div>
         ))}
       </div>
@@ -87,7 +88,7 @@ function ContactSection({ section }: { section: DynamicSection<'contact'> }) {
         {section.content.contacts.map((contact, index) => (
           <div key={`${contact.name}-${index}`} className="card shadow-soft p-5">
             <p className="text-lg font-semibold text-black">{contact.name}</p>
-            {contact.role ? <p className="text-sm text-koa">{contact.role}</p> : null}
+            {contact.role ? <p className="text-sm text-koa">{normalizeCopy(contact.role)}</p> : null}
             <div className="mt-3 space-y-1 text-sm text-koa">
               {contact.email ? (
                 <p>
@@ -104,7 +105,7 @@ function ContactSection({ section }: { section: DynamicSection<'contact'> }) {
         ))}
       </div>
       {section.content.note ? (
-        <p className="text-sm text-koa">{section.content.note}</p>
+        <p className="text-sm text-koa">{normalizeCopy(section.content.note)}</p>
       ) : null}
     </SectionWrapper>
   );
@@ -116,8 +117,8 @@ function FAQSection({ section }: { section: DynamicSection<'faq'> }) {
       <div className="space-y-3">
         {section.content.faqs.map((item, index) => (
           <details key={`${item.question}-${index}`} className="card shadow-soft p-5">
-            <summary className="cursor-pointer text-lg font-semibold text-black">{item.question}</summary>
-            <p className="mt-3 text-sm leading-6 text-koa">{item.answer}</p>
+            <summary className="cursor-pointer text-lg font-semibold text-black">{normalizeCopy(item.question)}</summary>
+            <p className="mt-3 text-sm leading-6 text-koa">{normalizeCopy(item.answer)}</p>
           </details>
         ))}
       </div>

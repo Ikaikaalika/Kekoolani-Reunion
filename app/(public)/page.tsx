@@ -10,6 +10,7 @@ import { createSupabaseServerClient } from '@/lib/supabaseClient';
 import { SITE_SETTINGS_ID } from '@/lib/constants';
 import { aboutHtmlToText, getSiteExtras, getSiteSchedule, SITE_DEFAULTS } from '@/lib/siteContent';
 import { normalizeSectionList } from '@/lib/sections';
+import { normalizeCopy } from '@/lib/copy';
 import type { Database } from '@/types/supabase';
 
 const HERO_IMAGE = '/assets/LoiKalo1.jpg';
@@ -35,7 +36,7 @@ function isLikelyTimePrefix(value: string) {
 }
 
 function splitScheduleItem(item: string) {
-  const trimmed = item.trim();
+  const trimmed = normalizeCopy(item.trim());
   const match = trimmed.match(scheduleItemPattern);
   if (!match) {
     return { time: null, detail: trimmed };
@@ -46,7 +47,7 @@ function splitScheduleItem(item: string) {
     return { time: null, detail: trimmed };
   }
 
-  return { time, detail: match[2].trim() };
+  return { time, detail: normalizeCopy(match[2].trim()) };
 }
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
@@ -153,7 +154,7 @@ async function getSiteContent() {
   const aboutText = aboutHtmlToText(aboutSource);
   const welcomeParagraphs = aboutText
     .split(/\n+/)
-    .map((line) => line.trim())
+    .map((line) => normalizeCopy(line.trim()))
     .filter(Boolean);
 
   return {
