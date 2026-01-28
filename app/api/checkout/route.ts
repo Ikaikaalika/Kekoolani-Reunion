@@ -6,6 +6,7 @@ import { getStripeClient } from '@/lib/stripe';
 import { getParticipantAge, getPeopleFromAnswers, isParticipantAttending, selectTicketForAge } from '@/lib/orderUtils';
 import { SITE_SETTINGS_ID } from '@/lib/constants';
 import { getSiteExtras } from '@/lib/siteContent';
+import { buildPdfAttachment, sendSendPulseEmail } from '@/lib/sendpulse';
 import type { Database } from '@/types/supabase';
 
 type TicketRow = Database['public']['Tables']['ticket_types']['Row'];
@@ -212,6 +213,65 @@ export async function POST(request: Request) {
     if (itemsError) {
       console.error(itemsError);
       throw new Error('Unable to create order items');
+    }
+
+    const cleanEmail = (value: unknown) =>
+      typeof value === 'string' && value.includes('@') ? value.trim().toLowerCase() : null;
+    const peopleEmails = people
+      .map((person) => cleanEmail((person as Record<string, unknown>)?.email))
+      .filter((email): email is string => Boolean(email));
+    const purchaserEmail = cleanEmail(parsed.purchaser_email);
+    const uniqueEmails = Array.from(new Set([...(purchaserEmail ? [purchaserEmail] : []), ...peopleEmails]));
+
+    if (uniqueEmails.length && process.env.SENDPULSE_API_ID && process.env.SENDPULSE_API_SECRET) {
+      try {
+        const formattedTotal = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD'
+        }).format(totalCents / 100);
+        const receiptFromEmail = process.env.RECEIPT_FROM_EMAIL || 'ohana@kekoolanireunion.com';
+        const pdfFromEmail = process.env.PDF_FROM_EMAIL || 'kokua@kekoolanireunion.com';
+        const fromName = process.env.EMAIL_FROM_NAME || 'Kekoʻolani Reunion';
+        const pdfAttachment = await buildPdfAttachment();
+
+        if (purchaserEmail) {
+          await sendSendPulseEmail({
+            from: { name: fromName, email: receiptFromEmail },
+            to: [{ email: purchaserEmail, name: parsed.purchaser_name }],
+            subject: 'Kekoʻolani Reunion Registration Receipt',
+            html: `<p>Aloha ${parsed.purchaser_name},</p>
+<p>Mahalo for registering for the Kekoʻolani Family Reunion.</p>
+<p><strong>Order ID:</strong> ${orderRecord.id}<br/>
+<strong>Total:</strong> ${formattedTotal}<br/>
+<strong>Payment method:</strong> ${paymentMethod}</p>
+<p>We will follow up with any next steps as we get closer to the event.</p>
+<p>Me ka haʻahaʻa,<br/>Kekoʻolani Reunion Team</p>`,
+            text: `Aloha ${parsed.purchaser_name},\n\nMahalo for registering for the Kekoʻolani Family Reunion.\nOrder ID: ${orderRecord.id}\nTotal: ${formattedTotal}\nPayment method: ${paymentMethod}\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`
+          });
+        }
+
+        const thankYouSubject = 'Mahalo for registering — Kekoʻolani Reunion';
+        const thankYouHtml = `<p>Aloha,</p>
+<p>Mahalo for registering for the Kekoʻolani Family Reunion. We appreciate you and can’t wait to gather together.</p>
+<p>Attached is the PDF for reference${pdfAttachment ? '.' : ' (PDF will be shared soon).'}.</p>
+<p>Me ka haʻahaʻa,<br/>Kekoʻolani Reunion Team</p>`;
+        const thankYouText = `Aloha,\n\nMahalo for registering for the Kekoʻolani Family Reunion. We appreciate you and can’t wait to gather together.\n${pdfAttachment ? 'The PDF is attached.' : 'The PDF will be shared soon.'}\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`;
+
+        await Promise.all(
+          uniqueEmails.map((email) =>
+            sendSendPulseEmail({
+              from: { name: fromName, email: pdfFromEmail },
+              to: [{ email }],
+              subject: thankYouSubject,
+              html: thankYouHtml,
+              text: thankYouText,
+              attachments: pdfAttachment ? [pdfAttachment] : undefined
+            })
+          )
+        );
+      } catch (emailError) {
+        console.error('[sendpulse]', emailError);
+      }
     }
 
     const origin = request.headers.get('origin');
