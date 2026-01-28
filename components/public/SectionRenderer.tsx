@@ -145,9 +145,10 @@ function CTASection({ section }: { section: DynamicSection<'cta'> }) {
 }
 
 function CustomHtmlSection({ section }: { section: DynamicSection<'custom_html'> }) {
+  const normalizedHtml = normalizeCopy(section.content.html);
   return (
     <SectionWrapper section={section}>
-      <div className="prose prose-lg prose-slate max-w-none text-koa" dangerouslySetInnerHTML={{ __html: section.content.html }} />
+      <div className="prose prose-lg prose-slate max-w-none text-koa" dangerouslySetInnerHTML={{ __html: normalizedHtml }} />
     </SectionWrapper>
   );
 }
