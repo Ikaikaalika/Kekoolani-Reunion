@@ -229,8 +229,10 @@ export async function POST(request: Request) {
           style: 'currency',
           currency: 'USD'
         }).format(totalCents / 100);
-        const receiptFromEmail = process.env.RECEIPT_FROM_EMAIL || 'ohana@kekoolanireunion.com';
-        const pdfFromEmail = process.env.PDF_FROM_EMAIL || 'kokua@kekoolanireunion.com';
+        const receiptFromEmail =
+          extras.receipt_from_email?.trim() || process.env.RECEIPT_FROM_EMAIL || 'ohana@kekoolanireunion.com';
+        const pdfFromEmail =
+          extras.pdf_from_email?.trim() || process.env.PDF_FROM_EMAIL || 'ohana@kekoolanireunion.com';
         const fromName = process.env.EMAIL_FROM_NAME || 'Kekoʻolani Reunion';
         const pdfAttachment = await buildPdfAttachment();
 

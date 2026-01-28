@@ -36,6 +36,9 @@ export type SiteExtras = {
   cost_total?: string;
   paypal_handle?: string;
   stripe_account_id?: string;
+  contact_email?: string;
+  receipt_from_email?: string;
+  pdf_from_email?: string;
   lodging: string[];
   lodging_links: LodgingLink[];
   lodging_hotels_heading?: string;
@@ -157,6 +160,9 @@ export const DEFAULT_EXTRAS: SiteExtras = {
   cost_total: DEFAULT_COST_TOTAL,
   paypal_handle: '',
   stripe_account_id: '',
+  contact_email: 'kokua@kekoolanireunion.com',
+  receipt_from_email: 'ohana@kekoolanireunion.com',
+  pdf_from_email: 'ohana@kekoolanireunion.com',
   lodging: DEFAULT_LODGING_PARAGRAPHS,
   lodging_links: DEFAULT_LODGING_LINKS,
   lodging_hotels_heading: DEFAULT_LODGING_HOTELS_HEADING,
@@ -270,6 +276,12 @@ export function parseExtras(raw: unknown): SiteExtras {
       typeof record.paypal_handle === 'string' ? record.paypal_handle : DEFAULT_EXTRAS.paypal_handle;
     const stripeAccountId =
       typeof record.stripe_account_id === 'string' ? record.stripe_account_id : DEFAULT_EXTRAS.stripe_account_id;
+    const contactEmail =
+      typeof record.contact_email === 'string' ? record.contact_email : DEFAULT_EXTRAS.contact_email;
+    const receiptFromEmail =
+      typeof record.receipt_from_email === 'string' ? record.receipt_from_email : DEFAULT_EXTRAS.receipt_from_email;
+    const pdfFromEmail =
+      typeof record.pdf_from_email === 'string' ? record.pdf_from_email : DEFAULT_EXTRAS.pdf_from_email;
 
     const lodging = Array.isArray(record.lodging)
       ? record.lodging.filter((item): item is string => typeof item === 'string')
@@ -311,6 +323,9 @@ export function parseExtras(raw: unknown): SiteExtras {
       cost_total: costTotal ?? DEFAULT_EXTRAS.cost_total,
       paypal_handle: paypalHandle ?? DEFAULT_EXTRAS.paypal_handle,
       stripe_account_id: stripeAccountId ?? DEFAULT_EXTRAS.stripe_account_id,
+      contact_email: contactEmail ?? DEFAULT_EXTRAS.contact_email,
+      receipt_from_email: receiptFromEmail ?? DEFAULT_EXTRAS.receipt_from_email,
+      pdf_from_email: pdfFromEmail ?? DEFAULT_EXTRAS.pdf_from_email,
       lodging: lodging.length ? lodging : DEFAULT_EXTRAS.lodging,
       lodging_links: lodgingLinks.length ? lodgingLinks : DEFAULT_EXTRAS.lodging_links,
       lodging_hotels_heading: lodgingHotelsHeading ?? DEFAULT_EXTRAS.lodging_hotels_heading,

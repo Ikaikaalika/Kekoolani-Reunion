@@ -74,6 +74,9 @@ function normalizeExtras(extras: SiteExtras) {
     costTotal: extras.cost_total ?? DEFAULT_EXTRAS.cost_total ?? '',
     paypalHandle: extras.paypal_handle ?? DEFAULT_EXTRAS.paypal_handle ?? '',
     stripeAccountId: extras.stripe_account_id ?? DEFAULT_EXTRAS.stripe_account_id ?? '',
+    contactEmail: extras.contact_email ?? DEFAULT_EXTRAS.contact_email ?? '',
+    receiptFromEmail: extras.receipt_from_email ?? DEFAULT_EXTRAS.receipt_from_email ?? '',
+    pdfFromEmail: extras.pdf_from_email ?? DEFAULT_EXTRAS.pdf_from_email ?? '',
     lodging: (extras.lodging.length ? extras.lodging : DEFAULT_EXTRAS.lodging).map((text) => ({ id: createId(), text })),
     lodgingLinks: (extras.lodging_links.length ? extras.lodging_links : DEFAULT_EXTRAS.lodging_links).map((item) => ({
       ...item,
@@ -105,6 +108,9 @@ function toExtrasPayload(params: {
   costTotal: string;
   paypalHandle: string;
   stripeAccountId: string;
+  contactEmail: string;
+  receiptFromEmail: string;
+  pdfFromEmail: string;
   lodging: TextItem[];
   lodgingLinks: LodgingLinkItem[];
   lodgingHotelsHeading: string;
@@ -135,6 +141,9 @@ function toExtrasPayload(params: {
   const costTotal = params.costTotal.trim();
   const paypalHandle = params.paypalHandle.trim();
   const stripeAccountId = params.stripeAccountId.trim();
+  const contactEmail = params.contactEmail.trim();
+  const receiptFromEmail = params.receiptFromEmail.trim();
+  const pdfFromEmail = params.pdfFromEmail.trim();
 
   const lodging = params.lodging.map((item) => item.text.trim()).filter(Boolean);
   const lodgingLinks = params.lodgingLinks
@@ -155,6 +164,9 @@ function toExtrasPayload(params: {
     cost_total: costTotal || DEFAULT_EXTRAS.cost_total,
     paypal_handle: paypalHandle || DEFAULT_EXTRAS.paypal_handle,
     stripe_account_id: stripeAccountId || DEFAULT_EXTRAS.stripe_account_id,
+    contact_email: contactEmail || DEFAULT_EXTRAS.contact_email,
+    receipt_from_email: receiptFromEmail || DEFAULT_EXTRAS.receipt_from_email,
+    pdf_from_email: pdfFromEmail || DEFAULT_EXTRAS.pdf_from_email,
     lodging,
     lodging_links: lodgingLinks,
     lodging_hotels_heading: lodgingHotelsHeading || DEFAULT_EXTRAS.lodging_hotels_heading,
@@ -187,6 +199,9 @@ export default function ContentForm({ site, action }: ContentFormProps) {
   const [costTotal, setCostTotal] = useState(initialExtras.costTotal);
   const [paypalHandle, setPayPalHandle] = useState(initialExtras.paypalHandle);
   const [stripeAccountId, setStripeAccountId] = useState(initialExtras.stripeAccountId);
+  const [contactEmail, setContactEmail] = useState(initialExtras.contactEmail);
+  const [receiptFromEmail, setReceiptFromEmail] = useState(initialExtras.receiptFromEmail);
+  const [pdfFromEmail, setPdfFromEmail] = useState(initialExtras.pdfFromEmail);
   const [lodging, setLodging] = useState<TextItem[]>(initialExtras.lodging);
   const [lodgingLinks, setLodgingLinks] = useState<LodgingLinkItem[]>(initialExtras.lodgingLinks);
   const [lodgingHotelsHeading, setLodgingHotelsHeading] = useState(initialExtras.lodgingHotelsHeading);
@@ -207,6 +222,9 @@ export default function ContentForm({ site, action }: ContentFormProps) {
           costTotal,
           paypalHandle,
           stripeAccountId,
+          contactEmail,
+          receiptFromEmail,
+          pdfFromEmail,
           lodging,
           lodgingLinks,
           lodgingHotelsHeading,
@@ -223,6 +241,9 @@ export default function ContentForm({ site, action }: ContentFormProps) {
       costTotal,
       paypalHandle,
       stripeAccountId,
+      contactEmail,
+      receiptFromEmail,
+      pdfFromEmail,
       lodging,
       lodgingLinks,
       lodgingHotelsHeading,
@@ -672,6 +693,39 @@ export default function ContentForm({ site, action }: ContentFormProps) {
                   placeholder="acct_..."
                 />
                 <p className="text-xs text-koa">Leave blank to use the platform Stripe account.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h4 className="font-semibold text-sand-900">Email Settings</h4>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="contact_email">Public Contact Email (site display)</Label>
+                <Input
+                  id="contact_email"
+                  value={contactEmail}
+                  onChange={(event) => setContactEmail(event.target.value)}
+                  placeholder="kokua@kekoolanireunion.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="receipt_from_email">Receipt From Email</Label>
+                <Input
+                  id="receipt_from_email"
+                  value={receiptFromEmail}
+                  onChange={(event) => setReceiptFromEmail(event.target.value)}
+                  placeholder="ohana@kekoolanireunion.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="pdf_from_email">PDF/Thank You From Email</Label>
+                <Input
+                  id="pdf_from_email"
+                  value={pdfFromEmail}
+                  onChange={(event) => setPdfFromEmail(event.target.value)}
+                  placeholder="ohana@kekoolanireunion.com"
+                />
               </div>
             </div>
           </div>

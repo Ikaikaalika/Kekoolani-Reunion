@@ -107,8 +107,8 @@ export default async function RegisterPage({ searchParams }: { searchParams: { c
           </ul>
           <p className="mono mt-4 text-xs uppercase tracking-[0.25em] text-koa">
             Have questions or need help? Email{' '}
-            <a href="mailto:pumehanasilva@mac.com" className="text-brandBlue underline">
-              pumehanasilva@mac.com
+            <a href={`mailto:${extras.contact_email ?? 'kokua@kekoolanireunion.com'}`} className="text-brandBlue underline">
+              {extras.contact_email ?? 'kokua@kekoolanireunion.com'}
             </a>
             .
           </p>

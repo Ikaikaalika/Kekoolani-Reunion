@@ -44,7 +44,7 @@ function buildPayPalLink(baseLink: string, amountCents?: number | null) {
 
 type SiteSettingsRow = Database['public']['Tables']['site_settings']['Row'];
 
-async function getPayPalBaseLink() {
+async function getSiteEmailConfig() {
   const supabase = createSupabaseServerClient();
   const { data } = await supabase
     .from('site_settings')
@@ -54,13 +54,15 @@ async function getPayPalBaseLink() {
 
   const extras = getSiteExtras(data ?? null);
   const handle = extras.paypal_handle?.trim() ?? '';
-  if (!handle) {
-    return PAYPAL_LINK;
-  }
-  if (/^https?:\/\//i.test(handle)) {
-    return handle;
-  }
-  return `https://www.paypal.com/paypalme/${handle}`;
+  const paypalBase = !handle
+    ? PAYPAL_LINK
+    : /^https?:\/\//i.test(handle)
+      ? handle
+      : `https://www.paypal.com/paypalme/${handle}`;
+  return {
+    paypalBase,
+    contactEmail: extras.contact_email ?? 'kokua@kekoolanireunion.com'
+  };
 }
 
 export default async function SuccessPage({
@@ -72,7 +74,7 @@ export default async function SuccessPage({
   const paymentLabel = method ? PAYMENT_LABELS[method] ?? method : null;
   const isPending = status === 'pending';
   const amountCents = amount ? Number(amount) : null;
-  const paypalBaseLink = await getPayPalBaseLink();
+  const { paypalBase: paypalBaseLink, contactEmail } = await getSiteEmailConfig();
   const paypalLink = method === 'paypal' ? buildPayPalLink(paypalBaseLink, amountCents) : '';
   const showPayPalLink = method === 'paypal' && Boolean(paypalBaseLink);
   const headline = isPending ? 'Registration received' : 'Mahalo nui loa!';
@@ -84,7 +86,7 @@ export default async function SuccessPage({
   const receiptMessage = isPending
     ? 'A receipt will be emailed once your payment is completed.'
     : 'Keep an eye out for your receipt in the next few minutes.';
-  const genealogyEmail = 'pumehanasilva@mac.com';
+  const genealogyEmail = contactEmail;
 
   return (
     <div className="section">

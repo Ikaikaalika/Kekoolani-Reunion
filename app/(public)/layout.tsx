@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import TaroLeafIcon from '@/components/icons/TaroLeafIcon';
 import { createSupabaseServerClient } from '@/lib/supabaseClient';
 import { SITE_SETTINGS_ID } from '@/lib/constants';
-import { SITE_DEFAULTS } from '@/lib/siteContent';
+import { getSiteExtras, SITE_DEFAULTS } from '@/lib/siteContent';
 import type { Database } from '@/types/supabase';
 
 const navLinks = [
@@ -19,12 +19,14 @@ export default async function PublicLayout({ children }: { children: ReactNode }
   const supabase = createSupabaseServerClient();
   const { data } = await supabase
     .from('site_settings')
-    .select('event_dates, location')
+    .select('event_dates, location, gallery_json')
     .eq('id', SITE_SETTINGS_ID)
     .maybeSingle<SiteSettingsRow>();
 
   const eventDates = data?.event_dates ?? SITE_DEFAULTS.event_dates;
   const location = data?.location ?? SITE_DEFAULTS.location;
+  const extras = getSiteExtras(data ?? null);
+  const contactEmail = extras.contact_email ?? 'kokua@kekoolanireunion.com';
 
   return (
     <div className="min-h-screen bg-white">
@@ -35,8 +37,8 @@ export default async function PublicLayout({ children }: { children: ReactNode }
               <a href="tel:8088956883" className="opacity-90 hover:opacity-100">
                 808-895-6883
               </a>
-              <a href="mailto:pumehanasilva@mac.com" className="opacity-90 hover:opacity-100">
-                pumehanasilva@mac.com
+              <a href={`mailto:${contactEmail}`} className="opacity-90 hover:opacity-100">
+                {contactEmail}
               </a>
             </div>
             <div className="opacity-90">
@@ -89,7 +91,7 @@ export default async function PublicLayout({ children }: { children: ReactNode }
               </p>
               <div className="space-y-2 text-white/70">
                 <p>Jade Silva</p>
-                <p>pumehanasilva@mac.com</p>
+                <p>{contactEmail}</p>
                 <p>808-895-6883 (Hawaiʻi time)</p>
                 <p>Mailing: PO Box 10124, Hilo, HI 96721</p>
               </div>
