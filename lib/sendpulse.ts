@@ -1,3 +1,6 @@
+import fs from 'fs';
+import path from 'path';
+
 type SendPulseAttachment = {
   content: string;
   filename: string;
@@ -73,19 +76,28 @@ export async function sendSendPulseEmail(message: SendPulseEmail) {
   return response.json();
 }
 
-export async function buildPdfAttachment() {
-  const pdfUrl = process.env.REUNION_PDF_URL;
-  if (!pdfUrl) return null;
-  const filename = process.env.REUNION_PDF_FILENAME || 'Kekoolani-Reunion.pdf';
-
-  const response = await fetch(pdfUrl);
-  if (!response.ok) {
-    throw new Error(`Unable to fetch PDF attachment (${response.status}).`);
+export function listPublicAssetsByExt(extensions: string[]) {
+  const assetsDir = path.join(process.cwd(), 'public', 'assets');
+  const extSet = new Set(extensions.map((ext) => ext.toLowerCase()));
+  try {
+    return fs
+      .readdirSync(assetsDir)
+      .filter((file) => extSet.has(path.extname(file).toLowerCase()))
+      .sort((a, b) => a.localeCompare(b));
+  } catch (error) {
+    return [];
   }
-  const buffer = Buffer.from(await response.arrayBuffer());
-  return {
-    content: buffer.toString('base64'),
-    filename,
-    type: 'application/pdf'
-  } satisfies SendPulseAttachment;
+}
+
+export function buildPdfAttachmentsFromPublicAssets(files: string[]) {
+  if (!files.length) return [];
+  const assetsDir = path.join(process.cwd(), 'public', 'assets');
+  return files.map((file) => {
+    const buffer = fs.readFileSync(path.join(assetsDir, file));
+    return {
+      content: buffer.toString('base64'),
+      filename: file,
+      type: 'application/pdf'
+    } satisfies SendPulseAttachment;
+  });
 }

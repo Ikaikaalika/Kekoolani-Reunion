@@ -168,9 +168,10 @@ async function getSiteContent() {
 function getPublicGalleryAssets() {
   const assetsDir = path.join(process.cwd(), 'public', 'assets');
   const supported = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.mp4', '.webm', '.mov']);
+  const excluded = new Set(['Jade.jpeg']);
   try {
     return readdirSync(assetsDir)
-      .filter((file) => supported.has(path.extname(file).toLowerCase()))
+      .filter((file) => supported.has(path.extname(file).toLowerCase()) && !excluded.has(file))
       .sort((a, b) => a.localeCompare(b))
       .map((file) => ({ src: `/assets/${file}` }));
   } catch (error) {

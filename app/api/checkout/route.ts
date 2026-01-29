@@ -6,7 +6,7 @@ import { getStripeClient } from '@/lib/stripe';
 import { getParticipantAge, getPeopleFromAnswers, isParticipantAttending, selectTicketForAge } from '@/lib/orderUtils';
 import { SITE_SETTINGS_ID } from '@/lib/constants';
 import { getSiteExtras } from '@/lib/siteContent';
-import { buildPdfAttachment, sendSendPulseEmail } from '@/lib/sendpulse';
+import { buildPdfAttachmentsFromPublicAssets, listPublicAssetsByExt, sendSendPulseEmail } from '@/lib/sendpulse';
 import type { Database } from '@/types/supabase';
 
 type TicketRow = Database['public']['Tables']['ticket_types']['Row'];
@@ -215,6 +215,12 @@ export async function POST(request: Request) {
       throw new Error('Unable to create order items');
     }
 
+    const origin = request.headers.get('origin');
+    const forwardedHost = request.headers.get('x-forwarded-host') ?? request.headers.get('host');
+    const forwardedProto = request.headers.get('x-forwarded-proto') ?? 'https';
+    const fallbackHost = forwardedHost ? `${forwardedProto}://${forwardedHost}` : 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? origin ?? fallbackHost;
+
     const cleanEmail = (value: unknown) =>
       typeof value === 'string' && value.includes('@') ? value.trim().toLowerCase() : null;
     const peopleEmails = people
@@ -234,7 +240,18 @@ export async function POST(request: Request) {
         const pdfFromEmail =
           extras.pdf_from_email?.trim() || process.env.PDF_FROM_EMAIL || 'ohana@kekoolanireunion.com';
         const fromName = process.env.EMAIL_FROM_NAME || 'Kekoʻolani Reunion';
-        const pdfAttachment = await buildPdfAttachment();
+        const pdfFiles = listPublicAssetsByExt(['.pdf']);
+        const pdfAttachments = buildPdfAttachmentsFromPublicAssets(pdfFiles);
+        const pdfLinks = pdfFiles.map((file) => ({
+          label: file.replace(/\.pdf$/i, '').replace(/[_-]/g, ' '),
+          href: `${baseUrl}/assets/${encodeURIComponent(file)}`
+        }));
+        const jadeImageUrl = `${baseUrl}/assets/Jade.jpeg`;
+        const allNotAttending = attendingPeople.length === 0;
+        const pdfLinksHtml = pdfLinks.length
+          ? `<ul>${pdfLinks.map((link) => `<li><a href="${link.href}">${link.label}</a></li>`).join('')}</ul>`
+          : '';
+        const pdfLinksText = pdfLinks.length ? pdfLinks.map((link) => `${link.label}: ${link.href}`).join('\n') : '';
 
         if (purchaserEmail) {
           await sendSendPulseEmail({
@@ -252,12 +269,25 @@ export async function POST(request: Request) {
           });
         }
 
-        const thankYouSubject = 'Mahalo for registering — Kekoʻolani Reunion';
-        const thankYouHtml = `<p>Aloha,</p>
-<p>Mahalo for registering for the Kekoʻolani Family Reunion. We appreciate you and can’t wait to gather together.</p>
-<p>Attached is the PDF for reference${pdfAttachment ? '.' : ' (PDF will be shared soon).'}.</p>
-<p>Me ka haʻahaʻa,<br/>Kekoʻolani Reunion Team</p>`;
-        const thankYouText = `Aloha,\n\nMahalo for registering for the Kekoʻolani Family Reunion. We appreciate you and can’t wait to gather together.\n${pdfAttachment ? 'The PDF is attached.' : 'The PDF will be shared soon.'}\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`;
+        const thankYouSubject = allNotAttending
+          ? 'Mahalo for ordering a shirt — Kekoʻolani Reunion'
+          : 'Mahalo for registering — Kekoʻolani Reunion';
+        const thankYouHtml = allNotAttending
+          ? `<p>Aloha,</p>
+<p>We will miss you at the reunion. Mahalo for ordering a shirt. Even if you do not plan to attend the reunion, could you please complete the family group record to keep our records updated. Please let me know if you have any questions.</p>
+${pdfLinksHtml}
+<p>Me ke aloha nui,</p>
+<p>Jade Pumehana Silva</p>
+<p><img src="${jadeImageUrl}" alt="Jade Pumehana Silva" style="max-width:240px; border-radius:12px;" /></p>`
+          : `<p>Aloha,</p>
+<p>Mahalo for registering to attend E hoʻi ka piko, our Kekoʻolani Reunion 2026! I am looking forward to our time together. In preparation for our reunion, could you please help update our family records by completing the family group record at the link below. If you have any questions, please let me know.</p>
+${pdfLinksHtml}
+<p>Me ke aloha nui,</p>
+<p>Jade Pumehana Silva</p>
+<p><img src="${jadeImageUrl}" alt="Jade Pumehana Silva" style="max-width:240px; border-radius:12px;" /></p>`;
+        const thankYouText = allNotAttending
+          ? `Aloha,\n\nWe will miss you at the reunion. Mahalo for ordering a shirt. Even if you do not plan to attend the reunion, could you please complete the family group record to keep our records updated. Please let me know if you have any questions.\n\n${pdfLinksText}\n\nMe ke aloha nui,\nJade Pumehana Silva`
+          : `Aloha,\n\nMahalo for registering to attend E hoʻi ka piko, our Kekoʻolani Reunion 2026! I am looking forward to our time together. In preparation for our reunion, could you please help update our family records by completing the family group record at the link below. If you have any questions, please let me know.\n\n${pdfLinksText}\n\nMe ke aloha nui,\nJade Pumehana Silva`;
 
         await Promise.all(
           uniqueEmails.map((email) =>
@@ -267,7 +297,7 @@ export async function POST(request: Request) {
               subject: thankYouSubject,
               html: thankYouHtml,
               text: thankYouText,
-              attachments: pdfAttachment ? [pdfAttachment] : undefined
+              attachments: pdfAttachments.length ? pdfAttachments : undefined
             })
           )
         );
@@ -275,12 +305,6 @@ export async function POST(request: Request) {
         console.error('[sendpulse]', emailError);
       }
     }
-
-    const origin = request.headers.get('origin');
-    const forwardedHost = request.headers.get('x-forwarded-host') ?? request.headers.get('host');
-    const forwardedProto = request.headers.get('x-forwarded-proto') ?? 'https';
-    const fallbackHost = forwardedHost ? `${forwardedProto}://${forwardedHost}` : 'http://localhost:3000';
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? origin ?? fallbackHost;
     const redirectUrl = `${baseUrl}/success?order=${orderRecord.id}&status=pending&method=${paymentMethod}&amount=${totalCents}`;
     const stripeEnabled = paymentMethod === 'stripe' && process.env.STRIPE_CHECKOUT_ENABLED === 'true';
 
