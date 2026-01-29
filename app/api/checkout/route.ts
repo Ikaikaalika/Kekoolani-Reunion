@@ -229,6 +229,13 @@ export async function POST(request: Request) {
     const purchaserEmail = cleanEmail(parsed.purchaser_email);
     const uniqueEmails = Array.from(new Set([...(purchaserEmail ? [purchaserEmail] : []), ...peopleEmails]));
 
+    const { data: siteSettings } = await supabaseAdmin
+      .from('site_settings')
+      .select('gallery_json')
+      .eq('id', SITE_SETTINGS_ID)
+      .maybeSingle();
+    const extras = getSiteExtras(siteSettings ?? null);
+
     if (uniqueEmails.length && process.env.SENDPULSE_API_ID && process.env.SENDPULSE_API_SECRET) {
       try {
         const formattedTotal = new Intl.NumberFormat('en-US', {
@@ -327,12 +334,6 @@ ${pdfLinksHtml}
       return NextResponse.json({ redirectUrl });
     }
 
-    const { data: siteSettings } = await supabaseAdmin
-      .from('site_settings')
-      .select('gallery_json')
-      .eq('id', SITE_SETTINGS_ID)
-      .maybeSingle();
-    const extras = getSiteExtras(siteSettings ?? null);
     const stripeAccountId = extras.stripe_account_id?.trim() || null;
 
     const stripe = getStripeClient();
