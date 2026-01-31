@@ -55,6 +55,10 @@ export async function POST(request: Request) {
       name: string;
     }> = [];
     const isTshirtTicketName = (name: string) => name.toLowerCase().includes('shirt');
+    const donationRaw = (answers as Record<string, unknown>)?.donation_amount;
+    const donationAmount =
+      typeof donationRaw === 'number' ? donationRaw : typeof donationRaw === 'string' ? Number(donationRaw) : 0;
+    const donationCents = Number.isFinite(donationAmount) ? Math.max(0, Math.round(donationAmount * 100)) : 0;
 
     if (lineItems.length) {
       const { data: ticketTypes, error: ticketError } = await supabaseAdmin
@@ -178,6 +182,10 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
+    }
+
+    if (donationCents > 0) {
+      totalCents += donationCents;
     }
 
     const orderInsert: OrderInsert = {
@@ -338,6 +346,30 @@ ${pdfLinksHtml}
 
     const stripe = getStripeClient();
 
+    const stripeLineItems = orderItems.map((item) => ({
+      price_data: {
+        currency: ticketsById.get(item.ticket_type_id)!.currency,
+        unit_amount: item.unit_amount,
+        product_data: {
+          name: item.name
+        }
+      },
+      quantity: item.quantity
+    }));
+
+    if (donationCents > 0) {
+      stripeLineItems.push({
+        price_data: {
+          currency: 'usd',
+          unit_amount: donationCents,
+          product_data: {
+            name: 'Reunion Donation'
+          }
+        },
+        quantity: 1
+      });
+    }
+
     const session = await stripe.checkout.sessions.create(
       {
         mode: 'payment',
@@ -347,16 +379,7 @@ ${pdfLinksHtml}
         metadata: {
           order_id: orderRecord.id
         },
-        line_items: orderItems.map((item) => ({
-          price_data: {
-            currency: ticketsById.get(item.ticket_type_id)!.currency,
-            unit_amount: item.unit_amount,
-            product_data: {
-              name: item.name
-            }
-          },
-          quantity: item.quantity
-        }))
+        line_items: stripeLineItems
       },
       stripeAccountId ? { stripeAccount: stripeAccountId } : undefined
     );

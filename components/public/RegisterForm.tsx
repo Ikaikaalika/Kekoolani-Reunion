@@ -138,6 +138,8 @@ type FormSchema = {
   photo_urls?: Array<string | null>;
   tshirt_orders?: Array<{ category: string; style: string; size: string; quantity: number }>;
   payment_method: 'stripe' | 'paypal' | 'check';
+  tshirt_only?: boolean;
+  donation_amount?: number;
   donation_note?: string;
 };
 
@@ -334,6 +336,8 @@ function buildFormSchema(personSchema: z.ZodTypeAny) {
     photo_urls: z.array(z.string().url().nullable()).optional(),
     tshirt_orders: z.array(tshirtOrderSchema).optional(),
     payment_method: z.enum(['stripe', 'paypal', 'check']),
+    tshirt_only: z.boolean().optional(),
+    donation_amount: z.preprocess(preprocessNumber, z.number().min(0)).optional(),
     donation_note: z.string().optional()
   });
 }
@@ -518,6 +522,8 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
       photo_urls: [],
       tshirt_orders: [],
       payment_method: 'check',
+      tshirt_only: false,
+      donation_amount: 0,
       donation_note: ''
     }
   });
@@ -540,15 +546,17 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
   const quantities = watch('tickets');
   const photoUrls = watch('photo_urls') as Array<string | null> | undefined;
   const tshirtOrders = useWatch({ control, name: 'tshirt_orders' });
+  const tshirtOnly = useWatch({ control, name: 'tshirt_only' });
+  const donationAmount = watch('donation_amount');
   const paymentMethod = useWatch({ control, name: 'payment_method' });
   const peopleRecords = useMemo(
     () => (Array.isArray(people) ? (people as Record<string, unknown>[]) : []),
     [people]
   );
-  const attendingPeople = useMemo(
-    () => peopleRecords.filter((person) => person[ATTENDING_KEY] !== false),
-    [peopleRecords]
-  );
+  const attendingPeople = useMemo(() => {
+    if (tshirtOnly) return [];
+    return peopleRecords.filter((person) => person[ATTENDING_KEY] !== false);
+  }, [peopleRecords, tshirtOnly]);
   const ageBasedTickets = useMemo(() => tickets.filter(isAgeBasedTicket), [tickets]);
   const tshirtTicket = useMemo(() => {
     return (
@@ -676,6 +684,14 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
       }
     });
   }, [tshirtOrders, setValue]);
+
+  useEffect(() => {
+    if (!tshirtOnly) return;
+    if (!people?.length) return;
+    people.forEach((_, index) => {
+      setValue(`people.${index}.${ATTENDING_KEY}` as const, false, { shouldValidate: true, shouldDirty: true });
+    });
+  }, [tshirtOnly, people, setValue]);
 
   useEffect(() => {
     if (!people?.length) return;
@@ -823,12 +839,15 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
   const ticketById = useMemo(() => new Map(tickets.map((ticket) => [ticket.id, ticket])), [tickets]);
   const additionalTshirtTotalCents = additionalTshirtQuantity * TSHIRT_PRICE_CENTS;
   const totalTshirtCents = totalTshirtQuantity * TSHIRT_PRICE_CENTS;
+  const donationCentsRaw = typeof donationAmount === 'number' ? donationAmount : Number(donationAmount ?? 0);
+  const donationCents = Number.isFinite(donationCentsRaw) ? Math.max(0, Math.round(donationCentsRaw * 100)) : 0;
   const ticketTotalCents = derivedTickets.reduce((sum, item) => {
     const ticket = ticketById.get(item.ticket_type_id);
     if (!ticket) return sum;
     return sum + ticket.price_cents * (Number.isFinite(item.quantity) ? item.quantity : 0);
   }, 0);
-  const totalCents = tshirtTicket ? ticketTotalCents : ticketTotalCents + totalTshirtCents;
+  const baseTotal = tshirtTicket ? ticketTotalCents : ticketTotalCents + totalTshirtCents;
+  const totalCents = baseTotal + donationCents;
   const hasAgeTickets = ageBasedTickets.length > 0;
   const missingAgeEntry = attendingPeople.find((person) => getParticipantAge(person) === null);
   const unmatchedAgeEntry = attendingPeople.find((person) => {
@@ -871,7 +890,7 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
         return;
       }
       const derivedTicketPayload = derivedTickets.filter((item) => item.quantity > 0);
-      if (!derivedTicketPayload.length && totalTshirtQuantity === 0 && !isZeroBalance) {
+      if (!derivedTicketPayload.length && totalTshirtQuantity === 0 && donationCents === 0) {
         setError('Select at least one ticket.');
         setLoading(false);
         return;
@@ -908,7 +927,7 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
               record[field.field_key] = normalizeFieldValue(field, value);
             });
             const rawPerson = (rawValues as any)?.people?.[index] ?? {};
-            record.attending = rawPerson[ATTENDING_KEY] !== false;
+            record.attending = data.tshirt_only ? false : rawPerson[ATTENDING_KEY] !== false;
             if (typeof record.refunded !== 'boolean') {
               record.refunded = false;
             }
@@ -916,6 +935,8 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
           }),
           photo_urls: data.photo_urls ?? [],
           tshirt_orders: data.tshirt_orders ?? [],
+          tshirt_only: data.tshirt_only ?? false,
+          donation_amount: donationCents ? donationCents / 100 : 0,
           donation_note: data.donation_note || null
         }
       );
@@ -1014,11 +1035,27 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
       )}
 
       <form onSubmit={onSubmit} className="card shadow-soft backdrop-soft space-y-8 p-8">
+        <div className="space-y-3 rounded-2xl border border-slate-200 bg-sand-50 px-5 py-4">
+          <h2 className="text-lg font-semibold text-black">Registration Type</h2>
+          <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+            <input type="checkbox" className="mt-1 h-4 w-4" {...register('tshirt_only')} />
+            <span>
+              T-shirt only (not attending the reunion)
+              <span className="mt-1 block text-xs text-koa">
+                Choose this if you&apos;re only ordering shirts and won&apos;t attend any reunion days.
+              </span>
+            </span>
+          </label>
+        </div>
+
         <div className="space-y-2">
           <h2 className="text-lg font-semibold text-black">Participant Information</h2>
           <p className="text-sm text-koa">
             Start with the primary contact. Add each additional person below. Required fields are marked.
           </p>
+          {tshirtOnly && (
+            <p className="text-xs text-koa">T-shirt only registration is selected. Attending in person is disabled.</p>
+          )}
         </div>
 
         <div className="space-y-6">
@@ -1218,8 +1255,17 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
                     <h3 className="mt-2 text-xl font-semibold text-black">Personal Details</h3>
                   </div>
                   <div className="flex items-center gap-4">
-                    <label className="flex items-center gap-2 text-xs font-semibold text-koa">
-                      <input type="checkbox" className="h-4 w-4" {...register(`people.${index}.${ATTENDING_KEY}` as const)} />
+                    <label
+                      className={`flex items-center gap-2 text-xs font-semibold ${
+                        tshirtOnly ? 'cursor-not-allowed text-slate-400' : 'text-koa'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4"
+                        {...register(`people.${index}.${ATTENDING_KEY}` as const)}
+                        disabled={tshirtOnly}
+                      />
                       Attending in person
                     </label>
                     {index > 0 && (
@@ -1416,7 +1462,9 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
                 )}
                 <div className="mt-6 rounded-2xl border border-slate-200 bg-sand-50 px-5 py-4">
                   <p className="mono text-xs uppercase tracking-[0.3em] text-koa">Ticket</p>
-                  {people?.[index]?.[ATTENDING_KEY] === false ? (
+                  {tshirtOnly ? (
+                    <p className="mt-2 text-sm text-koa">T-shirt only registration selected. No reunion ticket required.</p>
+                  ) : people?.[index]?.[ATTENDING_KEY] === false ? (
                     <p className="mt-2 text-sm text-koa">Marked as not attending. No reunion ticket required.</p>
                   ) : !ticketDetail || ticketDetail.age === null ? (
                     <p className="mt-2 text-sm text-koa">Enter an age to see the ticket type and price.</p>
@@ -1441,7 +1489,13 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
             type="button"
             variant="secondary"
             className="w-full sm:w-auto"
-            onClick={() => appendPerson(createPerson())}
+            onClick={() => {
+              const nextIndex = participantFields.length;
+              appendPerson(createPerson());
+              if (tshirtOnly) {
+                setValue(`people.${nextIndex}.${ATTENDING_KEY}` as const, false, { shouldDirty: true, shouldValidate: true });
+              }
+            }}
             disabled={participantFields.length >= 30}
           >
             Add Person
@@ -1663,14 +1717,32 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
           </div>
         )}
 
-        <div className="space-y-2">
-          <Label htmlFor="donation_note">Donation Note (Optional)</Label>
-          <Textarea
-            id="donation_note"
-            rows={3}
-            placeholder="Share any additional contribution details for the reunion fund."
-            {...register('donation_note')}
-          />
+        <div className="space-y-3 rounded-2xl border border-slate-200 bg-sand-50 px-5 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-lg font-semibold text-black">Reunion Donation (Optional)</h2>
+            {donationCents > 0 && <p className="text-sm font-semibold text-koa">{formatCurrency(donationCents)}</p>}
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="donation_amount">Donation Amount (USD)</Label>
+              <Input
+                id="donation_amount"
+                type="number"
+                min="0"
+                step="1"
+                placeholder="0"
+                {...register('donation_amount' as const)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="donation_note">Donation Note (Optional)</Label>
+              <Input
+                id="donation_note"
+                placeholder="Optional note or dedication"
+                {...register('donation_note')}
+              />
+            </div>
+          </div>
           <p className="text-xs text-koa">
             Additional funds support reunion expenses and the Kekoʻolani Trust fund for Waipiʻo land stewardship.
           </p>

@@ -32,8 +32,8 @@ export const REGISTRATION_GUIDELINES: RegistrationGuideline[] = [
   },
   {
     key: 'donation_note',
-    label: 'Donation Note',
-    description: 'Optional contribution toward the reunion fund.'
+    label: 'Reunion Donation',
+    description: 'Optional donation amount and note to support reunion expenses.'
   }
 ];
 
@@ -41,5 +41,7 @@ export const REGISTRATION_FORM_FIELDS = [
   { key: 'people', label: 'Participants (details)' },
   { key: 'photo_urls', label: 'Photo URLs' },
   { key: 'tshirt_orders', label: 'T-shirt Orders' },
+  { key: 'tshirt_only', label: 'T-shirt Only Registration' },
+  { key: 'donation_amount', label: 'Donation Amount' },
   { key: 'donation_note', label: 'Donation Note' }
 ];
