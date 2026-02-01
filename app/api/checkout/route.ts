@@ -25,6 +25,7 @@ export async function POST(request: Request) {
 
     const answers = parsed.answers ?? {};
     const people = getPeopleFromAnswers(answers);
+    const tshirtOnly = Boolean((answers as Record<string, unknown>)?.tshirt_only);
     const attendingPeople = people.filter((person) => isParticipantAttending(person));
     const tshirtOrders = Array.isArray((answers as Record<string, unknown>)?.tshirt_orders)
       ? ((answers as Record<string, unknown>).tshirt_orders as Array<Record<string, unknown>>)
@@ -278,7 +279,6 @@ export async function POST(request: Request) {
       .filter((email): email is string => Boolean(email));
     const purchaserEmail = cleanEmail(parsed.purchaser_email);
     const uniqueEmails = Array.from(new Set([...(purchaserEmail ? [purchaserEmail] : []), ...peopleEmails]));
-    const tshirtOnly = Boolean((answers as Record<string, unknown>)?.tshirt_only);
 
     const { data: siteSettings } = await supabaseAdmin
       .from('site_settings')
