@@ -275,6 +275,7 @@ export async function POST(request: Request) {
       .filter((email): email is string => Boolean(email));
     const purchaserEmail = cleanEmail(parsed.purchaser_email);
     const uniqueEmails = Array.from(new Set([...(purchaserEmail ? [purchaserEmail] : []), ...peopleEmails]));
+    const tshirtOnly = Boolean((answers as Record<string, unknown>)?.tshirt_only);
 
     const { data: siteSettings } = await supabaseAdmin
       .from('site_settings')
@@ -307,19 +308,64 @@ export async function POST(request: Request) {
           : '';
         const pdfLinksText = pdfLinks.length ? pdfLinks.map((link) => `${link.label}: ${link.href}`).join('\n') : '';
 
+        const tshirtLineItems: string[] = [];
+        people.forEach((person) => {
+          const record = person as Record<string, unknown>;
+          const quantityRaw = record.tshirt_quantity;
+          const quantity = typeof quantityRaw === 'number' ? quantityRaw : typeof quantityRaw === 'string' ? Number(quantityRaw) : 0;
+          if (!Number.isFinite(quantity) || quantity <= 0) return;
+          const name = typeof record.full_name === 'string' ? record.full_name : 'Participant';
+          const category = typeof record.tshirt_category === 'string' ? record.tshirt_category : 'mens';
+          const style = typeof record.tshirt_style === 'string' ? record.tshirt_style : '';
+          const size = typeof record.tshirt_size === 'string' ? record.tshirt_size : '';
+          const label = `${name} — ${category}${style ? ` ${style}` : ''}${size ? ` (${size})` : ''} × ${quantity}`;
+          tshirtLineItems.push(label);
+        });
+        tshirtOrders.forEach((order) => {
+          const quantityRaw = order?.quantity;
+          const quantity = typeof quantityRaw === 'number' ? quantityRaw : typeof quantityRaw === 'string' ? Number(quantityRaw) : 0;
+          if (!Number.isFinite(quantity) || quantity <= 0) return;
+          const category = typeof order?.category === 'string' ? order.category : 'mens';
+          const style = typeof order?.style === 'string' ? order.style : '';
+          const size = typeof order?.size === 'string' ? order.size : '';
+          const label = `Additional — ${category}${style ? ` ${style}` : ''}${size ? ` (${size})` : ''} × ${quantity}`;
+          tshirtLineItems.push(label);
+        });
+        const tshirtListHtml = tshirtLineItems.length
+          ? `<ul>${tshirtLineItems.map((line) => `<li>${line}</li>`).join('')}</ul>`
+          : '<p>No T-shirt items listed.</p>';
+        const tshirtListText = tshirtLineItems.length ? tshirtLineItems.map((line) => `- ${line}`).join('\n') : 'No T-shirt items listed.';
+
         if (purchaserEmail) {
-          await sendSendPulseEmail({
-            from: { name: fromName, email: receiptFromEmail },
-            to: [{ email: purchaserEmail, name: parsed.purchaser_name }],
-            subject: 'Kekoʻolani Reunion Registration Receipt',
-            html: `<p>Aloha ${parsed.purchaser_name},</p>
+          const receiptSubject = tshirtOnly
+            ? 'Kekoʻolani Reunion T-shirt Order Receipt'
+            : 'Kekoʻolani Reunion Registration Receipt';
+          const receiptHtml = tshirtOnly
+            ? `<p>Aloha ${parsed.purchaser_name},</p>
+<p>Mahalo for your T-shirt order.</p>
+<p><strong>Order ID:</strong> ${orderRecord.id}<br/>
+<strong>Total:</strong> ${formattedTotal}<br/>
+<strong>Payment method:</strong> ${paymentMethod}</p>
+<p><strong>Shirt order details:</strong></p>
+${tshirtListHtml}
+<p>Me ka haʻahaʻa,<br/>Kekoʻolani Reunion Team</p>`
+            : `<p>Aloha ${parsed.purchaser_name},</p>
 <p>Mahalo for registering for the Kekoʻolani Family Reunion.</p>
 <p><strong>Order ID:</strong> ${orderRecord.id}<br/>
 <strong>Total:</strong> ${formattedTotal}<br/>
 <strong>Payment method:</strong> ${paymentMethod}</p>
 <p>We will follow up with any next steps as we get closer to the event.</p>
-<p>Me ka haʻahaʻa,<br/>Kekoʻolani Reunion Team</p>`,
-            text: `Aloha ${parsed.purchaser_name},\n\nMahalo for registering for the Kekoʻolani Family Reunion.\nOrder ID: ${orderRecord.id}\nTotal: ${formattedTotal}\nPayment method: ${paymentMethod}\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`
+<p>Me ka haʻahaʻa,<br/>Kekoʻolani Reunion Team</p>`;
+          const receiptText = tshirtOnly
+            ? `Aloha ${parsed.purchaser_name},\n\nMahalo for your T-shirt order.\nOrder ID: ${orderRecord.id}\nTotal: ${formattedTotal}\nPayment method: ${paymentMethod}\n\nShirt order details:\n${tshirtListText}\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`
+            : `Aloha ${parsed.purchaser_name},\n\nMahalo for registering for the Kekoʻolani Family Reunion.\nOrder ID: ${orderRecord.id}\nTotal: ${formattedTotal}\nPayment method: ${paymentMethod}\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`;
+
+          await sendSendPulseEmail({
+            from: { name: fromName, email: receiptFromEmail },
+            to: [{ email: purchaserEmail, name: parsed.purchaser_name }],
+            subject: receiptSubject,
+            html: receiptHtml,
+            text: receiptText
           });
         }
 
@@ -343,18 +389,20 @@ ${pdfLinksHtml}
           ? `Aloha,\n\nWe will miss you at the reunion. Mahalo for ordering a shirt. Even if you do not plan to attend the reunion, could you please complete the family group record to keep our records updated. Please let me know if you have any questions.\n\n${pdfLinksText}\n\nMe ke aloha nui,\nJade Pumehana Silva`
           : `Aloha,\n\nMahalo for registering to attend E hoʻi ka piko, our Kekoʻolani Reunion 2026! I am looking forward to our time together. In preparation for our reunion, could you please help update our family records by completing the family group record at the link below. If you have any questions, please let me know.\n\n${pdfLinksText}\n\nMe ke aloha nui,\nJade Pumehana Silva`;
 
-        await Promise.all(
-          uniqueEmails.map((email) =>
-            sendSendPulseEmail({
-              from: { name: fromName, email: pdfFromEmail },
-              to: [{ email }],
-              subject: thankYouSubject,
-              html: thankYouHtml,
-              text: thankYouText,
-              attachments: pdfAttachments.length ? pdfAttachments : undefined
-            })
-          )
-        );
+        if (!tshirtOnly) {
+          await Promise.all(
+            uniqueEmails.map((email) =>
+              sendSendPulseEmail({
+                from: { name: fromName, email: pdfFromEmail },
+                to: [{ email }],
+                subject: thankYouSubject,
+                html: thankYouHtml,
+                text: thankYouText,
+                attachments: pdfAttachments.length ? pdfAttachments : undefined
+              })
+            )
+          );
+        }
       } catch (emailError) {
         console.error('[sendpulse]', emailError);
       }
