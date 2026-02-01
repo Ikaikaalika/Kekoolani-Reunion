@@ -74,7 +74,11 @@ async function getSiteEmailConfig() {
   return {
     paypalBase,
     venmoBase,
-    contactEmail: extras.contact_email ?? 'kokua@kekoolanireunion.com'
+    contactEmail: extras.contact_email ?? 'kokua@kekoolanireunion.com',
+    genealogyEmail:
+      extras.pdf_from_email?.trim() ||
+      extras.receipt_from_email?.trim() ||
+      'ohana@kekoolanireunion.com'
   };
 }
 
@@ -87,7 +91,7 @@ export default async function SuccessPage({
   const paymentLabel = method ? PAYMENT_LABELS[method] ?? method : null;
   const isPending = status === 'pending';
   const amountCents = amount ? Number(amount) : null;
-  const { paypalBase: paypalBaseLink, venmoBase: venmoBaseLink, contactEmail } = await getSiteEmailConfig();
+  const { paypalBase: paypalBaseLink, venmoBase: venmoBaseLink, genealogyEmail } = await getSiteEmailConfig();
   const paypalLink = method === 'paypal' ? buildPayPalLink(paypalBaseLink, amountCents) : '';
   const showPayPalLink = method === 'paypal' && Boolean(paypalBaseLink);
   const showVenmoLink = method === 'venmo' && Boolean(venmoBaseLink);
@@ -100,8 +104,6 @@ export default async function SuccessPage({
   const receiptMessage = isPending
     ? 'A receipt will be emailed once your payment is completed.'
     : 'Keep an eye out for your receipt in the next few minutes.';
-  const genealogyEmail = contactEmail;
-
   return (
     <div className="section">
       <div className="container flex min-h-[70vh] max-w-3xl flex-col items-center justify-center gap-6 text-center">

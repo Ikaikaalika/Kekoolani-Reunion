@@ -27,6 +27,8 @@ export default async function PublicLayout({ children }: { children: ReactNode }
   const location = data?.location ?? SITE_DEFAULTS.location;
   const extras = getSiteExtras(data ?? null);
   const contactEmail = extras.contact_email ?? 'kokua@kekoolanireunion.com';
+  const genealogyEmail =
+    extras.pdf_from_email?.trim() || extras.receipt_from_email?.trim() || 'ohana@kekoolanireunion.com';
 
   return (
     <div className="min-h-screen bg-white">
@@ -86,12 +88,16 @@ export default async function PublicLayout({ children }: { children: ReactNode }
                   <p className="text-brandBlueLight">Family Reunion 2026</p>
                 </div>
               </div>
-              <p className="mb-6 max-w-xl text-white/80">
-                Contact Jade Silva for registration help, genealogy submissions, or reunion updates.
-              </p>
+              <p className="mb-6 max-w-xl text-white/80">Contact Jade Silva for registration help or reunion updates.</p>
               <div className="space-y-2 text-white/70">
                 <p>Jade Silva</p>
                 <p>{contactEmail}</p>
+                <p>
+                  Genealogy submissions:{' '}
+                  <a href={`mailto:${genealogyEmail}`} className="underline decoration-white/40 underline-offset-2">
+                    {genealogyEmail}
+                  </a>
+                </p>
                 <p>808-895-6883 (Hawaiʻi time)</p>
                 <p>Mailing: PO Box 10124, Hilo, HI 96721</p>
               </div>
