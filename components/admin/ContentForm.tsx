@@ -73,6 +73,7 @@ function normalizeExtras(extras: SiteExtras) {
     costIntro: extras.cost_intro ?? DEFAULT_EXTRAS.cost_intro ?? '',
     costTotal: extras.cost_total ?? DEFAULT_EXTRAS.cost_total ?? '',
     paypalHandle: extras.paypal_handle ?? DEFAULT_EXTRAS.paypal_handle ?? '',
+    venmoHandle: extras.venmo_handle ?? DEFAULT_EXTRAS.venmo_handle ?? '',
     stripeAccountId: extras.stripe_account_id ?? DEFAULT_EXTRAS.stripe_account_id ?? '',
     contactEmail: extras.contact_email ?? DEFAULT_EXTRAS.contact_email ?? '',
     receiptFromEmail: extras.receipt_from_email ?? DEFAULT_EXTRAS.receipt_from_email ?? '',
@@ -107,6 +108,7 @@ function toExtrasPayload(params: {
   costIntro: string;
   costTotal: string;
   paypalHandle: string;
+  venmoHandle: string;
   stripeAccountId: string;
   contactEmail: string;
   receiptFromEmail: string;
@@ -140,6 +142,7 @@ function toExtrasPayload(params: {
   const costIntro = params.costIntro.trim();
   const costTotal = params.costTotal.trim();
   const paypalHandle = params.paypalHandle.trim();
+  const venmoHandle = params.venmoHandle.trim();
   const stripeAccountId = params.stripeAccountId.trim();
   const contactEmail = params.contactEmail.trim();
   const receiptFromEmail = params.receiptFromEmail.trim();
@@ -163,6 +166,7 @@ function toExtrasPayload(params: {
     cost_intro: costIntro || DEFAULT_EXTRAS.cost_intro,
     cost_total: costTotal || DEFAULT_EXTRAS.cost_total,
     paypal_handle: paypalHandle || DEFAULT_EXTRAS.paypal_handle,
+    venmo_handle: venmoHandle || DEFAULT_EXTRAS.venmo_handle,
     stripe_account_id: stripeAccountId || DEFAULT_EXTRAS.stripe_account_id,
     contact_email: contactEmail || DEFAULT_EXTRAS.contact_email,
     receipt_from_email: receiptFromEmail || DEFAULT_EXTRAS.receipt_from_email,
@@ -198,6 +202,7 @@ export default function ContentForm({ site, action }: ContentFormProps) {
   const [costIntro, setCostIntro] = useState(initialExtras.costIntro);
   const [costTotal, setCostTotal] = useState(initialExtras.costTotal);
   const [paypalHandle, setPayPalHandle] = useState(initialExtras.paypalHandle);
+  const [venmoHandle, setVenmoHandle] = useState(initialExtras.venmoHandle);
   const [stripeAccountId, setStripeAccountId] = useState(initialExtras.stripeAccountId);
   const [contactEmail, setContactEmail] = useState(initialExtras.contactEmail);
   const [receiptFromEmail, setReceiptFromEmail] = useState(initialExtras.receiptFromEmail);
@@ -221,6 +226,7 @@ export default function ContentForm({ site, action }: ContentFormProps) {
           costIntro,
           costTotal,
           paypalHandle,
+          venmoHandle,
           stripeAccountId,
           contactEmail,
           receiptFromEmail,
@@ -240,6 +246,7 @@ export default function ContentForm({ site, action }: ContentFormProps) {
       costIntro,
       costTotal,
       paypalHandle,
+      venmoHandle,
       stripeAccountId,
       contactEmail,
       receiptFromEmail,
@@ -665,6 +672,16 @@ export default function ContentForm({ site, action }: ContentFormProps) {
                 placeholder="yourname"
               />
               <p className="text-xs text-koa">Use your PayPal.me handle (no https://). Example: <span className="font-semibold">kekoolani</span>.</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="venmo_handle">Venmo Handle</Label>
+              <Input
+                id="venmo_handle"
+                value={venmoHandle}
+                onChange={(event) => setVenmoHandle(event.target.value)}
+                placeholder="your-handle"
+              />
+              <p className="text-xs text-koa">Use your Venmo handle (no https://, no @). Example: <span className="font-semibold">Jade-Silva-1</span>.</p>
             </div>
             <div className="rounded-2xl border border-sand-200 bg-sand-50 p-4">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

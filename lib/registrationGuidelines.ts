@@ -28,7 +28,7 @@ export const REGISTRATION_GUIDELINES: RegistrationGuideline[] = [
   {
     key: 'tshirt',
     label: 'T-shirt Order',
-    description: 'Optional: choose category, style, size, and quantity for each shirt (youth sizes S-L, adult sizes S-5X).'
+    description: 'Optional: choose category, style, size, and quantity for each shirt (adult $25, youth $15; youth sizes S-L, adult sizes S-5X).'
   },
   {
     key: 'donation_note',

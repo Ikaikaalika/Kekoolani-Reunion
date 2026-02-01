@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 import { readFileSync } from 'fs';
 import path from 'path';
 
@@ -37,6 +38,8 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
   auth: { persistSession: false }
 });
 
+const LEGACY_TICKET_NAMES = ['Keiki (3-10)', 'Reunion T-Shirt'];
+
 const desiredTickets = [
   {
     name: 'Keiki (0-3)',
@@ -49,10 +52,10 @@ const desiredTickets = [
     position: 1
   },
   {
-    name: 'Keiki (3-10)',
-    description: 'Reunion admission for ages 3-10.',
+    name: 'Keiki (4-10)',
+    description: 'Reunion admission for ages 4-10.',
     price_cents: 2500,
-    age_min: 3,
+    age_min: 4,
     age_max: 10,
     currency: 'usd',
     active: true,
@@ -67,16 +70,33 @@ const desiredTickets = [
     currency: 'usd',
     active: true,
     position: 3
+  },
+  {
+    name: 'Reunion T-Shirt (Adult)',
+    description: 'Reunion T-Shirt (Adult)',
+    price_cents: 2500,
+    age_min: null,
+    age_max: null,
+    currency: 'usd',
+    active: true,
+    position: 98
+  },
+  {
+    name: 'Reunion T-Shirt (Youth)',
+    description: 'Reunion T-Shirt (Youth)',
+    price_cents: 1500,
+    age_min: null,
+    age_max: null,
+    currency: 'usd',
+    active: true,
+    position: 99
   }
 ];
 
 const { data: existingTickets, error: fetchError } = await supabase
   .from('ticket_types')
   .select('id, name')
-  .in(
-    'name',
-    desiredTickets.map((ticket) => ticket.name)
-  );
+  .in('name', [...desiredTickets.map((ticket) => ticket.name), ...LEGACY_TICKET_NAMES]);
 
 if (fetchError) {
   console.error('Unable to fetch tickets:', fetchError.message);
@@ -91,8 +111,14 @@ for (const ticket of existingTickets ?? []) {
 }
 
 const upserts = desiredTickets.map((ticket) => {
-  const id = byName.get(ticket.name);
-  return id ? { ...ticket, id } : ticket;
+  let id = byName.get(ticket.name);
+  if (!id && ticket.name === 'Keiki (4-10)') {
+    id = byName.get('Keiki (3-10)');
+  }
+  if (!id && ticket.name === 'Reunion T-Shirt (Adult)') {
+    id = byName.get('Reunion T-Shirt');
+  }
+  return { ...ticket, id: id ?? crypto.randomUUID() };
 });
 
 const { error: upsertError } = await supabase.from('ticket_types').upsert(upserts);

@@ -69,7 +69,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: { c
           <p className="mt-2 text-sm text-koa">
             Secure your seats at the reunion, let us know your family details, and select the experiences that fit your crew.
           </p>
-          <p className="mt-4 text-xl font-semibold text-brandBlue md:text-2xl">Deadline to Register is March 15, 2026.</p>
+          <p className="mt-4 text-xl font-semibold text-brandBlue md:text-2xl">Deadline to Register is March 31, 2026.</p>
         </div>
         {canceled && (
           <div className="mb-8 rounded-2xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-700">
@@ -118,6 +118,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: { c
           questions={questions}
           registrationFields={registrationFields}
           paypalHandle={extras.paypal_handle ?? ''}
+          venmoHandle={extras.venmo_handle ?? ''}
         />
       </div>
     </div>

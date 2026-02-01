@@ -7,6 +7,7 @@ import type { Database } from '@/types/supabase';
 const PAYMENT_LABELS: Record<string, string> = {
   stripe: 'Stripe',
   paypal: 'PayPal',
+  venmo: 'Venmo',
   check: 'Mail-in check'
 };
 
@@ -42,6 +43,11 @@ function buildPayPalLink(baseLink: string, amountCents?: number | null) {
   }
 }
 
+function normalizeHandle(handle?: string | null) {
+  if (typeof handle !== 'string') return '';
+  return handle.trim().replace(/^@+/, '');
+}
+
 type SiteSettingsRow = Database['public']['Tables']['site_settings']['Row'];
 
 async function getSiteEmailConfig() {
@@ -53,14 +59,21 @@ async function getSiteEmailConfig() {
     .maybeSingle<SiteSettingsRow>();
 
   const extras = getSiteExtras(data ?? null);
-  const handle = extras.paypal_handle?.trim() ?? '';
-  const paypalBase = !handle
+  const paypalHandle = normalizeHandle(extras.paypal_handle);
+  const venmoHandle = normalizeHandle(extras.venmo_handle);
+  const paypalBase = !paypalHandle
     ? PAYPAL_LINK
-    : /^https?:\/\//i.test(handle)
-      ? handle
-      : `https://www.paypal.com/paypalme/${handle}`;
+    : /^https?:\/\//i.test(paypalHandle)
+      ? paypalHandle
+      : `https://www.paypal.com/paypalme/${paypalHandle}`;
+  const venmoBase = !venmoHandle
+    ? ''
+    : /^https?:\/\//i.test(venmoHandle)
+      ? venmoHandle
+      : `https://venmo.com/${venmoHandle}`;
   return {
     paypalBase,
+    venmoBase,
     contactEmail: extras.contact_email ?? 'kokua@kekoolanireunion.com'
   };
 }
@@ -74,9 +87,10 @@ export default async function SuccessPage({
   const paymentLabel = method ? PAYMENT_LABELS[method] ?? method : null;
   const isPending = status === 'pending';
   const amountCents = amount ? Number(amount) : null;
-  const { paypalBase: paypalBaseLink, contactEmail } = await getSiteEmailConfig();
+  const { paypalBase: paypalBaseLink, venmoBase: venmoBaseLink, contactEmail } = await getSiteEmailConfig();
   const paypalLink = method === 'paypal' ? buildPayPalLink(paypalBaseLink, amountCents) : '';
   const showPayPalLink = method === 'paypal' && Boolean(paypalBaseLink);
+  const showVenmoLink = method === 'venmo' && Boolean(venmoBaseLink);
   const headline = isPending ? 'Registration received' : 'Mahalo nui loa!';
   const message = isPending
     ? `Your registration is confirmed. We have recorded your payment preference${
@@ -107,6 +121,12 @@ export default async function SuccessPage({
               {amountCents ? ` ($${(amountCents / 100).toFixed(2)} USD).` : '.'}
             </p>
           )}
+          {showVenmoLink && (
+            <p>
+              Use the Venmo link below to complete your payment
+              {amountCents ? ` ($${(amountCents / 100).toFixed(2)} USD).` : '.'}
+            </p>
+          )}
           <p className="text-base">
             Genealogy submissions and questions: email{' '}
             <a href={`mailto:${genealogyEmail}`} className="text-brandBlue underline">
@@ -120,6 +140,14 @@ export default async function SuccessPage({
             <p className="font-semibold text-black">Pay with PayPal</p>
             <a href={paypalLink || PAYPAL_LINK} target="_blank" rel="noreferrer" className="btn">
               Open PayPal Link
+            </a>
+          </div>
+        )}
+        {showVenmoLink && (
+          <div className="card shadow-soft flex flex-col items-center gap-3 px-6 py-5 text-sm text-koa">
+            <p className="font-semibold text-black">Pay with Venmo</p>
+            <a href={venmoBaseLink} target="_blank" rel="noreferrer" className="btn">
+              Open Venmo Link
             </a>
           </div>
         )}

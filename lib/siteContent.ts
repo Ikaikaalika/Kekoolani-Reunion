@@ -35,6 +35,7 @@ export type SiteExtras = {
   cost_intro?: string;
   cost_total?: string;
   paypal_handle?: string;
+  venmo_handle?: string;
   stripe_account_id?: string;
   contact_email?: string;
   receipt_from_email?: string;
@@ -48,14 +49,15 @@ export type SiteExtras = {
   genealogy_image?: GalleryItem | null;
 };
 
-const DEFAULT_COST_INTRO = 'Ticket pricing is based on age. T-shirts are $25 each.';
+const DEFAULT_COST_INTRO = 'Ticket pricing is based on age. Adult T-shirts are $25, youth T-shirts are $15.';
 const DEFAULT_COST_TOTAL = '';
 
 const DEFAULT_COSTS: CostItem[] = [
   { label: 'Keiki (0-3)', detail: '$0' },
-  { label: 'Keiki (3-10)', detail: '$25.00' },
+  { label: 'Keiki (4-10)', detail: '$25.00' },
   { label: 'General (11+)', detail: '$35.00' },
-  { label: 'Reunion T-Shirt', detail: '$25.00' }
+  { label: 'Reunion T-Shirt (Adult)', detail: '$25.00' },
+  { label: 'Reunion T-Shirt (Youth)', detail: '$15.00' }
 ];
 
 const DEFAULT_LODGING_PARAGRAPHS = [
@@ -66,7 +68,7 @@ const DEFAULT_LODGING_PARAGRAPHS = [
 const DEFAULT_LODGING_LINKS: LodgingLink[] = [
   {
     label: 'Information for Hilo Hawaiian Hotel group rate',
-    href: 'https://drive.google.com/file/d/1iurqFFQYgSl0XTebyLcYZ9MScL7EAYOx/view?usp=drive_link'
+    href: '/assets/Info_Hilo Hawaiian Group Rate.pdf'
   },
   {
     label: 'Hilo Hawaiian Hotel form with group code',
@@ -159,6 +161,7 @@ export const DEFAULT_EXTRAS: SiteExtras = {
   cost_intro: DEFAULT_COST_INTRO,
   cost_total: DEFAULT_COST_TOTAL,
   paypal_handle: '',
+  venmo_handle: '',
   stripe_account_id: '',
   contact_email: 'kokua@kekoolanireunion.com',
   receipt_from_email: 'ohana@kekoolanireunion.com',
@@ -274,6 +277,8 @@ export function parseExtras(raw: unknown): SiteExtras {
     const costTotal = typeof record.cost_total === 'string' ? record.cost_total : DEFAULT_EXTRAS.cost_total;
     const paypalHandle =
       typeof record.paypal_handle === 'string' ? record.paypal_handle : DEFAULT_EXTRAS.paypal_handle;
+    const venmoHandle =
+      typeof record.venmo_handle === 'string' ? record.venmo_handle : DEFAULT_EXTRAS.venmo_handle;
     const stripeAccountId =
       typeof record.stripe_account_id === 'string' ? record.stripe_account_id : DEFAULT_EXTRAS.stripe_account_id;
     const contactEmail =
@@ -322,6 +327,7 @@ export function parseExtras(raw: unknown): SiteExtras {
       cost_intro: costIntro ?? DEFAULT_EXTRAS.cost_intro,
       cost_total: costTotal ?? DEFAULT_EXTRAS.cost_total,
       paypal_handle: paypalHandle ?? DEFAULT_EXTRAS.paypal_handle,
+      venmo_handle: venmoHandle ?? DEFAULT_EXTRAS.venmo_handle,
       stripe_account_id: stripeAccountId ?? DEFAULT_EXTRAS.stripe_account_id,
       contact_email: contactEmail ?? DEFAULT_EXTRAS.contact_email,
       receipt_from_email: receiptFromEmail ?? DEFAULT_EXTRAS.receipt_from_email,

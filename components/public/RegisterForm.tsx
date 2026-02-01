@@ -139,7 +139,7 @@ type FormSchema = {
   people: Array<Record<string, any>>;
   photo_urls?: Array<string | null>;
   tshirt_orders?: Array<{ category: string; style: string; size: string; quantity: number }>;
-  payment_method: 'stripe' | 'paypal' | 'check';
+  payment_method: 'stripe' | 'paypal' | 'venmo' | 'check';
   tshirt_only?: boolean;
   donation_amount?: number;
   donation_note?: string;
@@ -337,7 +337,7 @@ function buildFormSchema(personSchema: z.ZodTypeAny) {
     people: z.array(personSchema).min(1).max(30),
     photo_urls: z.array(z.string().url().nullable()).optional(),
     tshirt_orders: z.array(tshirtOrderSchema).optional(),
-    payment_method: z.enum(['stripe', 'paypal', 'check']),
+    payment_method: z.enum(['stripe', 'paypal', 'venmo', 'check']),
     tshirt_only: z.boolean().optional(),
     donation_amount: z.preprocess(preprocessNumber, z.number().min(0)).optional(),
     donation_note: z.string().optional()
@@ -406,6 +406,7 @@ interface RegisterFormProps {
   questions: Question[];
   registrationFields: RegistrationField[];
   paypalHandle?: string | null;
+  venmoHandle?: string | null;
 }
 
 type PendingNavigation = { type: 'link'; href: string } | { type: 'back' } | null;
@@ -440,7 +441,12 @@ function buildPayPalLink(baseLink: string, amountCents?: number | null) {
   }
 }
 
-export default function RegisterForm({ tickets, questions, registrationFields, paypalHandle }: RegisterFormProps) {
+function normalizeHandle(handle?: string | null) {
+  if (typeof handle !== 'string') return '';
+  return handle.trim().replace(/^@+/, '');
+}
+
+export default function RegisterForm({ tickets, questions, registrationFields, paypalHandle, venmoHandle }: RegisterFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -724,14 +730,6 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
   }, [tshirtOrders, setValue]);
 
   useEffect(() => {
-    if (!tshirtOnly) return;
-    if (!people?.length) return;
-    people.forEach((_, index) => {
-      setValue(`people.${index}.${ATTENDING_KEY}` as const, false, { shouldValidate: true, shouldDirty: true });
-    });
-  }, [tshirtOnly, people, setValue]);
-
-  useEffect(() => {
     if (!people?.length) return;
     people.forEach((person, index) => {
       const category = typeof person?.[TSHIRT_CATEGORY_KEY] === 'string' ? person[TSHIRT_CATEGORY_KEY] : '';
@@ -893,12 +891,18 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
   });
   const isZeroBalance = totalCents === 0;
   const paypalBaseLink = useMemo(() => {
-    const trimmed = typeof paypalHandle === 'string' ? paypalHandle.trim() : '';
+    const trimmed = normalizeHandle(paypalHandle);
     if (!trimmed) return '';
     if (/^https?:\/\//i.test(trimmed)) return trimmed;
     return `https://www.paypal.com/paypalme/${trimmed}`;
   }, [paypalHandle]);
   const paypalLink = useMemo(() => buildPayPalLink(paypalBaseLink, totalCents), [paypalBaseLink, totalCents]);
+  const venmoBaseLink = useMemo(() => {
+    const trimmed = normalizeHandle(venmoHandle);
+    if (!trimmed) return '';
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return `https://venmo.com/${trimmed}`;
+  }, [venmoHandle]);
 
   const onSubmit = handleSubmit(async (data) => {
     setError(null);
@@ -963,7 +967,7 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
               record[field.field_key] = normalizeFieldValue(field, value);
             });
             const rawPerson = (rawValues as any)?.people?.[index] ?? {};
-            record.attending = data.tshirt_only ? false : rawPerson[ATTENDING_KEY] !== false;
+            record.attending = rawPerson[ATTENDING_KEY] !== false;
             if (typeof record.refunded !== 'boolean') {
               record.refunded = false;
             }
@@ -1076,9 +1080,9 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
           <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
             <input type="checkbox" className="mt-1 h-4 w-4" {...register('tshirt_only')} />
             <span>
-              T-shirt only (not attending the reunion)
+              T-shirt-only order (no reunion ticket required)
               <span className="mt-1 block text-xs text-koa">
-                Choose this if you&apos;re only ordering shirts and won&apos;t attend any reunion days.
+                Choose this if you&apos;re only ordering shirts or already paid for reunion tickets.
               </span>
             </span>
           </label>
@@ -1089,9 +1093,7 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
           <p className="text-sm text-koa">
             Start with the primary contact. Add each additional person below. Required fields are marked.
           </p>
-          {tshirtOnly && (
-            <p className="text-xs text-koa">T-shirt only registration is selected. Attending in person is disabled.</p>
-          )}
+          {tshirtOnly && <p className="text-xs text-koa">T-shirt-only order selected. Reunion tickets are optional.</p>}
         </div>
 
         <div className="space-y-6">
@@ -1291,16 +1293,11 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
                     <h3 className="mt-2 text-xl font-semibold text-black">Personal Details</h3>
                   </div>
                   <div className="flex items-center gap-4">
-                    <label
-                      className={`flex items-center gap-2 text-xs font-semibold ${
-                        tshirtOnly ? 'cursor-not-allowed text-slate-400' : 'text-koa'
-                      }`}
-                    >
+                    <label className="flex items-center gap-2 text-xs font-semibold text-koa">
                       <input
                         type="checkbox"
                         className="h-4 w-4"
                         {...register(`people.${index}.${ATTENDING_KEY}` as const)}
-                        disabled={tshirtOnly}
                       />
                       Attending in person
                     </label>
@@ -1501,7 +1498,7 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
                 <div className="mt-6 rounded-2xl border border-slate-200 bg-sand-50 px-5 py-4">
                   <p className="mono text-xs uppercase tracking-[0.3em] text-koa">Ticket</p>
                   {tshirtOnly ? (
-                    <p className="mt-2 text-sm text-koa">T-shirt only registration selected. No reunion ticket required.</p>
+                    <p className="mt-2 text-sm text-koa">T-shirt-only order selected. Reunion tickets are optional.</p>
                   ) : people?.[index]?.[ATTENDING_KEY] === false ? (
                     <p className="mt-2 text-sm text-koa">Marked as not attending. No reunion ticket required.</p>
                   ) : !ticketDetail || ticketDetail.age === null ? (
@@ -1530,9 +1527,6 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
             onClick={() => {
               const nextIndex = participantFields.length;
               appendPerson(createPerson());
-              if (tshirtOnly) {
-                setValue(`people.${nextIndex}.${ATTENDING_KEY}` as const, false, { shouldDirty: true, shouldValidate: true });
-              }
             }}
             disabled={participantFields.length >= 30}
           >
@@ -1673,7 +1667,7 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
           <p className="text-sm text-koa">
             We are recording your preferred payment method. No payment will be collected yet.
           </p>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-4">
             <label
               className={`flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm ${
                 isZeroBalance ? 'cursor-not-allowed opacity-60' : ''
@@ -1695,6 +1689,14 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
                 isZeroBalance ? 'cursor-not-allowed opacity-60' : ''
               }`}
             >
+              <input type="radio" value="venmo" className="h-4 w-4" disabled={isZeroBalance} {...register('payment_method')} />
+              <span>Venmo</span>
+            </label>
+            <label
+              className={`flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm ${
+                isZeroBalance ? 'cursor-not-allowed opacity-60' : ''
+              }`}
+            >
               <input type="radio" value="check" className="h-4 w-4" disabled={isZeroBalance} {...register('payment_method')} />
               <span>Mail-in check</span>
             </label>
@@ -1707,6 +1709,15 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
               <p className="mt-1">We will generate your PayPal link after you submit registration.</p>
               <a href={paypalLink || paypalBaseLink} target="_blank" rel="noreferrer" className="mt-3 inline-flex text-brandBlue underline">
                 Open PayPal link for {formatCurrency(totalCents)}
+              </a>
+            </div>
+          )}
+          {paymentMethod === 'venmo' && venmoBaseLink && !isZeroBalance && (
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-koa">
+              <p className="font-semibold text-black">Pay with Venmo</p>
+              <p className="mt-1">Use the Venmo handle below after you submit registration.</p>
+              <a href={venmoBaseLink} target="_blank" rel="noreferrer" className="mt-3 inline-flex text-brandBlue underline">
+                Open Venmo profile
               </a>
             </div>
           )}
