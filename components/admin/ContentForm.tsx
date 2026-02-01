@@ -203,7 +203,7 @@ export default function ContentForm({ site, action }: ContentFormProps) {
   const [costTotal, setCostTotal] = useState(initialExtras.costTotal);
   const [paypalHandle, setPayPalHandle] = useState(initialExtras.paypalHandle);
   const [venmoHandle, setVenmoHandle] = useState(initialExtras.venmoHandle);
-  const [stripeAccountId, setStripeAccountId] = useState(initialExtras.stripeAccountId);
+  const [stripeAccountId] = useState(initialExtras.stripeAccountId);
   const [contactEmail, setContactEmail] = useState(initialExtras.contactEmail);
   const [receiptFromEmail, setReceiptFromEmail] = useState(initialExtras.receiptFromEmail);
   const [pdfFromEmail, setPdfFromEmail] = useState(initialExtras.pdfFromEmail);
@@ -684,33 +684,11 @@ export default function ContentForm({ site, action }: ContentFormProps) {
               <p className="text-xs text-koa">Use your Venmo handle (no https://, no @). Example: <span className="font-semibold">Jade-Silva-1</span>.</p>
             </div>
             <div className="rounded-2xl border border-sand-200 bg-sand-50 p-4">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-sand-900">Stripe Connect</p>
-                  <p className="text-xs text-koa">
-                    {stripeAccountId ? `Connected account: ${stripeAccountId}` : 'No Stripe account connected yet.'}
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => {
-                    window.location.href = '/api/stripe/connect';
-                  }}
-                >
-                  {stripeAccountId ? 'Reconnect Stripe' : 'Connect Stripe'}
-                </Button>
-              </div>
-              <div className="mt-3 space-y-2">
-                <Label htmlFor="stripe_account_id">Stripe Account ID</Label>
-                <Input
-                  id="stripe_account_id"
-                  value={stripeAccountId}
-                  onChange={(event) => setStripeAccountId(event.target.value)}
-                  placeholder="acct_..."
-                />
-                <p className="text-xs text-koa">Leave blank to use the platform Stripe account.</p>
-              </div>
+              <p className="text-sm font-semibold text-sand-900">Stripe Checkout</p>
+              <p className="text-xs text-koa">
+                Stripe Connect is disabled for this site. Payments will use the platform Stripe account configured in
+                your environment variables.
+              </p>
             </div>
           </div>
 
