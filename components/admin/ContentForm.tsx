@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import GalleryUploader from '@/components/admin/GalleryUploader';
 import {
   parseSchedule,
   parseExtras,
@@ -311,25 +310,6 @@ export default function ContentForm({ site, action }: ContentFormProps) {
     });
   };
 
-  const addGalleryItem = (item?: { src: string; alt?: string | null }) => {
-    setGallery((prev) => [
-      ...prev,
-      {
-        id: createId(),
-        src: item?.src ?? '',
-        alt: item?.alt ?? ''
-      }
-    ]);
-  };
-
-  const updateGalleryItem = (id: string, key: 'src' | 'alt', value: string) => {
-    setGallery((prev) => prev.map((item) => (item.id === id ? { ...item, [key]: value } : item)));
-  };
-
-  const removeGalleryItem = (id: string) => {
-    setGallery((prev) => (prev.length > 1 ? prev.filter((item) => item.id !== id) : prev));
-  };
-
   const addCostItem = () => setCosts((prev) => [...prev, { id: createId(), label: '', detail: '', notesText: '' }]);
   const updateCostItem = (id: string, key: 'label' | 'detail' | 'notesText', value: string) =>
     setCosts((prev) => prev.map((item) => (item.id === id ? { ...item, [key]: value } : item)));
@@ -502,52 +482,15 @@ export default function ContentForm({ site, action }: ContentFormProps) {
       <section className="card shadow-soft space-y-6 p-6">
         <SectionTitle
           title="Welcome Carousel"
-          description="Manage the image carousel that sits under the welcome message. Upload new images or paste existing URLs."
+          description="The homepage carousel now pulls directly from /public/assets/carousel."
         />
-        <GalleryUploader
-          onUploaded={(item) =>
-            setGallery((prev) => [
-              ...prev,
-              {
-                id: createId(),
-                src: item.url,
-                alt: ''
-              }
-            ])
-          }
-        />
-        <div className="space-y-4">
-          {gallery.map((item, index) => (
-            <div key={item.id} className="grid gap-4 rounded-2xl border border-sand-200 bg-sand-50 p-4 md:grid-cols-[2fr,2fr,auto]">
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-[0.25em] text-koa">Image URL</Label>
-                <Input
-                  value={item.src}
-                  onChange={(event) => updateGalleryItem(item.id, 'src', event.target.value)}
-                  placeholder="https://"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-[0.25em] text-koa">Alt Text</Label>
-                <Input
-                  value={item.alt ?? ''}
-                  onChange={(event) => updateGalleryItem(item.id, 'alt', event.target.value)}
-                  placeholder="Waipio Valley lookout"
-                />
-              </div>
-              <div className="flex items-end justify-end">
-                {gallery.length > 1 && (
-                  <Button type="button" variant="ghost" onClick={() => removeGalleryItem(item.id)}>
-                    Remove
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
+        <div className="rounded-2xl border border-sand-200 bg-sand-50 p-4 text-sm text-koa">
+          <p className="font-semibold text-sand-900">Carousel images/videos are file-based.</p>
+          <p className="mt-2">
+            To update the carousel, add or remove files in <span className="font-semibold">public/assets/carousel</span>{' '}
+            and redeploy the site. Admin edits here no longer change the carousel.
+          </p>
         </div>
-        <Button type="button" variant="secondary" onClick={() => addGalleryItem()}>
-          Add carousel image
-        </Button>
       </section>
 
       <section className="card shadow-soft space-y-6 p-6">

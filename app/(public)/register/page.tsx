@@ -59,6 +59,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: { c
   const canceled = searchParams.canceled === '1';
   const { tickets, questions, extras, registrationFields, eventDates } = await getRegistrationConfig();
   const costSummary = extras.costs;
+  const stripeEnabled = process.env.STRIPE_CHECKOUT_ENABLED === 'true';
 
   return (
     <div className="section">
@@ -119,6 +120,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: { c
           registrationFields={registrationFields}
           paypalHandle={extras.paypal_handle ?? ''}
           venmoHandle={extras.venmo_handle ?? ''}
+          stripeEnabled={stripeEnabled}
         />
       </div>
     </div>

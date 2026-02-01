@@ -49,8 +49,9 @@ export async function POST(request: Request) {
       addTshirtCount(order?.category, quantity);
     });
     const totalTshirtQuantity = tshirtCounts.adult + tshirtCounts.youth;
+    const skipTicketValidation = tshirtOnly && lineItems.length === 0;
 
-    if (!lineItems.length && attendingPeople.length > 0) {
+    if (!lineItems.length && attendingPeople.length > 0 && !skipTicketValidation) {
       return NextResponse.json({ error: 'Select at least one ticket.' }, { status: 400 });
     }
 
@@ -194,32 +195,34 @@ export async function POST(request: Request) {
     const ageBasedTickets = ticketRecords.filter(
       (ticket) => typeof ticket.age_min === 'number' || typeof ticket.age_max === 'number'
     );
-    if (!ageBasedTickets.length && attendingPeople.length) {
-      return NextResponse.json({ error: 'Registration tickets are not available yet.' }, { status: 400 });
-    }
-    const ageTicketCounts = new Map<string, number>();
-    ageBasedTickets.forEach((ticket) => ageTicketCounts.set(ticket.id, 0));
-    for (const person of attendingPeople) {
-      const age = getParticipantAge(person);
-      if (age === null) {
-        return NextResponse.json({ error: 'Age is required for every participant.' }, { status: 400 });
+    if (!skipTicketValidation) {
+      if (!ageBasedTickets.length && attendingPeople.length) {
+        return NextResponse.json({ error: 'Registration tickets are not available yet.' }, { status: 400 });
       }
-      const ticket = selectTicketForAge(ageBasedTickets, age);
-      if (!ticket) {
-        return NextResponse.json({ error: `No ticket is configured for age ${age}.` }, { status: 400 });
+      const ageTicketCounts = new Map<string, number>();
+      ageBasedTickets.forEach((ticket) => ageTicketCounts.set(ticket.id, 0));
+      for (const person of attendingPeople) {
+        const age = getParticipantAge(person);
+        if (age === null) {
+          return NextResponse.json({ error: 'Age is required for every participant.' }, { status: 400 });
+        }
+        const ticket = selectTicketForAge(ageBasedTickets, age);
+        if (!ticket) {
+          return NextResponse.json({ error: `No ticket is configured for age ${age}.` }, { status: 400 });
+        }
+        ageTicketCounts.set(ticket.id, (ageTicketCounts.get(ticket.id) ?? 0) + 1);
       }
-      ageTicketCounts.set(ticket.id, (ageTicketCounts.get(ticket.id) ?? 0) + 1);
-    }
-    for (const ticket of ageBasedTickets) {
-      const requiredCount = ageTicketCounts.get(ticket.id) ?? 0;
-      const selectedCount = ticketQuantitiesById.get(ticket.id) ?? 0;
-      if (requiredCount !== selectedCount) {
-        return NextResponse.json(
-          {
-            error: `Ticket quantity for ${ticket.name} must be ${requiredCount} to cover all attendees in that age range.`
-          },
-          { status: 400 }
-        );
+      for (const ticket of ageBasedTickets) {
+        const requiredCount = ageTicketCounts.get(ticket.id) ?? 0;
+        const selectedCount = ticketQuantitiesById.get(ticket.id) ?? 0;
+        if (requiredCount !== selectedCount) {
+          return NextResponse.json(
+            {
+              error: `Ticket quantity for ${ticket.name} must be ${requiredCount} to cover all attendees in that age range.`
+            },
+            { status: 400 }
+          );
+        }
       }
     }
 

@@ -409,6 +409,7 @@ interface RegisterFormProps {
   registrationFields: RegistrationField[];
   paypalHandle?: string | null;
   venmoHandle?: string | null;
+  stripeEnabled?: boolean;
 }
 
 type PendingNavigation = { type: 'link'; href: string } | { type: 'back' } | null;
@@ -448,7 +449,14 @@ function normalizeHandle(handle?: string | null) {
   return handle.trim().replace(/^@+/, '');
 }
 
-export default function RegisterForm({ tickets, questions, registrationFields, paypalHandle, venmoHandle }: RegisterFormProps) {
+export default function RegisterForm({
+  tickets,
+  questions,
+  registrationFields,
+  paypalHandle,
+  venmoHandle,
+  stripeEnabled = false
+}: RegisterFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1669,15 +1677,23 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
           <p className="text-sm text-koa">
             We are recording your preferred payment method. No payment will be collected yet.
           </p>
-          <div className="grid gap-3 sm:grid-cols-4">
-            <label
-              className={`flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm ${
-                isZeroBalance ? 'cursor-not-allowed opacity-60' : ''
-              }`}
-            >
-              <input type="radio" value="stripe" className="h-4 w-4" disabled={isZeroBalance} {...register('payment_method')} />
-              <span>Stripe</span>
-            </label>
+          <div className={`grid gap-3 ${stripeEnabled ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}>
+            {stripeEnabled && (
+              <label
+                className={`flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm ${
+                  isZeroBalance ? 'cursor-not-allowed opacity-60' : ''
+                }`}
+              >
+                <input
+                  type="radio"
+                  value="stripe"
+                  className="h-4 w-4"
+                  disabled={isZeroBalance}
+                  {...register('payment_method')}
+                />
+                <span>Stripe</span>
+              </label>
+            )}
             <label
               className={`flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm ${
                 isZeroBalance ? 'cursor-not-allowed opacity-60' : ''
