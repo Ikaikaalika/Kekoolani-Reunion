@@ -52,6 +52,8 @@ const TSHIRT_SIZES: Record<string, string[]> = {
   adult: ['S', 'M', 'L', 'XL', '2X', '3X', '4X', '5X'],
   youth: ['YS', 'YM', 'YL']
 };
+type TshirtTotals = { adultQty: number; youthQty: number; adultCents: number; youthCents: number };
+const EMPTY_TSHIRT_TOTALS: TshirtTotals = { adultQty: 0, youthQty: 0, adultCents: 0, youthCents: 0 };
 
 const DEFAULT_TSHIRT_FIELDS: RegistrationField[] = [
   {
@@ -605,7 +607,7 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
     return counts;
   }, [ageBasedTickets, attendingPeople]);
   const additionalTshirtTotals = useMemo(() => {
-    return (tshirtOrders ?? []).reduce(
+    return (tshirtOrders ?? []).reduce<TshirtTotals>(
       (acc, order) => {
         const quantity = typeof order?.quantity === 'number' ? order.quantity : Number(order?.quantity ?? 0);
         if (!Number.isFinite(quantity) || quantity <= 0) return acc;
@@ -619,11 +621,11 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
         }
         return acc;
       },
-      { adultQty: 0, youthQty: 0, adultCents: 0, youthCents: 0 }
+      { ...EMPTY_TSHIRT_TOTALS }
     );
   }, [tshirtOrders]);
   const participantTshirtTotals = useMemo(() => {
-    return peopleRecords.reduce(
+    return peopleRecords.reduce<TshirtTotals>(
       (acc, person) => {
         const raw = person[TSHIRT_QUANTITY_KEY];
         const quantity = typeof raw === 'number' ? raw : typeof raw === 'string' ? Number(raw) : 0;
@@ -638,7 +640,7 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
         }
         return acc;
       },
-      { adultQty: 0, youthQty: 0, adultCents: 0, youthCents: 0 }
+      { ...EMPTY_TSHIRT_TOTALS }
     );
   }, [peopleRecords]);
   const additionalTshirtQuantity = additionalTshirtTotals.adultQty + additionalTshirtTotals.youthQty;

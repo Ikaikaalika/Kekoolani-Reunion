@@ -115,15 +115,16 @@ export async function POST(request: Request) {
       const ADULT_PRICE = 2500;
       const YOUTH_PRICE = 1500;
 
-      const { data: tshirtTickets } = await supabaseAdmin
+      const { data: tshirtTicketsRaw } = await supabaseAdmin
         .from('ticket_types')
         .select('*')
         .eq('active', true)
         .in('price_cents', [ADULT_PRICE, YOUTH_PRICE])
         .ilike('name', '%shirt%');
 
-      let adultTicket = (tshirtTickets ?? []).find((ticket) => ticket.price_cents === ADULT_PRICE) as TicketRow | undefined;
-      let youthTicket = (tshirtTickets ?? []).find((ticket) => ticket.price_cents === YOUTH_PRICE) as TicketRow | undefined;
+      const tshirtTickets = (tshirtTicketsRaw ?? []) as TicketRow[];
+      let adultTicket = tshirtTickets.find((ticket) => ticket.price_cents === ADULT_PRICE) as TicketRow | undefined;
+      let youthTicket = tshirtTickets.find((ticket) => ticket.price_cents === YOUTH_PRICE) as TicketRow | undefined;
 
       if (!adultTicket) {
         const { data: inserted, error: insertError } = await (supabaseAdmin
