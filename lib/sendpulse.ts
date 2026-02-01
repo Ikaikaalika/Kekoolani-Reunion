@@ -76,8 +76,8 @@ export async function sendSendPulseEmail(message: SendPulseEmail) {
   return response.json();
 }
 
-export function listPublicAssetsByExt(extensions: string[]) {
-  const assetsDir = path.join(process.cwd(), 'public', 'assets');
+export function listPublicAssetsByExt(extensions: string[], subdir = '') {
+  const assetsDir = path.join(process.cwd(), 'public', 'assets', subdir);
   const extSet = new Set(extensions.map((ext) => ext.toLowerCase()));
   try {
     return fs
@@ -89,9 +89,9 @@ export function listPublicAssetsByExt(extensions: string[]) {
   }
 }
 
-export function buildPdfAttachmentsFromPublicAssets(files: string[]) {
+export function buildPdfAttachmentsFromPublicAssets(files: string[], subdir = '') {
   if (!files.length) return [];
-  const assetsDir = path.join(process.cwd(), 'public', 'assets');
+  const assetsDir = path.join(process.cwd(), 'public', 'assets', subdir);
   return files.map((file) => {
     const buffer = fs.readFileSync(path.join(assetsDir, file));
     return {

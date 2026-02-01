@@ -68,7 +68,7 @@ const DEFAULT_LODGING_PARAGRAPHS = [
 const DEFAULT_LODGING_LINKS: LodgingLink[] = [
   {
     label: 'Information for Hilo Hawaiian Hotel group rate',
-    href: '/assets/Info_Hilo Hawaiian Group Rate.pdf'
+    href: '/assets/site/Info_Hilo Hawaiian Group Rate.pdf'
   },
   {
     label: 'Hilo Hawaiian Hotel form with group code',
@@ -89,22 +89,22 @@ const DEFAULT_GENEALOGY = [
 ];
 
 const DEFAULT_GENEALOGY_IMAGE: GalleryItem = {
-  src: '/assets/NawaiandEmily.png',
+  src: '/assets/site/NawaiandEmily.png',
   alt: 'Nawai and Emily Kekoʻolani'
 };
 
 const DEFAULT_GALLERY: GalleryItem[] = [
-  { src: '/assets/IMG_0644.JPG', alt: 'Kekoolani family gathering' },
-  { src: '/assets/IMG_0647.JPG', alt: 'Family reunion moment' },
-  { src: '/assets/IMG_2937.JPG', alt: 'Hilo shoreline' },
-  { src: '/assets/IMG_2972.JPG', alt: 'Family photo' },
-  { src: '/assets/Hilo-1.jpg', alt: 'Hilo landscape' },
-  { src: '/assets/Hilo.jpg', alt: 'Hilo shoreline' },
-  { src: '/assets/Keiki_LoiKalo.jpg', alt: 'Keiki learning in the loʻi' },
-  { src: '/assets/LoiKalo1.jpg', alt: 'Loʻi kalo in Waipiʻo' },
-  { src: '/assets/LoiKalo2.jpeg', alt: 'Loʻi kalo in Waipiʻo' },
-  { src: '/assets/LoiKalo3.jpg', alt: 'Loʻi kalo in Waipiʻo' },
-  { src: '/assets/MaunaKea.jpg', alt: 'Mauna Kea' }
+  { src: '/assets/carousel/IMG_0644.JPG', alt: 'Kekoolani family gathering' },
+  { src: '/assets/carousel/IMG_0647.JPG', alt: 'Family reunion moment' },
+  { src: '/assets/carousel/IMG_2937.JPG', alt: 'Hilo shoreline' },
+  { src: '/assets/carousel/IMG_2972.JPG', alt: 'Family photo' },
+  { src: '/assets/carousel/Hilo-1.jpg', alt: 'Hilo landscape' },
+  { src: '/assets/carousel/Hilo.jpg', alt: 'Hilo shoreline' },
+  { src: '/assets/carousel/Keiki_LoiKalo.jpg', alt: 'Keiki learning in the loʻi' },
+  { src: '/assets/carousel/LoiKalo1.jpg', alt: 'Loʻi kalo in Waipiʻo' },
+  { src: '/assets/carousel/LoiKalo2.jpeg', alt: 'Loʻi kalo in Waipiʻo' },
+  { src: '/assets/carousel/LoiKalo3.jpg', alt: 'Loʻi kalo in Waipiʻo' },
+  { src: '/assets/carousel/MaunaKea.jpg', alt: 'Mauna Kea' }
 ];
 
 const DEFAULT_HERO_TITLE = 'Kekoʻolani Family Reunion 2026';

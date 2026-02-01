@@ -295,13 +295,14 @@ export async function POST(request: Request) {
         const pdfFromEmail =
           extras.pdf_from_email?.trim() || process.env.PDF_FROM_EMAIL || 'ohana@kekoolanireunion.com';
         const fromName = process.env.EMAIL_FROM_NAME || 'Kekoʻolani Reunion';
-        const pdfFiles = listPublicAssetsByExt(['.pdf']);
-        const pdfAttachments = buildPdfAttachmentsFromPublicAssets(pdfFiles);
+        const emailAssetsDir = 'email';
+        const pdfFiles = listPublicAssetsByExt(['.pdf'], emailAssetsDir);
+        const pdfAttachments = buildPdfAttachmentsFromPublicAssets(pdfFiles, emailAssetsDir);
         const pdfLinks = pdfFiles.map((file) => ({
           label: file.replace(/\.pdf$/i, '').replace(/[_-]/g, ' '),
-          href: `${baseUrl}/assets/${encodeURIComponent(file)}`
+          href: `${baseUrl}/assets/${emailAssetsDir}/${encodeURIComponent(file)}`
         }));
-        const jadeImageUrl = `${baseUrl}/assets/Jade.jpeg`;
+        const jadeImageUrl = `${baseUrl}/assets/${emailAssetsDir}/Jade.jpeg`;
         const allNotAttending = attendingPeople.length === 0;
         const pdfLinksHtml = pdfLinks.length
           ? `<ul>${pdfLinks.map((link) => `<li><a href="${link.href}">${link.label}</a></li>`).join('')}</ul>`

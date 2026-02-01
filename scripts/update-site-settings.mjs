@@ -68,7 +68,7 @@ nextExtras.costs = [
 nextExtras.lodging_links = [
   {
     label: 'Information for Hilo Hawaiian Hotel group rate',
-    href: '/assets/Info_Hilo Hawaiian Group Rate.pdf'
+    href: '/assets/site/Info_Hilo Hawaiian Group Rate.pdf'
   },
   {
     label: 'Hilo Hawaiian Hotel form with group code',
@@ -77,6 +77,32 @@ nextExtras.lodging_links = [
 ];
 nextExtras.paypal_handle = 'JadeSilva224';
 nextExtras.venmo_handle = 'Jade-Silva-1';
+
+if (Array.isArray(nextExtras.gallery)) {
+  nextExtras.gallery = nextExtras.gallery.map((item) => {
+    if (!item || typeof item !== 'object') return item;
+    const src = typeof item.src === 'string' ? item.src : '';
+    if (!src) return item;
+    if (src.includes('/assets/carousel/')) return item;
+    if (src.includes('/assets/')) {
+      const filename = src.split('/').pop();
+      if (filename) {
+        return { ...item, src: `/assets/carousel/${filename}` };
+      }
+    }
+    return item;
+  });
+}
+
+if (nextExtras.genealogy_image && typeof nextExtras.genealogy_image === 'object') {
+  const src = typeof nextExtras.genealogy_image.src === 'string' ? nextExtras.genealogy_image.src : '';
+  if (src && !src.includes('/assets/site/')) {
+    const filename = src.split('/').pop();
+    if (filename) {
+      nextExtras.genealogy_image = { ...nextExtras.genealogy_image, src: `/assets/site/${filename}` };
+    }
+  }
+}
 
 const { error: updateError } = await supabase
   .from('site_settings')

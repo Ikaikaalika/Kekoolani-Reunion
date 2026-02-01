@@ -166,14 +166,13 @@ async function getSiteContent() {
 }
 
 function getPublicGalleryAssets() {
-  const assetsDir = path.join(process.cwd(), 'public', 'assets');
+  const assetsDir = path.join(process.cwd(), 'public', 'assets', 'carousel');
   const supported = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.mp4', '.webm', '.mov']);
-  const excluded = new Set(['Jade.jpeg']);
   try {
     return readdirSync(assetsDir)
-      .filter((file) => supported.has(path.extname(file).toLowerCase()) && !excluded.has(file))
+      .filter((file) => supported.has(path.extname(file).toLowerCase()))
       .sort((a, b) => a.localeCompare(b))
-      .map((file) => ({ src: `/assets/${file}` }));
+      .map((file) => ({ src: `/assets/carousel/${file}` }));
   } catch (error) {
     return [];
   }
