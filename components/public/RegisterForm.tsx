@@ -35,7 +35,9 @@ const ALWAYS_REQUIRED_KEYS = new Set([PRIMARY_NAME_KEY, PRIMARY_EMAIL_KEY, AGE_K
 const OPTIONAL_CHECKBOX_KEYS = new Set([SAME_CONTACT_KEY, SHOW_NAME_KEY, SHOW_PHOTO_KEY]);
 const HIDDEN_KEYS = new Set([PHOTO_UPLOAD_KEY]);
 
-const TSHIRT_PRICE_CENTS = 2500;
+const TSHIRT_ADULT_PRICE_CENTS = 2500;
+const TSHIRT_YOUTH_PRICE_CENTS = 1500;
+const getTshirtUnitPrice = (category?: string) => (category === 'youth' ? TSHIRT_YOUTH_PRICE_CENTS : TSHIRT_ADULT_PRICE_CENTS);
 const TSHIRT_CATEGORIES = [
   { value: 'mens', label: "Men's" },
   { value: 'womens', label: "Women's" },
@@ -558,12 +560,20 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
     return peopleRecords.filter((person) => person[ATTENDING_KEY] !== false);
   }, [peopleRecords, tshirtOnly]);
   const ageBasedTickets = useMemo(() => tickets.filter(isAgeBasedTicket), [tickets]);
-  const tshirtTicket = useMemo(() => {
+  const isTshirtTicket = (ticket: Ticket) => ticket.name.toLowerCase().includes('shirt');
+  const tshirtAdultTicket = useMemo(() => {
     return (
       tickets.find((ticket) => {
         if (isAgeBasedTicket(ticket)) return false;
-        const name = ticket.name.toLowerCase();
-        return name.includes('shirt') && ticket.price_cents === TSHIRT_PRICE_CENTS;
+        return isTshirtTicket(ticket) && ticket.price_cents === TSHIRT_ADULT_PRICE_CENTS;
+      }) ?? null
+    );
+  }, [tickets]);
+  const tshirtYouthTicket = useMemo(() => {
+    return (
+      tickets.find((ticket) => {
+        if (isAgeBasedTicket(ticket)) return false;
+        return isTshirtTicket(ticket) && ticket.price_cents === TSHIRT_YOUTH_PRICE_CENTS;
       }) ?? null
     );
   }, [tickets]);
@@ -588,39 +598,67 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
     });
     return counts;
   }, [ageBasedTickets, attendingPeople]);
-  const additionalTshirtQuantity = useMemo(
-    () =>
-      (tshirtOrders ?? []).reduce((sum, order) => {
+  const additionalTshirtTotals = useMemo(() => {
+    return (tshirtOrders ?? []).reduce(
+      (acc, order) => {
         const quantity = typeof order?.quantity === 'number' ? order.quantity : Number(order?.quantity ?? 0);
-        return sum + (Number.isFinite(quantity) ? quantity : 0);
-      }, 0),
-    [tshirtOrders]
-  );
-  const participantTshirtQuantity = useMemo(
-    () =>
-      peopleRecords.reduce((sum, person) => {
+        if (!Number.isFinite(quantity) || quantity <= 0) return acc;
+        const category = typeof order?.category === 'string' ? order.category : 'mens';
+        if (category === 'youth') {
+          acc.youthQty += quantity;
+          acc.youthCents += quantity * TSHIRT_YOUTH_PRICE_CENTS;
+        } else {
+          acc.adultQty += quantity;
+          acc.adultCents += quantity * TSHIRT_ADULT_PRICE_CENTS;
+        }
+        return acc;
+      },
+      { adultQty: 0, youthQty: 0, adultCents: 0, youthCents: 0 }
+    );
+  }, [tshirtOrders]);
+  const participantTshirtTotals = useMemo(() => {
+    return peopleRecords.reduce(
+      (acc, person) => {
         const raw = person[TSHIRT_QUANTITY_KEY];
         const quantity = typeof raw === 'number' ? raw : typeof raw === 'string' ? Number(raw) : 0;
-        if (!Number.isFinite(quantity) || quantity <= 0) {
-          return sum;
+        if (!Number.isFinite(quantity) || quantity <= 0) return acc;
+        const category = typeof person[TSHIRT_CATEGORY_KEY] === 'string' ? person[TSHIRT_CATEGORY_KEY] : 'mens';
+        if (category === 'youth') {
+          acc.youthQty += quantity;
+          acc.youthCents += quantity * TSHIRT_YOUTH_PRICE_CENTS;
+        } else {
+          acc.adultQty += quantity;
+          acc.adultCents += quantity * TSHIRT_ADULT_PRICE_CENTS;
         }
-        return sum + quantity;
-      }, 0),
-    [peopleRecords]
-  );
-  const totalTshirtQuantity = additionalTshirtQuantity + participantTshirtQuantity;
+        return acc;
+      },
+      { adultQty: 0, youthQty: 0, adultCents: 0, youthCents: 0 }
+    );
+  }, [peopleRecords]);
+  const additionalTshirtQuantity = additionalTshirtTotals.adultQty + additionalTshirtTotals.youthQty;
+  const totalTshirtQuantity =
+    additionalTshirtTotals.adultQty +
+    additionalTshirtTotals.youthQty +
+    participantTshirtTotals.adultQty +
+    participantTshirtTotals.youthQty;
+  const totalTshirtCents = additionalTshirtTotals.adultCents + additionalTshirtTotals.youthCents + participantTshirtTotals.adultCents + participantTshirtTotals.youthCents;
+  const additionalTshirtTotalCents = additionalTshirtTotals.adultCents + additionalTshirtTotals.youthCents;
+  const totalTshirtAdultQty = additionalTshirtTotals.adultQty + participantTshirtTotals.adultQty;
+  const totalTshirtYouthQty = additionalTshirtTotals.youthQty + participantTshirtTotals.youthQty;
   const derivedTickets = useMemo(
     () =>
       tickets.map((ticket) => {
         let quantity = 0;
         if (isAgeBasedTicket(ticket)) {
           quantity = ageTicketCounts.get(ticket.id) ?? 0;
-        } else if (tshirtTicket && ticket.id === tshirtTicket.id) {
-          quantity = totalTshirtQuantity;
+        } else if (tshirtAdultTicket && ticket.id === tshirtAdultTicket.id) {
+          quantity = totalTshirtAdultQty;
+        } else if (tshirtYouthTicket && ticket.id === tshirtYouthTicket.id) {
+          quantity = totalTshirtYouthQty;
         }
         return { ticket_type_id: ticket.id, quantity };
       }),
-    [tickets, ageTicketCounts, tshirtTicket, totalTshirtQuantity]
+    [tickets, ageTicketCounts, tshirtAdultTicket, tshirtYouthTicket, totalTshirtAdultQty, totalTshirtYouthQty]
   );
   const selectedTicketIds = useMemo(
     () => derivedTickets.filter((item) => item.quantity > 0).map((item) => item.ticket_type_id),
@@ -837,16 +875,14 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
   }, []);
 
   const ticketById = useMemo(() => new Map(tickets.map((ticket) => [ticket.id, ticket])), [tickets]);
-  const additionalTshirtTotalCents = additionalTshirtQuantity * TSHIRT_PRICE_CENTS;
-  const totalTshirtCents = totalTshirtQuantity * TSHIRT_PRICE_CENTS;
   const donationCentsRaw = typeof donationAmount === 'number' ? donationAmount : Number(donationAmount ?? 0);
   const donationCents = Number.isFinite(donationCentsRaw) ? Math.max(0, Math.round(donationCentsRaw * 100)) : 0;
   const ticketTotalCents = derivedTickets.reduce((sum, item) => {
     const ticket = ticketById.get(item.ticket_type_id);
-    if (!ticket) return sum;
+    if (!ticket || isTshirtTicket(ticket)) return sum;
     return sum + ticket.price_cents * (Number.isFinite(item.quantity) ? item.quantity : 0);
   }, 0);
-  const baseTotal = tshirtTicket ? ticketTotalCents : ticketTotalCents + totalTshirtCents;
+  const baseTotal = ticketTotalCents + totalTshirtCents;
   const totalCents = baseTotal + donationCents;
   const hasAgeTickets = ageBasedTickets.length > 0;
   const missingAgeEntry = attendingPeople.find((person) => getParticipantAge(person) === null);
@@ -1297,7 +1333,9 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
                 <div className="mt-6 space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h4 className="text-sm font-semibold text-black">Participant T-shirt Order</h4>
-                    <p className="mono text-xs uppercase tracking-[0.2em] text-koa">{formatCurrency(TSHIRT_PRICE_CENTS)} each</p>
+                    <p className="mono text-xs uppercase tracking-[0.2em] text-koa">
+                      Adults {formatCurrency(TSHIRT_ADULT_PRICE_CENTS)} · Youth {formatCurrency(TSHIRT_YOUTH_PRICE_CENTS)}
+                    </p>
                   </div>
                   <p className="text-sm text-koa">All apparel is black cotton. Women&apos;s styles are lightweight.</p>
                   <div className="grid gap-3 text-sm text-koa md:grid-cols-3">
@@ -1384,7 +1422,7 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
                   </div>
                   {tshirtQuantityValue && Number(tshirtQuantityValue) > 0 && (
                     <p className="text-xs text-koa">
-                      Subtotal: {formatCurrency(TSHIRT_PRICE_CENTS * Number(tshirtQuantityValue))}
+                      Subtotal: {formatCurrency(getTshirtUnitPrice(tshirtCategoryValue) * Number(tshirtQuantityValue))}
                     </p>
                   )}
                 </div>
@@ -1506,7 +1544,9 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-lg font-semibold text-black">Additional T-Shirt Orders</h2>
-            <p className="mono text-xs uppercase tracking-[0.2em] text-koa">{formatCurrency(TSHIRT_PRICE_CENTS)} each</p>
+            <p className="mono text-xs uppercase tracking-[0.2em] text-koa">
+              Adults {formatCurrency(TSHIRT_ADULT_PRICE_CENTS)} · Youth {formatCurrency(TSHIRT_YOUTH_PRICE_CENTS)}
+            </p>
           </div>
           <div className="grid gap-3 text-sm text-koa md:grid-cols-3">
             <div className="rounded-2xl border border-slate-100 bg-white p-4">
@@ -1594,7 +1634,7 @@ export default function RegisterForm({ tickets, questions, registrationFields, p
                   </div>
                   <div className="mt-4 flex items-center justify-between">
                     <p className="text-xs text-koa">
-                      Subtotal: {formatCurrency(TSHIRT_PRICE_CENTS * (order?.quantity ? Number(order.quantity) : 0))}
+                      Subtotal: {formatCurrency(getTshirtUnitPrice(order?.category) * (order?.quantity ? Number(order.quantity) : 0))}
                     </p>
                     <button type="button" className="text-xs font-semibold text-red-500 underline" onClick={() => removeTshirt(index)}>
                       Remove

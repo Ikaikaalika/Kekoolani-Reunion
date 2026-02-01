@@ -29,17 +29,26 @@ export async function POST(request: Request) {
     const tshirtOrders = Array.isArray((answers as Record<string, unknown>)?.tshirt_orders)
       ? ((answers as Record<string, unknown>).tshirt_orders as Array<Record<string, unknown>>)
       : [];
-    const personTshirtQuantity = people.reduce((sum, person) => {
+    const tshirtCounts = { adult: 0, youth: 0 };
+    const addTshirtCount = (category: unknown, quantity: number) => {
+      if (!Number.isFinite(quantity) || quantity <= 0) return;
+      if (category === 'youth') {
+        tshirtCounts.youth += quantity;
+      } else {
+        tshirtCounts.adult += quantity;
+      }
+    };
+    people.forEach((person) => {
       const raw = person.tshirt_quantity;
       const quantity = typeof raw === 'number' ? raw : typeof raw === 'string' ? Number(raw) : 0;
-      return sum + (Number.isFinite(quantity) && quantity > 0 ? quantity : 0);
-    }, 0);
-    const additionalTshirtQuantity = tshirtOrders.reduce((sum, order) => {
+      addTshirtCount(person.tshirt_category, quantity);
+    });
+    tshirtOrders.forEach((order) => {
       const raw = order?.quantity;
       const quantity = typeof raw === 'number' ? raw : typeof raw === 'string' ? Number(raw) : 0;
-      return sum + (Number.isFinite(quantity) && quantity > 0 ? quantity : 0);
-    }, 0);
-    const totalTshirtQuantity = personTshirtQuantity + additionalTshirtQuantity;
+      addTshirtCount(order?.category, quantity);
+    });
+    const totalTshirtQuantity = tshirtCounts.adult + tshirtCounts.youth;
 
     if (!lineItems.length && attendingPeople.length > 0) {
       return NextResponse.json({ error: 'Select at least one ticket.' }, { status: 400 });
@@ -90,40 +99,62 @@ export async function POST(request: Request) {
         if (typeof ticket.inventory === 'number' && item.quantity > ticket.inventory) {
           return NextResponse.json({ error: `${ticket.name} only has ${ticket.inventory} left.` }, { status: 400 });
         }
-        totalCents += ticket.price_cents * item.quantity;
-        orderItems.push({
-          ticket_type_id: ticket.id,
-          quantity: item.quantity,
-          unit_amount: ticket.price_cents,
-          name: ticket.name
-        });
+        if (!isTshirtTicketName(ticket.name)) {
+          totalCents += ticket.price_cents * item.quantity;
+          orderItems.push({
+            ticket_type_id: ticket.id,
+            quantity: item.quantity,
+            unit_amount: ticket.price_cents,
+            name: ticket.name
+          });
+        }
       }
     }
 
-    if (totalTshirtQuantity > 0 && !orderItems.some((item) => isTshirtTicketName(item.name))) {
-      const TSHIRT_PRICE_CENTS = 2500;
-      let tshirtTicket: TicketRow | null = null;
+    if (totalTshirtQuantity > 0) {
+      const ADULT_PRICE = 2500;
+      const YOUTH_PRICE = 1500;
 
       const { data: tshirtTickets } = await supabaseAdmin
         .from('ticket_types')
         .select('*')
         .eq('active', true)
-        .eq('price_cents', TSHIRT_PRICE_CENTS)
-        .ilike('name', '%shirt%')
-        .limit(1);
+        .in('price_cents', [ADULT_PRICE, YOUTH_PRICE])
+        .ilike('name', '%shirt%');
 
-      if (tshirtTickets && tshirtTickets.length) {
-        tshirtTicket = tshirtTickets[0] as TicketRow;
-      }
+      let adultTicket = (tshirtTickets ?? []).find((ticket) => ticket.price_cents === ADULT_PRICE) as TicketRow | undefined;
+      let youthTicket = (tshirtTickets ?? []).find((ticket) => ticket.price_cents === YOUTH_PRICE) as TicketRow | undefined;
 
-      if (!tshirtTicket) {
+      if (!adultTicket) {
         const { data: inserted, error: insertError } = await (supabaseAdmin
           .from('ticket_types') as any)
           .insert([
             {
-              name: 'Reunion T-Shirt',
-              description: 'Reunion T-Shirt',
-              price_cents: TSHIRT_PRICE_CENTS,
+              name: 'Reunion T-Shirt (Adult)',
+              description: 'Reunion T-Shirt (Adult)',
+              price_cents: ADULT_PRICE,
+              currency: 'usd',
+              active: true,
+              position: 98
+            }
+          ])
+          .select()
+          .single();
+        if (insertError) {
+          console.error(insertError);
+          throw new Error('Unable to create adult T-shirt ticket');
+        }
+        adultTicket = inserted as TicketRow;
+      }
+
+      if (!youthTicket) {
+        const { data: inserted, error: insertError } = await (supabaseAdmin
+          .from('ticket_types') as any)
+          .insert([
+            {
+              name: 'Reunion T-Shirt (Youth)',
+              description: 'Reunion T-Shirt (Youth)',
+              price_cents: YOUTH_PRICE,
               currency: 'usd',
               active: true,
               position: 99
@@ -131,22 +162,29 @@ export async function POST(request: Request) {
           ])
           .select()
           .single();
-
         if (insertError) {
           console.error(insertError);
-          throw new Error('Unable to create T-shirt ticket');
+          throw new Error('Unable to create youth T-shirt ticket');
         }
-
-        tshirtTicket = inserted as TicketRow;
+        youthTicket = inserted as TicketRow;
       }
 
-      if (tshirtTicket) {
-        totalCents += tshirtTicket.price_cents * totalTshirtQuantity;
+      if (tshirtCounts.adult > 0 && adultTicket) {
+        totalCents += adultTicket.price_cents * tshirtCounts.adult;
         orderItems.push({
-          ticket_type_id: tshirtTicket.id,
-          quantity: totalTshirtQuantity,
-          unit_amount: tshirtTicket.price_cents,
-          name: tshirtTicket.name
+          ticket_type_id: adultTicket.id,
+          quantity: tshirtCounts.adult,
+          unit_amount: adultTicket.price_cents,
+          name: adultTicket.name
+        });
+      }
+      if (tshirtCounts.youth > 0 && youthTicket) {
+        totalCents += youthTicket.price_cents * tshirtCounts.youth;
+        orderItems.push({
+          ticket_type_id: youthTicket.id,
+          quantity: tshirtCounts.youth,
+          unit_amount: youthTicket.price_cents,
+          name: youthTicket.name
         });
       }
     }
@@ -348,7 +386,7 @@ ${pdfLinksHtml}
 
     const stripeLineItems = orderItems.map((item) => ({
       price_data: {
-        currency: ticketsById.get(item.ticket_type_id)!.currency,
+        currency: ticketsById.get(item.ticket_type_id)?.currency ?? 'usd',
         unit_amount: item.unit_amount,
         product_data: {
           name: item.name
