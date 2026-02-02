@@ -295,8 +295,7 @@ export async function POST(request: Request) {
         }).format(totalCents / 100);
         const receiptFromEmail =
           extras.receipt_from_email?.trim() || process.env.RECEIPT_FROM_EMAIL || 'ohana@kekoolanireunion.com';
-        const pdfFromEmail =
-          extras.pdf_from_email?.trim() || process.env.PDF_FROM_EMAIL || 'ohana@kekoolanireunion.com';
+        const pdfFromEmail = receiptFromEmail;
         const fromName = process.env.EMAIL_FROM_NAME || 'Kekoʻolani Reunion';
         const emailAssetsDir = 'email';
         const pdfFiles = listPublicAssetsByExt(['.pdf'], emailAssetsDir);
