@@ -518,8 +518,10 @@ export default async function HomePage() {
                 <div className="card shadow-soft p-8">
                   <h3 className="text-2xl font-semibold text-sand-900">Transportation</h3>
                   <div className="mt-6 space-y-4 text-base text-sand-700">
-                    {transportationNotes.map((note) => (
-                      <p key={note}>{note}</p>
+                    {transportationNotes.map((note, index) => (
+                      <p key={`${index}-${note}`} className="whitespace-pre-line">
+                        {note}
+                      </p>
                     ))}
                   </div>
                 </div>
