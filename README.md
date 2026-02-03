@@ -36,6 +36,8 @@ Key settings:
 | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe keys for checkout & webhook |
 | `NEXT_PUBLIC_APP_URL` | Public base URL (e.g. `https://kekoolani.com`) |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob read/write token for media uploads |
+| `SES_REGION` (or `AWS_REGION`) | AWS region for SES (sender must be verified in SES) |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` (+ optional `AWS_SESSION_TOKEN`) | AWS credentials when not using an IAM role / OIDC |
 
 ### Database Schema
 

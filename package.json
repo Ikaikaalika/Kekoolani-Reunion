@@ -7,10 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test:email": "tsx scripts/test-email.ts",
+    "test:email:send": "tsx scripts/send-test-emails.ts",
     "test:all": "npm run lint && npm run build && npx playwright test",
     "test:ui": "npx playwright test --project=chromium --headed"
   },
   "dependencies": {
+    "@aws-sdk/client-ses": "^3.981.0",
     "@headlessui/react": "^1.7.17",
     "@hookform/resolvers": "^3.3.4",
     "@supabase/auth-helpers-nextjs": "^0.9.0",
@@ -43,6 +46,7 @@
     "postcss": "^8.4.39",
     "prettier": "^3.3.2",
     "tailwindcss": "^3.4.7",
+    "tsx": "^4.21.0",
     "typescript": "^5.5.4"
   }
 }

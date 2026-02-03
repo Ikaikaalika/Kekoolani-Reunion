@@ -6,7 +6,7 @@ import { getStripeClient } from '@/lib/stripe';
 import { getParticipantAge, getPeopleFromAnswers, isParticipantAttending, selectTicketForAge } from '@/lib/orderUtils';
 import { SITE_SETTINGS_ID } from '@/lib/constants';
 import { getSiteExtras } from '@/lib/siteContent';
-import { buildPdfAttachmentsFromPublicAssets, listPublicAssetsByExt, sendSendPulseEmail } from '@/lib/sendpulse';
+import { buildPdfAttachmentsFromPublicAssets, listPublicAssetsByExt, sendSesEmail } from '@/lib/email';
 import type { Database } from '@/types/supabase';
 
 type TicketRow = Database['public']['Tables']['ticket_types']['Row'];
@@ -287,7 +287,9 @@ export async function POST(request: Request) {
       .maybeSingle();
     const extras = getSiteExtras(siteSettings ?? null);
 
-    if (uniqueEmails.length && process.env.SENDPULSE_API_ID && process.env.SENDPULSE_API_SECRET) {
+    const sesConfigured = Boolean(process.env.SES_REGION || process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION);
+
+    if (uniqueEmails.length && sesConfigured) {
       try {
         const formattedTotal = new Intl.NumberFormat('en-US', {
           style: 'currency',
@@ -295,7 +297,7 @@ export async function POST(request: Request) {
         }).format(totalCents / 100);
         const receiptFromEmail =
           extras.receipt_from_email?.trim() || process.env.RECEIPT_FROM_EMAIL || 'ohana@kekoolanireunion.com';
-        const pdfFromEmail = receiptFromEmail;
+        const pdfFromEmail = extras.pdf_from_email?.trim() || process.env.PDF_FROM_EMAIL || receiptFromEmail;
         const fromName = process.env.EMAIL_FROM_NAME || 'Kekoʻolani Reunion';
         const emailAssetsDir = 'email';
         const pdfFiles = listPublicAssetsByExt(['.pdf'], emailAssetsDir);
@@ -363,7 +365,7 @@ ${tshirtListHtml}
             ? `Aloha ${parsed.purchaser_name},\n\nMahalo for your T-shirt order.\nOrder ID: ${orderRecord.id}\nTotal: ${formattedTotal}\nPayment method: ${paymentMethod}\n\nShirt order details:\n${tshirtListText}\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`
             : `Aloha ${parsed.purchaser_name},\n\nMahalo for registering for the Kekoʻolani Family Reunion.\nOrder ID: ${orderRecord.id}\nTotal: ${formattedTotal}\nPayment method: ${paymentMethod}\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`;
 
-          await sendSendPulseEmail({
+          await sendSesEmail({
             from: { name: fromName, email: receiptFromEmail },
             to: [{ email: purchaserEmail, name: parsed.purchaser_name }],
             subject: receiptSubject,
@@ -395,7 +397,7 @@ ${pdfLinksHtml}
         if (!tshirtOnly) {
           await Promise.all(
             uniqueEmails.map((email) =>
-              sendSendPulseEmail({
+              sendSesEmail({
                 from: { name: fromName, email: pdfFromEmail },
                 to: [{ email }],
                 subject: thankYouSubject,
@@ -407,7 +409,7 @@ ${pdfLinksHtml}
           );
         }
       } catch (emailError) {
-        console.error('[sendpulse]', emailError);
+        console.error('[ses]', emailError);
       }
     }
     const redirectUrl = `${baseUrl}/success?order=${orderRecord.id}&status=pending&method=${paymentMethod}&amount=${totalCents}`;
