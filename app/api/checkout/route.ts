@@ -6,7 +6,12 @@ import { getStripeClient } from '@/lib/stripe';
 import { getParticipantAge, getPeopleFromAnswers, isParticipantAttending, selectTicketForAge } from '@/lib/orderUtils';
 import { SITE_SETTINGS_ID } from '@/lib/constants';
 import { getSiteExtras } from '@/lib/siteContent';
-import { buildPdfAttachmentsFromPublicAssets, listPublicAssetsByExt, sendSesEmail } from '@/lib/email';
+import {
+  buildInlineImageAttachmentFromPublicAsset,
+  buildPdfAttachmentsFromPublicAssets,
+  listPublicAssetsByExt,
+  sendSesEmail
+} from '@/lib/email';
 import type { Database } from '@/types/supabase';
 
 type TicketRow = Database['public']['Tables']['ticket_types']['Row'];
@@ -307,6 +312,8 @@ export async function POST(request: Request) {
           href: `${baseUrl}/assets/${emailAssetsDir}/${encodeURIComponent(file)}`
         }));
         const jadeImageUrl = `${baseUrl}/assets/${emailAssetsDir}/Jade.jpeg`;
+        const jadeAttachment = buildInlineImageAttachmentFromPublicAsset('Jade.jpeg', emailAssetsDir, 'jade-photo');
+        const jadeImageSrc = jadeAttachment ? 'cid:jade-photo' : jadeImageUrl;
         const allNotAttending = attendingPeople.length === 0;
         const pdfLinksHtml = pdfLinks.length
           ? `<ul>${pdfLinks.map((link) => `<li><a href="${link.href}">${link.label}</a></li>`).join('')}</ul>`
@@ -353,6 +360,7 @@ export async function POST(request: Request) {
 <strong>Payment method:</strong> ${paymentMethod}</p>
 <p><strong>Shirt order details:</strong></p>
 ${tshirtListHtml}
+<p>If you would like to opt out of reunion emails, please email kokua@kekoolanireunion.com.</p>
 <p>Me ka haʻahaʻa,<br/>Kekoʻolani Reunion Team</p>`
             : `<p>Aloha ${parsed.purchaser_name},</p>
 <p>Mahalo for registering for the Kekoʻolani Family Reunion.</p>
@@ -360,10 +368,11 @@ ${tshirtListHtml}
 <strong>Total:</strong> ${formattedTotal}<br/>
 <strong>Payment method:</strong> ${paymentMethod}</p>
 <p>We will follow up with any next steps as we get closer to the event.</p>
+<p>If you would like to opt out of reunion emails, please email kokua@kekoolanireunion.com.</p>
 <p>Me ka haʻahaʻa,<br/>Kekoʻolani Reunion Team</p>`;
           const receiptText = tshirtOnly
-            ? `Aloha ${parsed.purchaser_name},\n\nMahalo for your T-shirt order.\nOrder ID: ${orderRecord.id}\nTotal: ${formattedTotal}\nPayment method: ${paymentMethod}\n\nShirt order details:\n${tshirtListText}\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`
-            : `Aloha ${parsed.purchaser_name},\n\nMahalo for registering for the Kekoʻolani Family Reunion.\nOrder ID: ${orderRecord.id}\nTotal: ${formattedTotal}\nPayment method: ${paymentMethod}\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`;
+            ? `Aloha ${parsed.purchaser_name},\n\nMahalo for your T-shirt order.\nOrder ID: ${orderRecord.id}\nTotal: ${formattedTotal}\nPayment method: ${paymentMethod}\n\nShirt order details:\n${tshirtListText}\n\nIf you would like to opt out of reunion emails, please email kokua@kekoolanireunion.com.\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`
+            : `Aloha ${parsed.purchaser_name},\n\nMahalo for registering for the Kekoʻolani Family Reunion.\nOrder ID: ${orderRecord.id}\nTotal: ${formattedTotal}\nPayment method: ${paymentMethod}\n\nIf you would like to opt out of reunion emails, please email kokua@kekoolanireunion.com.\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`;
 
           await sendSesEmail({
             from: { name: fromName, email: receiptFromEmail },
@@ -381,18 +390,24 @@ ${tshirtListHtml}
           ? `<p>Aloha,</p>
 <p>We will miss you at the reunion. Mahalo for ordering a shirt. Even if you do not plan to attend the reunion, could you please complete the family group record to keep our records updated. Please let me know if you have any questions.</p>
 ${pdfLinksHtml}
+<p>If you would like to opt out of reunion emails, please email kokua@kekoolanireunion.com.</p>
 <p>Me ke aloha nui,</p>
 <p>Jade Pumehana Silva</p>
-<p><img src="${jadeImageUrl}" alt="Jade Pumehana Silva" style="max-width:240px; border-radius:12px;" /></p>`
+<p><img src="${jadeImageSrc}" alt="Jade Pumehana Silva" style="max-width:240px; border-radius:12px;" /></p>`
           : `<p>Aloha,</p>
 <p>Mahalo for registering to attend E hoʻi ka piko, our Kekoʻolani Reunion 2026! I am looking forward to our time together. In preparation for our reunion, could you please help update our family records by completing the family group record at the link below. If you have any questions, please let me know.</p>
 ${pdfLinksHtml}
+<p>If you would like to opt out of reunion emails, please email kokua@kekoolanireunion.com.</p>
 <p>Me ke aloha nui,</p>
 <p>Jade Pumehana Silva</p>
-<p><img src="${jadeImageUrl}" alt="Jade Pumehana Silva" style="max-width:240px; border-radius:12px;" /></p>`;
+<p><img src="${jadeImageSrc}" alt="Jade Pumehana Silva" style="max-width:240px; border-radius:12px;" /></p>`;
         const thankYouText = allNotAttending
-          ? `Aloha,\n\nWe will miss you at the reunion. Mahalo for ordering a shirt. Even if you do not plan to attend the reunion, could you please complete the family group record to keep our records updated. Please let me know if you have any questions.\n\n${pdfLinksText}\n\nMe ke aloha nui,\nJade Pumehana Silva`
-          : `Aloha,\n\nMahalo for registering to attend E hoʻi ka piko, our Kekoʻolani Reunion 2026! I am looking forward to our time together. In preparation for our reunion, could you please help update our family records by completing the family group record at the link below. If you have any questions, please let me know.\n\n${pdfLinksText}\n\nMe ke aloha nui,\nJade Pumehana Silva`;
+          ? `Aloha,\n\nWe will miss you at the reunion. Mahalo for ordering a shirt. Even if you do not plan to attend the reunion, could you please complete the family group record to keep our records updated. Please let me know if you have any questions.\n\n${pdfLinksText}\n\nIf you would like to opt out of reunion emails, please email kokua@kekoolanireunion.com.\n\nMe ke aloha nui,\nJade Pumehana Silva`
+          : `Aloha,\n\nMahalo for registering to attend E hoʻi ka piko, our Kekoʻolani Reunion 2026! I am looking forward to our time together. In preparation for our reunion, could you please help update our family records by completing the family group record at the link below. If you have any questions, please let me know.\n\n${pdfLinksText}\n\nIf you would like to opt out of reunion emails, please email kokua@kekoolanireunion.com.\n\nMe ke aloha nui,\nJade Pumehana Silva`;
+        const thankYouAttachments = [
+          ...pdfAttachments,
+          ...(jadeAttachment ? [jadeAttachment] : [])
+        ];
 
         if (!tshirtOnly) {
           await Promise.all(
@@ -403,7 +418,7 @@ ${pdfLinksHtml}
                 subject: thankYouSubject,
                 html: thankYouHtml,
                 text: thankYouText,
-                attachments: pdfAttachments.length ? pdfAttachments : undefined
+                attachments: thankYouAttachments.length ? thankYouAttachments : undefined
               })
             )
           );

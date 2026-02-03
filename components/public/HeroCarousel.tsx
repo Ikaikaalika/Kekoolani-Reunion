@@ -17,7 +17,7 @@ export default function HeroCarousel({ images, intervalMs = 7000 }: HeroCarousel
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
 
   const isVideo = useCallback((src: string) => /\.(mp4|mov|webm|ogg)$/i.test(src), []);
-  const activeSrc = sanitizedImages[activeIndex];
+  const activeSrc = sanitizedImages[activeIndex]?.src;
   const activeIsVideo = activeSrc ? isVideo(activeSrc) : false;
 
   const advance = useCallback(() => {

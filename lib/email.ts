@@ -7,6 +7,8 @@ export type EmailAttachment = {
   content: string;
   filename: string;
   type?: string;
+  disposition?: 'attachment' | 'inline';
+  contentId?: string;
 };
 
 export type EmailAddress = { name?: string; email: string };
@@ -120,9 +122,13 @@ function buildRawEmail(message: EmailMessage) {
 
     for (const attachment of message.attachments ?? []) {
       const contentType = attachment.type || 'application/octet-stream';
+      const disposition = attachment.disposition ?? 'attachment';
       bodyLines.push(`--${mixedBoundary}`);
       bodyLines.push(`Content-Type: ${contentType}; name="${attachment.filename}"`);
-      bodyLines.push(`Content-Disposition: attachment; filename="${attachment.filename}"`);
+      bodyLines.push(`Content-Disposition: ${disposition}; filename="${attachment.filename}"`);
+      if (attachment.contentId) {
+        bodyLines.push(`Content-ID: <${attachment.contentId}>`);
+      }
       bodyLines.push('Content-Transfer-Encoding: base64');
       bodyLines.push('');
       bodyLines.push(wrapBase64(attachment.content));
@@ -176,4 +182,41 @@ export function buildPdfAttachmentsFromPublicAssets(files: string[], subdir = ''
       type: 'application/pdf'
     };
   });
+}
+
+function getImageMimeType(filename: string) {
+  const ext = path.extname(filename).toLowerCase();
+  switch (ext) {
+    case '.jpg':
+    case '.jpeg':
+      return 'image/jpeg';
+    case '.png':
+      return 'image/png';
+    case '.gif':
+      return 'image/gif';
+    case '.webp':
+      return 'image/webp';
+    default:
+      return 'application/octet-stream';
+  }
+}
+
+export function buildInlineImageAttachmentFromPublicAsset(
+  filename: string,
+  subdir = '',
+  contentId = 'inline-image'
+): EmailAttachment | null {
+  try {
+    const assetsDir = path.join(process.cwd(), 'public', 'assets', subdir);
+    const buffer = fs.readFileSync(path.join(assetsDir, filename));
+    return {
+      content: buffer.toString('base64'),
+      filename,
+      type: getImageMimeType(filename),
+      disposition: 'inline',
+      contentId
+    };
+  } catch (error) {
+    return null;
+  }
 }
