@@ -168,11 +168,17 @@ async function getSiteContent() {
 function getPublicGalleryAssets() {
   const assetsDir = path.join(process.cwd(), 'public', 'assets', 'carousel');
   const supported = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.mp4', '.webm', '.mov']);
+  const toAlt = (filename: string) => {
+    const base = filename.replace(/\.[^/.]+$/, '');
+    const cleaned = base.replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!cleaned) return 'Reunion highlight';
+    return cleaned.replace(/\b\w/g, (char) => char.toUpperCase());
+  };
   try {
     return readdirSync(assetsDir)
       .filter((file) => supported.has(path.extname(file).toLowerCase()))
       .sort((a, b) => a.localeCompare(b))
-      .map((file) => ({ src: `/assets/carousel/${file}` }));
+      .map((file) => ({ src: `/assets/carousel/${file}`, alt: toAlt(file) }));
   } catch (error) {
     return [];
   }
@@ -217,7 +223,13 @@ export default async function HomePage() {
     <div>
       <section className="section hero">
         <div className="absolute inset-0">
-          <img src={HERO_IMAGE} alt="Waipiʻo Valley" className="h-full w-full object-cover" />
+          <img
+            src={HERO_IMAGE}
+            alt="Waipiʻo Valley"
+            className="h-full w-full object-cover"
+            loading="eager"
+            fetchPriority="high"
+          />
           <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-emerald-900/50 to-emerald-700/30" />
         </div>
         <div className="container relative z-10 grid gap-12 lg:grid-cols-[3fr,2fr] lg:items-center">
@@ -289,7 +301,7 @@ export default async function HomePage() {
           {showCarousel && galleryAssets.length ? (
             <div className="mt-10 overflow-hidden rounded-3xl border border-sand-200 bg-white/80 shadow-soft">
               <div className="relative h-64 md:h-80">
-                <HeroCarousel images={galleryAssets.map((item) => item.src)} />
+                <HeroCarousel images={galleryAssets} />
               </div>
             </div>
           ) : null}

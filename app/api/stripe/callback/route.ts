@@ -11,10 +11,10 @@ type SiteSettingsRow = Database['public']['Tables']['site_settings']['Row'];
 export async function GET(request: Request) {
   const supabase = createSupabaseServerClient();
   const {
-    data: { session }
-  } = await supabase.auth.getSession();
+    data: { user }
+  } = await supabase.auth.getUser();
 
-  const isAdmin = session?.user.app_metadata?.role === 'admin';
+  const isAdmin = user?.app_metadata?.role === 'admin';
   if (!isAdmin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }

@@ -75,13 +75,15 @@ Ensure you also add the Supabase and Stripe secrets to Vercel’s environment se
 
 ## Admin Access
 
-- Admin routes are protected by middleware that checks the Supabase session for `app_metadata.role === 'admin'`.
+- Admin routes are protected by server-side auth checks for `app_metadata.role === 'admin'`.
 - Use the `/admin-login` page to sign in via Supabase email/password auth.
 - After authentication, visit `/admin` to manage everything without HTML/JSON:
   - **Landing Content** – edit hero text, schedule blocks, galleries, purpose statements, cost outline, logistics, and committees. Image uploads drop straight into the gallery list.
   - **Tickets** – update copy, price, inventory, and visibility with simple inputs.
   - **Questions** – build registration prompts with dropdown/checkbox options managed via add/remove controls.
   - **Orders** – review attendee answers in readable lists.
+ - To create an admin user locally or in production, run `node scripts/create-admin.mjs <email> <password>` with
+   `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` set, or set the user's `app_metadata.role` to `admin`.
 
 ## Future Enhancements
 

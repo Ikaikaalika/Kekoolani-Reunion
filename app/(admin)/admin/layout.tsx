@@ -1,10 +1,25 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import AdminNav from '@/components/admin/AdminNav';
 import LogoutButton from '@/components/admin/LogoutButton';
 import TaroLeafIcon from '@/components/icons/TaroLeafIcon';
+import { createSupabaseServerClient } from '@/lib/supabaseClient';
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+export default async function AdminLayout({ children }: { children: ReactNode }) {
+  const supabase = createSupabaseServerClient();
+  const { data } = await supabase.auth.getUser();
+  const user = data.user;
+  const isAdmin = user?.app_metadata?.role === 'admin';
+
+  if (!user) {
+    redirect('/admin-login?reason=signin&redirect=/admin');
+  }
+
+  if (!isAdmin) {
+    redirect('/admin-login?reason=unauthorized&redirect=/admin');
+  }
+
   return (
     <div className="min-h-screen bg-sand-50 text-sand-900">
       <header className="sticky top-0 z-40 border-b border-sand-200 bg-white/80 backdrop-blur">

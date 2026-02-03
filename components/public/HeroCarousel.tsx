@@ -4,12 +4,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type HeroCarouselProps = {
-  images: string[];
+  images: Array<{ src: string; alt?: string | null }>;
   intervalMs?: number;
 };
 
 export default function HeroCarousel({ images, intervalMs = 7000 }: HeroCarouselProps) {
-  const sanitizedImages = useMemo(() => images.filter(Boolean), [images]);
+  const sanitizedImages = useMemo(
+    () => images.filter((image) => image?.src).map((image) => ({ src: image.src, alt: image.alt ?? '' })),
+    [images]
+  );
   const [activeIndex, setActiveIndex] = useState(0);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
 
@@ -52,13 +55,13 @@ export default function HeroCarousel({ images, intervalMs = 7000 }: HeroCarousel
 
   return (
     <div className="absolute inset-0">
-      {sanitizedImages.map((src, index) => {
+      {sanitizedImages.map((image, index) => {
         const isActive = index === activeIndex;
-        const video = isVideo(src);
+        const video = isVideo(image.src);
 
         return (
           <div
-            key={src}
+            key={image.src}
             className={`absolute inset-0 transition-opacity duration-1000 ${isActive ? 'opacity-100' : 'opacity-0'}`}
             aria-hidden={!isActive}
           >
@@ -73,11 +76,12 @@ export default function HeroCarousel({ images, intervalMs = 7000 }: HeroCarousel
                 preload="metadata"
                 autoPlay={isActive}
                 onEnded={advance}
+                aria-label={image.alt || 'Reunion highlight video'}
               >
-                <source src={src} />
+                <source src={image.src} />
               </video>
             ) : (
-              <img src={src} alt="" className="h-full w-full object-cover" />
+              <img src={image.src} alt={image.alt || 'Reunion highlight'} className="h-full w-full object-cover" />
             )}
           </div>
         );
