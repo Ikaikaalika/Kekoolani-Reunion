@@ -12,6 +12,7 @@ import {
   listPublicAssetsByExt,
   sendSesEmail
 } from '@/lib/email';
+import crypto from 'crypto';
 import type { Database } from '@/types/supabase';
 
 type TicketRow = Database['public']['Tables']['ticket_types']['Row'];
@@ -314,6 +315,31 @@ export async function POST(request: Request) {
         const jadeImageUrl = `${baseUrl}/assets/${emailAssetsDir}/Jade.jpeg`;
         const jadeAttachment = buildInlineImageAttachmentFromPublicAsset('Jade.jpeg', emailAssetsDir, 'jade-photo');
         const jadeImageSrc = jadeAttachment ? 'cid:jade-photo' : jadeImageUrl;
+        const unsubscribeSecret = process.env.UNSUBSCRIBE_SECRET || process.env.SUPABASE_JWT_SECRET || '';
+        const buildUnsubscribeToken = (email: string) =>
+          crypto.createHmac('sha256', unsubscribeSecret).update(email).digest('hex');
+        const buildUnsubscribeLink = (email: string) =>
+          unsubscribeSecret
+            ? `${baseUrl}/api/unsubscribe?email=${encodeURIComponent(email)}&token=${buildUnsubscribeToken(email)}`
+            : '';
+        const buildUnsubscribeHtml = (email?: string | null) => {
+          if (!email) {
+            return '<p>If you would like to opt out of reunion emails, please email kokua@kekoolanireunion.com.</p>';
+          }
+          const link = buildUnsubscribeLink(email);
+          return link
+            ? `<p>If you would like to opt out of reunion emails, please click <a href="${link}">unsubscribe</a> or email kokua@kekoolanireunion.com.</p>`
+            : '<p>If you would like to opt out of reunion emails, please email kokua@kekoolanireunion.com.</p>';
+        };
+        const buildUnsubscribeText = (email?: string | null) => {
+          if (!email) {
+            return 'If you would like to opt out of reunion emails, please email kokua@kekoolanireunion.com.';
+          }
+          const link = buildUnsubscribeLink(email);
+          return link
+            ? `If you would like to opt out of reunion emails, please unsubscribe here: ${link} or email kokua@kekoolanireunion.com.`
+            : 'If you would like to opt out of reunion emails, please email kokua@kekoolanireunion.com.';
+        };
         const allNotAttending = attendingPeople.length === 0;
         const pdfLinksHtml = pdfLinks.length
           ? `<ul>${pdfLinks.map((link) => `<li><a href="${link.href}">${link.label}</a></li>`).join('')}</ul>`
@@ -349,6 +375,9 @@ export async function POST(request: Request) {
         const tshirtListText = tshirtLineItems.length ? tshirtLineItems.map((line) => `- ${line}`).join('\n') : 'No T-shirt items listed.';
 
         if (purchaserEmail) {
+          const unsubscribeHtml = buildUnsubscribeHtml(purchaserEmail);
+          const unsubscribeText = buildUnsubscribeText(purchaserEmail);
+
           const receiptSubject = tshirtOnly
             ? 'Kekoʻolani Reunion T-shirt Order Receipt'
             : 'Kekoʻolani Reunion Registration Receipt';
@@ -360,7 +389,7 @@ export async function POST(request: Request) {
 <strong>Payment method:</strong> ${paymentMethod}</p>
 <p><strong>Shirt order details:</strong></p>
 ${tshirtListHtml}
-<p>If you would like to opt out of reunion emails, please email kokua@kekoolanireunion.com.</p>
+${unsubscribeHtml}
 <p>Me ka haʻahaʻa,<br/>Kekoʻolani Reunion Team</p>`
             : `<p>Aloha ${parsed.purchaser_name},</p>
 <p>Mahalo for registering for the Kekoʻolani Family Reunion.</p>
@@ -368,11 +397,11 @@ ${tshirtListHtml}
 <strong>Total:</strong> ${formattedTotal}<br/>
 <strong>Payment method:</strong> ${paymentMethod}</p>
 <p>We will follow up with any next steps as we get closer to the event.</p>
-<p>If you would like to opt out of reunion emails, please email kokua@kekoolanireunion.com.</p>
+${unsubscribeHtml}
 <p>Me ka haʻahaʻa,<br/>Kekoʻolani Reunion Team</p>`;
           const receiptText = tshirtOnly
-            ? `Aloha ${parsed.purchaser_name},\n\nMahalo for your T-shirt order.\nOrder ID: ${orderRecord.id}\nTotal: ${formattedTotal}\nPayment method: ${paymentMethod}\n\nShirt order details:\n${tshirtListText}\n\nIf you would like to opt out of reunion emails, please email kokua@kekoolanireunion.com.\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`
-            : `Aloha ${parsed.purchaser_name},\n\nMahalo for registering for the Kekoʻolani Family Reunion.\nOrder ID: ${orderRecord.id}\nTotal: ${formattedTotal}\nPayment method: ${paymentMethod}\n\nIf you would like to opt out of reunion emails, please email kokua@kekoolanireunion.com.\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`;
+            ? `Aloha ${parsed.purchaser_name},\n\nMahalo for your T-shirt order.\nOrder ID: ${orderRecord.id}\nTotal: ${formattedTotal}\nPayment method: ${paymentMethod}\n\nShirt order details:\n${tshirtListText}\n\n${unsubscribeText}\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`
+            : `Aloha ${parsed.purchaser_name},\n\nMahalo for registering for the Kekoʻolani Family Reunion.\nOrder ID: ${orderRecord.id}\nTotal: ${formattedTotal}\nPayment method: ${paymentMethod}\n\n${unsubscribeText}\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`;
 
           await sendSesEmail({
             from: { name: fromName, email: receiptFromEmail },
@@ -390,20 +419,18 @@ ${tshirtListHtml}
           ? `<p>Aloha,</p>
 <p>We will miss you at the reunion. Mahalo for ordering a shirt. Even if you do not plan to attend the reunion, could you please complete the family group record to keep our records updated. Please let me know if you have any questions.</p>
 ${pdfLinksHtml}
-<p>If you would like to opt out of reunion emails, please email kokua@kekoolanireunion.com.</p>
 <p>Me ke aloha nui,</p>
 <p>Jade Pumehana Silva</p>
 <p><img src="${jadeImageSrc}" alt="Jade Pumehana Silva" style="max-width:240px; border-radius:12px;" /></p>`
           : `<p>Aloha,</p>
 <p>Mahalo for registering to attend E hoʻi ka piko, our Kekoʻolani Reunion 2026! I am looking forward to our time together. In preparation for our reunion, could you please help update our family records by completing the family group record at the link below. If you have any questions, please let me know.</p>
 ${pdfLinksHtml}
-<p>If you would like to opt out of reunion emails, please email kokua@kekoolanireunion.com.</p>
 <p>Me ke aloha nui,</p>
 <p>Jade Pumehana Silva</p>
 <p><img src="${jadeImageSrc}" alt="Jade Pumehana Silva" style="max-width:240px; border-radius:12px;" /></p>`;
         const thankYouText = allNotAttending
-          ? `Aloha,\n\nWe will miss you at the reunion. Mahalo for ordering a shirt. Even if you do not plan to attend the reunion, could you please complete the family group record to keep our records updated. Please let me know if you have any questions.\n\n${pdfLinksText}\n\nIf you would like to opt out of reunion emails, please email kokua@kekoolanireunion.com.\n\nMe ke aloha nui,\nJade Pumehana Silva`
-          : `Aloha,\n\nMahalo for registering to attend E hoʻi ka piko, our Kekoʻolani Reunion 2026! I am looking forward to our time together. In preparation for our reunion, could you please help update our family records by completing the family group record at the link below. If you have any questions, please let me know.\n\n${pdfLinksText}\n\nIf you would like to opt out of reunion emails, please email kokua@kekoolanireunion.com.\n\nMe ke aloha nui,\nJade Pumehana Silva`;
+          ? `Aloha,\n\nWe will miss you at the reunion. Mahalo for ordering a shirt. Even if you do not plan to attend the reunion, could you please complete the family group record to keep our records updated. Please let me know if you have any questions.\n\n${pdfLinksText}\n\nMe ke aloha nui,\nJade Pumehana Silva`
+          : `Aloha,\n\nMahalo for registering to attend E hoʻi ka piko, our Kekoʻolani Reunion 2026! I am looking forward to our time together. In preparation for our reunion, could you please help update our family records by completing the family group record at the link below. If you have any questions, please let me know.\n\n${pdfLinksText}\n\nMe ke aloha nui,\nJade Pumehana Silva`;
         const thankYouAttachments = [
           ...pdfAttachments,
           ...(jadeAttachment ? [jadeAttachment] : [])
@@ -411,16 +438,21 @@ ${pdfLinksHtml}
 
         if (!tshirtOnly) {
           await Promise.all(
-            uniqueEmails.map((email) =>
-              sendSesEmail({
+            uniqueEmails.map((email) => {
+              const unsubscribeHtml = buildUnsubscribeHtml(email);
+              const unsubscribeText = buildUnsubscribeText(email);
+              return sendSesEmail({
                 from: { name: fromName, email: pdfFromEmail },
                 to: [{ email }],
                 subject: thankYouSubject,
-                html: thankYouHtml,
-                text: thankYouText,
+                html: thankYouHtml.replace(
+                  '</p><p>Me ke aloha nui,',
+                  `</p>${unsubscribeHtml}<p>Me ke aloha nui,`
+                ),
+                text: `${thankYouText}\n\n${unsubscribeText}`,
                 attachments: thankYouAttachments.length ? thankYouAttachments : undefined
-              })
-            )
+              });
+            })
           );
         }
       } catch (emailError) {
