@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { sendSesEmail, buildPdfAttachmentsFromPublicAssets, listPublicAssetsByExt } from '@/lib/email';
+import { sendEmail, shouldUseSendPulse, buildPdfAttachmentsFromPublicAssets, listPublicAssetsByExt } from '@/lib/email';
 
 function argValue(flag: string) {
   const index = process.argv.indexOf(flag);
@@ -13,8 +13,11 @@ if (!toArg) {
 }
 const to = toArg;
 
+const useSendPulse = shouldUseSendPulse();
 const region = process.env.SES_REGION || process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION;
-assert.ok(region, 'Missing SES_REGION (or AWS_REGION/AWS_DEFAULT_REGION).');
+if (!useSendPulse) {
+  assert.ok(region, 'Missing SES_REGION (or AWS_REGION/AWS_DEFAULT_REGION).');
+}
 
 const receiptFromEmail = process.env.RECEIPT_FROM_EMAIL || 'ohana@kekoolanireunion.com';
 const pdfFromEmail = process.env.PDF_FROM_EMAIL || receiptFromEmail;
@@ -30,19 +33,22 @@ async function sendScenario(opts: {
   text: string;
   includeAttachments?: boolean;
 }) {
-  await sendSesEmail({
+  await sendEmail({
     from: { name: fromName, email: pdfFromEmail },
     to: [{ email: to }],
     subject: opts.subject,
     html: opts.html,
     text: opts.text,
-    attachments: opts.includeAttachments && pdfAttachments.length ? pdfAttachments : undefined
+    attachments: !useSendPulse && opts.includeAttachments && pdfAttachments.length ? pdfAttachments : undefined
   });
   console.log(`sent: ${opts.subject}`);
 }
 
 async function main() {
-  console.log(`SES region: ${region}`);
+  console.log(`Email provider: ${useSendPulse ? 'SendPulse' : 'SES'}`);
+  if (!useSendPulse) {
+    console.log(`SES region: ${region}`);
+  }
   console.log(`To: ${to}`);
   console.log(`From (receipt/pdf): ${receiptFromEmail} / ${pdfFromEmail}`);
   console.log(`PDF attachments found: ${pdfFiles.length}`);

@@ -64,6 +64,75 @@ function getSesClient() {
   return new SESClient({ region });
 }
 
+function isSendPulseConfigured() {
+  return Boolean(process.env.SENDPULSE_API_ID && process.env.SENDPULSE_API_SECRET);
+}
+
+let sendPulseTokenCache: { token: string; expiresAt: number } | null = null;
+
+async function getSendPulseToken() {
+  const clientId = process.env.SENDPULSE_API_ID;
+  const clientSecret = process.env.SENDPULSE_API_SECRET;
+  if (!clientId || !clientSecret) {
+    throw new Error('SendPulse credentials are not configured.');
+  }
+
+  const now = Date.now();
+  if (sendPulseTokenCache && sendPulseTokenCache.expiresAt > now + 60_000) {
+    return sendPulseTokenCache.token;
+  }
+
+  const response = await fetch('https://api.sendpulse.com/oauth/access_token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      grant_type: 'client_credentials',
+      client_id: clientId,
+      client_secret: clientSecret
+    })
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`SendPulse auth failed: ${response.status} ${body}`);
+  }
+
+  const data = (await response.json()) as { access_token: string; expires_in: number };
+  sendPulseTokenCache = {
+    token: data.access_token,
+    expiresAt: now + (data.expires_in || 3600) * 1000
+  };
+
+  return data.access_token;
+}
+
+async function sendSendPulseEmail(message: EmailMessage) {
+  const token = await getSendPulseToken();
+  const payload = {
+    email: {
+      subject: message.subject,
+      html: message.html,
+      text: message.text,
+      from: message.from,
+      to: message.to
+    }
+  };
+
+  const response = await fetch('https://api.sendpulse.com/smtp/emails', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`SendPulse send failed: ${response.status} ${body}`);
+  }
+}
+
 function buildRawEmail(message: EmailMessage) {
   const hasAttachments = Boolean(message.attachments?.length);
   const mixedBoundary = `mixed_${crypto.randomUUID()}`;
@@ -156,6 +225,17 @@ export async function sendSesEmail(message: EmailMessage) {
     RawMessage: { Data: raw }
   });
   return client.send(command);
+}
+
+export function shouldUseSendPulse() {
+  return isSendPulseConfigured();
+}
+
+export async function sendEmail(message: EmailMessage) {
+  if (isSendPulseConfigured()) {
+    return sendSendPulseEmail(message);
+  }
+  return sendSesEmail(message);
 }
 
 export function listPublicAssetsByExt(extensions: string[], subdir = '') {

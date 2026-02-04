@@ -10,7 +10,8 @@ import {
   buildInlineImageAttachmentFromPublicAsset,
   buildPdfAttachmentsFromPublicAssets,
   listPublicAssetsByExt,
-  sendSesEmail
+  sendEmail,
+  shouldUseSendPulse
 } from '@/lib/email';
 import crypto from 'crypto';
 import type { Database } from '@/types/supabase';
@@ -313,7 +314,10 @@ export async function POST(request: Request) {
           href: `${baseUrl}/assets/${emailAssetsDir}/${encodeURIComponent(file)}`
         }));
         const jadeImageUrl = `${baseUrl}/assets/${emailAssetsDir}/Jade.jpeg`;
-        const jadeAttachment = buildInlineImageAttachmentFromPublicAsset('Jade.jpeg', emailAssetsDir, 'jade-photo');
+        const useSendPulse = shouldUseSendPulse();
+        const jadeAttachment = useSendPulse
+          ? null
+          : buildInlineImageAttachmentFromPublicAsset('Jade.jpeg', emailAssetsDir, 'jade-photo');
         const jadeImageSrc = jadeAttachment ? 'cid:jade-photo' : jadeImageUrl;
         const unsubscribeSecret = process.env.UNSUBSCRIBE_SECRET || process.env.SUPABASE_JWT_SECRET || '';
         const buildUnsubscribeToken = (email: string) =>
@@ -390,6 +394,7 @@ export async function POST(request: Request) {
 <p><strong>Shirt order details:</strong></p>
 ${tshirtListHtml}
 ${unsubscribeHtml}
+${pdfLinksHtml}
 <p>Me ka haʻahaʻa,<br/>Kekoʻolani Reunion Team</p>`
             : `<p>Aloha ${parsed.purchaser_name},</p>
 <p>Mahalo for registering for the Kekoʻolani Family Reunion.</p>
@@ -398,12 +403,13 @@ ${unsubscribeHtml}
 <strong>Payment method:</strong> ${paymentMethod}</p>
 <p>We will follow up with any next steps as we get closer to the event.</p>
 ${unsubscribeHtml}
+${pdfLinksHtml}
 <p>Me ka haʻahaʻa,<br/>Kekoʻolani Reunion Team</p>`;
           const receiptText = tshirtOnly
-            ? `Aloha ${parsed.purchaser_name},\n\nMahalo for your T-shirt order.\nOrder ID: ${orderRecord.id}\nTotal: ${formattedTotal}\nPayment method: ${paymentMethod}\n\nShirt order details:\n${tshirtListText}\n\n${unsubscribeText}\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`
-            : `Aloha ${parsed.purchaser_name},\n\nMahalo for registering for the Kekoʻolani Family Reunion.\nOrder ID: ${orderRecord.id}\nTotal: ${formattedTotal}\nPayment method: ${paymentMethod}\n\n${unsubscribeText}\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`;
+            ? `Aloha ${parsed.purchaser_name},\n\nMahalo for your T-shirt order.\nOrder ID: ${orderRecord.id}\nTotal: ${formattedTotal}\nPayment method: ${paymentMethod}\n\nShirt order details:\n${tshirtListText}\n\n${unsubscribeText}\n\n${pdfLinksText}\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`
+            : `Aloha ${parsed.purchaser_name},\n\nMahalo for registering for the Kekoʻolani Family Reunion.\nOrder ID: ${orderRecord.id}\nTotal: ${formattedTotal}\nPayment method: ${paymentMethod}\n\n${unsubscribeText}\n\n${pdfLinksText}\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`;
 
-          await sendSesEmail({
+          await sendEmail({
             from: { name: fromName, email: receiptFromEmail },
             to: [{ email: purchaserEmail, name: parsed.purchaser_name }],
             subject: receiptSubject,
@@ -441,7 +447,7 @@ ${pdfLinksHtml}
             uniqueEmails.map((email) => {
               const unsubscribeHtml = buildUnsubscribeHtml(email);
               const unsubscribeText = buildUnsubscribeText(email);
-              return sendSesEmail({
+              return sendEmail({
                 from: { name: fromName, email: pdfFromEmail },
                 to: [{ email }],
                 subject: thankYouSubject,
@@ -450,7 +456,7 @@ ${pdfLinksHtml}
                   `</p>${unsubscribeHtml}<p>Me ke aloha nui,`
                 ),
                 text: `${thankYouText}\n\n${unsubscribeText}`,
-                attachments: thankYouAttachments.length ? thankYouAttachments : undefined
+                attachments: !useSendPulse && thankYouAttachments.length ? thankYouAttachments : undefined
               });
             })
           );
