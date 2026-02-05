@@ -295,13 +295,14 @@ export async function POST(request: Request) {
     const extras = getSiteExtras(siteSettings ?? null);
 
     const sesConfigured = Boolean(process.env.SES_REGION || process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION);
+    const useSendPulse = shouldUseSendPulse();
+    const canSendEmail = uniqueEmails.length && (sesConfigured || useSendPulse);
 
-    if (uniqueEmails.length && sesConfigured) {
+    if (canSendEmail) {
       try {
-        const formattedTotal = new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'USD'
-        }).format(totalCents / 100);
+        const formatCurrency = (valueCents: number) =>
+          new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(valueCents / 100);
+        const formattedTotal = formatCurrency(totalCents);
         const receiptFromEmail =
           extras.receipt_from_email?.trim() || process.env.RECEIPT_FROM_EMAIL || 'ohana@kekoolanireunion.com';
         const pdfFromEmail = extras.pdf_from_email?.trim() || process.env.PDF_FROM_EMAIL || receiptFromEmail;
@@ -314,7 +315,6 @@ export async function POST(request: Request) {
           href: `${baseUrl}/assets/${emailAssetsDir}/${encodeURIComponent(file)}`
         }));
         const jadeImageUrl = `${baseUrl}/assets/${emailAssetsDir}/Jade.jpeg`;
-        const useSendPulse = shouldUseSendPulse();
         const jadeAttachment = useSendPulse
           ? null
           : buildInlineImageAttachmentFromPublicAsset('Jade.jpeg', emailAssetsDir, 'jade-photo');
@@ -377,6 +377,42 @@ export async function POST(request: Request) {
           ? `<ul>${tshirtLineItems.map((line) => `<li>${line}</li>`).join('')}</ul>`
           : '<p>No T-shirt items listed.</p>';
         const tshirtListText = tshirtLineItems.length ? tshirtLineItems.map((line) => `- ${line}`).join('\n') : 'No T-shirt items listed.';
+        const ticketSummary = orderItems.length
+          ? orderItems.map((item) => `${item.quantity} × ${item.name}`).join('; ')
+          : 'No tickets selected.';
+        const donationLine = donationCents > 0 ? `Donation: ${formatCurrency(donationCents)}` : '';
+        const orderSummaryHtml = `
+<p><strong>Order details:</strong></p>
+<ul>
+  <li>Tickets: ${ticketSummary}</li>
+  ${donationCents > 0 ? `<li>${donationLine}</li>` : ''}
+  <li>Total attendees: ${attendingPeople.length}</li>
+</ul>`;
+        const orderSummaryText = [
+          'Order details:',
+          `Tickets: ${ticketSummary}`,
+          donationCents > 0 ? donationLine : '',
+          `Total attendees: ${attendingPeople.length}`
+        ]
+          .filter(Boolean)
+          .join('\n');
+        const orderLineItems = orderItems.map((item) => {
+          const lineTotal = item.unit_amount * item.quantity;
+          return {
+            label: item.name,
+            quantity: item.quantity,
+            unit: formatCurrency(item.unit_amount),
+            total: formatCurrency(lineTotal)
+          };
+        });
+        const orderLineItemsHtml = orderLineItems.length
+          ? `<ul>${orderLineItems
+              .map((item) => `<li>${item.label} — ${item.quantity} × ${item.unit} = ${item.total}</li>`)
+              .join('')}</ul>`
+          : '<p>No ticket or shirt line items.</p>';
+        const orderLineItemsText = orderLineItems.length
+          ? orderLineItems.map((item) => `- ${item.label}: ${item.quantity} × ${item.unit} = ${item.total}`).join('\n')
+          : 'No ticket or shirt line items.';
 
         if (purchaserEmail) {
           const unsubscribeHtml = buildUnsubscribeHtml(purchaserEmail);
@@ -393,6 +429,9 @@ export async function POST(request: Request) {
 <strong>Payment method:</strong> ${paymentMethod}</p>
 <p><strong>Shirt order details:</strong></p>
 ${tshirtListHtml}
+<p><strong>Line items:</strong></p>
+${orderLineItemsHtml}
+${orderSummaryHtml}
 ${unsubscribeHtml}
 ${pdfLinksHtml}
 <p>Me ka haʻahaʻa,<br/>Kekoʻolani Reunion Team</p>`
@@ -401,13 +440,17 @@ ${pdfLinksHtml}
 <p><strong>Order ID:</strong> ${orderRecord.id}<br/>
 <strong>Total:</strong> ${formattedTotal}<br/>
 <strong>Payment method:</strong> ${paymentMethod}</p>
+<p><strong>Line items:</strong></p>
+${orderLineItemsHtml}
+${tshirtLineItems.length ? `<p><strong>Shirt order details:</strong></p>${tshirtListHtml}` : ''}
+${orderSummaryHtml}
 <p>We will follow up with any next steps as we get closer to the event.</p>
 ${unsubscribeHtml}
 ${pdfLinksHtml}
 <p>Me ka haʻahaʻa,<br/>Kekoʻolani Reunion Team</p>`;
           const receiptText = tshirtOnly
-            ? `Aloha ${parsed.purchaser_name},\n\nMahalo for your T-shirt order.\nOrder ID: ${orderRecord.id}\nTotal: ${formattedTotal}\nPayment method: ${paymentMethod}\n\nShirt order details:\n${tshirtListText}\n\n${unsubscribeText}\n\n${pdfLinksText}\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`
-            : `Aloha ${parsed.purchaser_name},\n\nMahalo for registering for the Kekoʻolani Family Reunion.\nOrder ID: ${orderRecord.id}\nTotal: ${formattedTotal}\nPayment method: ${paymentMethod}\n\n${unsubscribeText}\n\n${pdfLinksText}\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`;
+            ? `Aloha ${parsed.purchaser_name},\n\nMahalo for your T-shirt order.\nOrder ID: ${orderRecord.id}\nTotal: ${formattedTotal}\nPayment method: ${paymentMethod}\n\nShirt order details:\n${tshirtListText}\n\nLine items:\n${orderLineItemsText}\n\n${orderSummaryText}\n\n${unsubscribeText}\n\n${pdfLinksText}\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`
+            : `Aloha ${parsed.purchaser_name},\n\nMahalo for registering for the Kekoʻolani Family Reunion.\nOrder ID: ${orderRecord.id}\nTotal: ${formattedTotal}\nPayment method: ${paymentMethod}\n\nLine items:\n${orderLineItemsText}\n\n${tshirtLineItems.length ? `Shirt order details:\n${tshirtListText}\n\n` : ''}${orderSummaryText}\n\n${unsubscribeText}\n\n${pdfLinksText}\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`;
 
           await sendEmail({
             from: { name: fromName, email: receiptFromEmail },

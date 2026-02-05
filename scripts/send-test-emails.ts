@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
+import dotenv from 'dotenv';
 import { sendEmail, shouldUseSendPulse, buildPdfAttachmentsFromPublicAssets, listPublicAssetsByExt } from '@/lib/email';
+
+dotenv.config({ path: '.env.local' });
 
 function argValue(flag: string) {
   const index = process.argv.indexOf(flag);

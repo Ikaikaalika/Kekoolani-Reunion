@@ -184,10 +184,28 @@ function getPublicGalleryAssets() {
   }
 }
 
+function getGenealogyPdfLinks() {
+  const assetsDir = path.join(process.cwd(), 'public', 'assets', 'email');
+  const toLabel = (filename: string) =>
+    filename.replace(/\.pdf$/i, '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  try {
+    return readdirSync(assetsDir)
+      .filter((file) => path.extname(file).toLowerCase() === '.pdf')
+      .sort((a, b) => a.localeCompare(b))
+      .map((file) => ({
+        label: toLabel(file) || 'Genealogy PDF',
+        href: `/assets/email/${encodeURIComponent(file)}`
+      }));
+  } catch (error) {
+    return [];
+  }
+}
+
 export default async function HomePage() {
   const [attendeeHighlights, siteContent] = await Promise.all([getAttendeeHighlights(), getSiteContent()]);
   const { site, extras, schedule, welcomeParagraphs, sections } = siteContent;
   const galleryAssets = getPublicGalleryAssets();
+  const genealogyPdfLinks = getGenealogyPdfLinks();
 
   const heroTitle = site?.hero_title ?? SITE_DEFAULTS.hero_title;
   const heroSubtitle = site?.hero_subtitle ?? SITE_DEFAULTS.hero_subtitle ?? '';
@@ -449,6 +467,20 @@ export default async function HomePage() {
                   <p key={paragraph}>{paragraph}</p>
                 ))}
               </div>
+              {genealogyPdfLinks.length ? (
+                <div className="mt-6 rounded-2xl border border-sand-200 bg-white/80 p-4">
+                  <p className="text-sm font-semibold uppercase tracking-wide text-sand-500">Genealogy PDFs</p>
+                  <ul className="mt-3 space-y-2 text-base text-sand-700">
+                    {genealogyPdfLinks.map((link) => (
+                      <li key={link.href}>
+                        <a href={link.href} className="text-emerald-700 underline">
+                          {link.label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
             </div>
           </div>
         </section>

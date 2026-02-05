@@ -10,7 +10,7 @@ export default defineConfig({
   workers: 1,
   retries: 0,
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://127.0.0.1:3000',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure'
   },
@@ -21,10 +21,12 @@ export default defineConfig({
     }
   ],
   webServer: {
-    command: 'npm run dev',
+    command: 'npm run dev -- --hostname 127.0.0.1 --port 3000',
     port: 3000,
     reuseExistingServer: true,
     env: {
+      HOST: '127.0.0.1',
+      PORT: '3000',
       NEXT_PUBLIC_PAYPAL_LINK: 'https://paypal.me/test'
     }
   }
