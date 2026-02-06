@@ -68,10 +68,10 @@ export default async function RegisterPage({ searchParams }: { searchParams: { c
     <div className="section">
       <div className="container max-w-3xl">
         <div className="mb-12 text-center">
-          <span className="mono text-xs uppercase tracking-[0.3em] text-koa">Reserve your spot</span>
+          <span className="mono text-xs uppercase tracking-[0.3em] text-koa">Register for the reunion</span>
           <h1 className="h2 mt-3">Family Registration - {eventDates}</h1>
           <p className="mt-2 text-sm text-koa">
-            Secure your seats at the reunion, let us know your family details, and select the experiences that fit your crew.
+            Use this form to register each person. You can add more people below.
           </p>
           <p className="mt-4 text-xl font-semibold text-brandBlue md:text-2xl">Deadline to Register is March 31, 2026.</p>
         </div>

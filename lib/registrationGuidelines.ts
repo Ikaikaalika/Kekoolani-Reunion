@@ -7,8 +7,8 @@ export type RegistrationGuideline = {
 export const REGISTRATION_GUIDELINES: RegistrationGuideline[] = [
   {
     key: 'participant_details',
-    label: 'Participant Details',
-    description: 'For each attendee: full name (Last, First, Middle), age, and relationship to Nawai & Emily.'
+    label: 'Participant details (name, age, relationship)',
+    description: 'For each person: full name, age, and relationship to Nawai & Emily.'
   },
   {
     key: 'lineage',

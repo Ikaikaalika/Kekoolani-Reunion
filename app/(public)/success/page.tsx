@@ -133,7 +133,7 @@ export default async function SuccessPage({
       : []),
     'Save your order reference below for your records.',
     'A receipt will be emailed to you. Please check your junk or spam folder.',
-    `Need help? Email ${contactEmail}.`
+    `If you get stuck, call 808-895-6883 (Hawaiʻi time) or email ${contactEmail}.`
   ];
   return (
     <div className="section">
