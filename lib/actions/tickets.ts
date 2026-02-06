@@ -3,8 +3,10 @@
 import { revalidatePath } from 'next/cache';
 import { ticketTypeSchema } from '../validators';
 import { supabaseAdmin } from '../supabaseAdmin';
+import { requireAdmin } from './requireAdmin';
 
 export async function upsertTicket(formData: FormData) {
+  await requireAdmin();
   const data = Object.fromEntries(formData.entries());
   const payload = {
     id: data.id ? String(data.id) : undefined,
@@ -38,6 +40,7 @@ export async function upsertTicket(formData: FormData) {
 }
 
 export async function deleteTicket(formData: FormData) {
+  await requireAdmin();
   const id = String(formData.get('id') ?? '');
   if (!id) {
     throw new Error('Ticket id required');

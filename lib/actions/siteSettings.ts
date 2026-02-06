@@ -5,8 +5,10 @@ import { supabaseAdmin } from '../supabaseAdmin';
 import { updateSiteSettingsSchema } from '../validators';
 import { parseSchedule, parseExtras, SITE_DEFAULTS, DEFAULT_EXTRAS } from '../siteContent';
 import { SITE_SETTINGS_ID } from '../constants';
+import { requireAdmin } from './requireAdmin';
 
 export async function updateSiteSettings(formData: FormData) {
+  await requireAdmin();
   const json = Object.fromEntries(formData.entries());
   let schedulePayload = SITE_DEFAULTS.schedule;
   let extrasPayload = DEFAULT_EXTRAS;

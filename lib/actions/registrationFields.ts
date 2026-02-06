@@ -3,8 +3,10 @@
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '../supabaseAdmin';
 import { registrationFieldSchema } from '../validators';
+import { requireAdmin } from './requireAdmin';
 
 export async function upsertRegistrationField(formData: FormData) {
+  await requireAdmin();
   const data = Object.fromEntries(formData.entries());
   const optionsRaw = data.options ? String(data.options) : '[]';
   let options;
@@ -47,6 +49,7 @@ export async function upsertRegistrationField(formData: FormData) {
 }
 
 export async function deleteRegistrationField(formData: FormData) {
+  await requireAdmin();
   const id = String(formData.get('id') ?? '');
   if (!id) {
     throw new Error('Field id required');

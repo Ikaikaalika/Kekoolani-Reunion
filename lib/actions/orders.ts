@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getPeopleFromAnswers } from '@/lib/orderUtils';
+import { requireAdmin } from './requireAdmin';
 
 type UpdatePayload = {
   orderId: string;
@@ -15,6 +16,7 @@ type UpdatePayload = {
 };
 
 export async function updateOrderParticipantStatus(payload: UpdatePayload) {
+  await requireAdmin();
   const { orderId, personIndex, attending, refunded, showName, showPhoto, remove } = payload;
   if (!orderId) {
     return { error: 'Missing order id' };
@@ -85,6 +87,7 @@ type DeleteEmptyOrderPayload = {
 };
 
 export async function deleteEmptyOrder(payload: DeleteEmptyOrderPayload) {
+  await requireAdmin();
   const { orderId } = payload;
   if (!orderId) {
     return { error: 'Missing order id' };
@@ -122,4 +125,32 @@ export async function deleteEmptyOrder(payload: DeleteEmptyOrderPayload) {
   revalidatePath('/admin/orders');
 
   return { ok: true };
+}
+
+type UpdateOrderStatusPayload = {
+  orderId: string;
+  status: 'pending' | 'paid' | 'canceled';
+};
+
+export async function updateOrderStatus(formData: FormData) {
+  await requireAdmin();
+  const orderId = String(formData.get('order_id') ?? '');
+  const status = String(formData.get('status') ?? '') as UpdateOrderStatusPayload['status'];
+
+  if (!orderId) {
+    throw new Error('Order id required');
+  }
+  if (!['pending', 'paid', 'canceled'].includes(status)) {
+    throw new Error('Invalid status');
+  }
+
+  const admin = supabaseAdmin as any;
+  const { error } = await admin.from('orders').update({ status }).eq('id', orderId);
+  if (error) {
+    throw new Error('Failed to update order status');
+  }
+
+  revalidatePath('/');
+  revalidatePath('/admin');
+  revalidatePath('/admin/orders');
 }

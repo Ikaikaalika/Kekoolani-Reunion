@@ -10,6 +10,7 @@ import {
   getPeopleFromAnswers,
   normalizeOrderParticipants
 } from '@/lib/orderUtils';
+import { updateOrderStatus } from '@/lib/actions/orders';
 import type { Database } from '@/types/supabase';
 
 type OrderWithRelations = Database['public']['Tables']['orders']['Row'] & {
@@ -67,7 +68,7 @@ export default async function AdminOrdersPage() {
           href="/admin/orders/export"
           className="inline-flex items-center justify-center rounded-full border border-brandBlue/30 bg-white px-4 py-2 text-sm font-semibold text-brandBlue shadow-soft transition hover:bg-brandBlue hover:text-white"
         >
-          Download CSV
+          Download CSV (per person)
         </Link>
       </div>
 
@@ -123,17 +124,37 @@ export default async function AdminOrdersPage() {
                   <td className="py-3 pr-6">{order.purchaser_name}</td>
                   <td className="py-3 pr-6 text-xs text-koa">{order.purchaser_email}</td>
                   <td className="py-3 pr-6">
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        order.status === 'paid'
-                          ? 'bg-fern-100 text-fern-700'
-                          : order.status === 'pending'
-                          ? 'bg-sand-100 text-sand-700'
-                          : 'bg-lava-100 text-lava-700'
-                      }`}
-                    >
-                      {order.status.toUpperCase()}
-                    </span>
+                    <div className="space-y-2">
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                          order.status === 'paid'
+                            ? 'bg-fern-100 text-fern-700'
+                            : order.status === 'pending'
+                            ? 'bg-sand-100 text-sand-700'
+                            : 'bg-lava-100 text-lava-700'
+                        }`}
+                      >
+                        {order.status.toUpperCase()}
+                      </span>
+                      <form action={updateOrderStatus} className="flex flex-wrap items-center gap-2">
+                        <input type="hidden" name="order_id" value={order.id} />
+                        <select
+                          name="status"
+                          defaultValue={order.status}
+                          className="rounded-lg border border-sand-200 bg-white px-2 py-1 text-xs text-koa"
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="paid">Paid</option>
+                          <option value="canceled">Canceled</option>
+                        </select>
+                        <button
+                          type="submit"
+                          className="rounded-full border border-brandBlue/30 bg-white px-3 py-1 text-xs font-semibold text-brandBlue transition hover:bg-brandBlue hover:text-white"
+                        >
+                          Update
+                        </button>
+                      </form>
+                    </div>
                   </td>
                   <td className="py-3 pr-6 text-xs text-koa">{order.payment_method ?? '-'}</td>
                   <td className="py-3 pr-6 font-semibold text-sand-900">

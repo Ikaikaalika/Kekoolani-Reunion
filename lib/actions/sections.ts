@@ -3,8 +3,10 @@
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '../supabaseAdmin';
 import { sectionSchema, parseSectionContent } from '../validators';
+import { requireAdmin } from './requireAdmin';
 
 export async function upsertSection(formData: FormData) {
+  await requireAdmin();
   const rawPayload = formData.get('payload');
   if (typeof rawPayload !== 'string' || !rawPayload.trim()) {
     throw new Error('Missing section payload');
@@ -45,6 +47,7 @@ export async function upsertSection(formData: FormData) {
 }
 
 export async function deleteSection(formData: FormData) {
+  await requireAdmin();
   const id = formData.get('id');
   if (typeof id !== 'string' || !id) {
     throw new Error('Section id required');

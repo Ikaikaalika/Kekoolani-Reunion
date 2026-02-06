@@ -3,8 +3,10 @@
 import { revalidatePath } from 'next/cache';
 import { questionSchema } from '../validators';
 import { supabaseAdmin } from '../supabaseAdmin';
+import { requireAdmin } from './requireAdmin';
 
 export async function upsertQuestion(formData: FormData) {
+  await requireAdmin();
   const data = Object.fromEntries(formData.entries());
   const optionsRaw = data.options ? String(data.options) : '[]';
   const ticketIdsRaw = formData.get('ticket_ids');
@@ -82,6 +84,7 @@ export async function upsertQuestion(formData: FormData) {
 }
 
 export async function deleteQuestion(formData: FormData) {
+  await requireAdmin();
   const id = String(formData.get('id') ?? '');
   if (!id) {
     throw new Error('Question id required');

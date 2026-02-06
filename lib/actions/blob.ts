@@ -2,10 +2,12 @@
 
 import { put } from '@vercel/blob';
 import { randomUUID } from 'crypto';
+import { requireAdmin } from './requireAdmin';
 
 const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
 
 export async function uploadGalleryImage(formData: FormData) {
+  await requireAdmin();
   if (!blobToken) {
     return { error: 'Blob storage is not configured' };
   }
