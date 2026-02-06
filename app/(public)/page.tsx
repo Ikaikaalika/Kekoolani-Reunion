@@ -536,7 +536,7 @@ export default async function HomePage() {
                             href={link.href}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-emerald-700 underline"
+                            className="block text-emerald-700 underline"
                           >
                             {link.label}
                           </a>
