@@ -2,13 +2,12 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { checkoutSchema } from '@/lib/validators';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { getStripeClient } from '@/lib/stripe';
+import { getStripeClient, isStripeCheckoutEnabled } from '@/lib/stripe';
 import { getParticipantAge, getPeopleFromAnswers, isParticipantAttending, selectTicketForAge } from '@/lib/orderUtils';
 import { SITE_SETTINGS_ID } from '@/lib/constants';
 import { getSiteExtras } from '@/lib/siteContent';
 import {
   buildInlineImageAttachmentFromPublicAsset,
-  buildPdfAttachmentsFromPublicAssets,
   listPublicAssetsByExt,
   sendEmail,
   shouldUseSendPulse
@@ -309,11 +308,7 @@ export async function POST(request: Request) {
         const fromName = process.env.EMAIL_FROM_NAME || 'Kekoʻolani Reunion';
         const emailAssetsDir = 'email';
         const pdfFiles = listPublicAssetsByExt(['.pdf'], emailAssetsDir);
-        const pdfAttachments = buildPdfAttachmentsFromPublicAssets(pdfFiles, emailAssetsDir);
-        const pdfLinks = pdfFiles.map((file) => ({
-          label: file.replace(/\.pdf$/i, '').replace(/[_-]/g, ' '),
-          href: `${baseUrl}/assets/${emailAssetsDir}/${encodeURIComponent(file)}`
-        }));
+        const genealogyPageUrl = `${baseUrl.replace(/\/$/, '')}/#genealogy`;
         const jadeImageUrl = `${baseUrl}/assets/${emailAssetsDir}/Jade.jpeg`;
         const jadeAttachment = useSendPulse
           ? null
@@ -345,10 +340,10 @@ export async function POST(request: Request) {
             : 'If you would like to opt out of reunion emails, please email kokua@kekoolanireunion.com.';
         };
         const allNotAttending = attendingPeople.length === 0;
-        const pdfLinksHtml = pdfLinks.length
-          ? `<ul>${pdfLinks.map((link) => `<li><a href="${link.href}">${link.label}</a></li>`).join('')}</ul>`
+        const pdfLinksHtml = pdfFiles.length
+          ? `<p>Family record PDFs are available on the reunion site: <a href="${genealogyPageUrl}">View the genealogy section</a>.</p>`
           : '';
-        const pdfLinksText = pdfLinks.length ? pdfLinks.map((link) => `${link.label}: ${link.href}`).join('\n') : '';
+        const pdfLinksText = pdfFiles.length ? `Family record PDFs: ${genealogyPageUrl}` : '';
 
         const tshirtLineItems: string[] = [];
         people.forEach((person) => {
@@ -480,10 +475,7 @@ ${pdfLinksHtml}
         const thankYouText = allNotAttending
           ? `Aloha,\n\nWe will miss you at the reunion. Mahalo for ordering a shirt. Even if you do not plan to attend the reunion, could you please complete the family group record to keep our records updated. Please let me know if you have any questions.\n\n${pdfLinksText}\n\nMe ke aloha nui,\nJade Pumehana Silva`
           : `Aloha,\n\nMahalo for registering to attend E hoʻi ka piko, our Kekoʻolani Reunion 2026! I am looking forward to our time together. In preparation for our reunion, could you please help update our family records by completing the family group record at the link below. If you have any questions, please let me know.\n\n${pdfLinksText}\n\nMe ke aloha nui,\nJade Pumehana Silva`;
-        const thankYouAttachments = [
-          ...pdfAttachments,
-          ...(jadeAttachment ? [jadeAttachment] : [])
-        ];
+        const thankYouAttachments = jadeAttachment ? [jadeAttachment] : [];
 
         if (!tshirtOnly) {
           await Promise.all(
@@ -509,7 +501,7 @@ ${pdfLinksHtml}
       }
     }
     const redirectUrl = `${baseUrl}/success?order=${orderRecord.id}&status=pending&method=${paymentMethod}&amount=${totalCents}`;
-    const stripeEnabled = paymentMethod === 'stripe' && process.env.STRIPE_CHECKOUT_ENABLED === 'true';
+    const stripeEnabled = paymentMethod === 'stripe' && isStripeCheckoutEnabled();
 
     if (!stripeEnabled) {
       const attendeeInserts: AttendeeInsert[] = Array.from({ length: attendingPeople.length }).map(() => ({

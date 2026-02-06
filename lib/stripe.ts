@@ -18,3 +18,15 @@ export function getStripeClient() {
   });
   return stripe;
 }
+
+export function isStripeCheckoutEnabled() {
+  const flag = process.env.STRIPE_CHECKOUT_ENABLED ?? process.env.NEXT_PUBLIC_STRIPE_CHECKOUT_ENABLED;
+  if (typeof flag === 'string') {
+    return flag.trim().toLowerCase() === 'true';
+  }
+  const publishable = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+  if (publishable) {
+    return true;
+  }
+  return Boolean(process.env.STRIPE_SECRET_KEY);
+}

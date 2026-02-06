@@ -421,23 +421,27 @@ function buildPayPalLink(baseLink: string, amountCents?: number | null) {
 
   try {
     const url = new URL(baseLink);
-    if (!url.hostname.includes('paypal.me')) {
+    const hostname = url.hostname.toLowerCase();
+    const isPayPalMe = hostname.includes('paypal.me');
+    const isPayPalComMe = hostname.includes('paypal.com') && url.pathname.toLowerCase().startsWith('/paypalme/');
+    if (!isPayPalMe && !isPayPalComMe) {
       return baseLink;
     }
     const parts = url.pathname.split('/').filter(Boolean);
-    if (!parts.length) {
+    const userParts = isPayPalComMe ? parts.slice(1) : parts;
+    if (!userParts.length) {
       return baseLink;
     }
-    const last = parts[parts.length - 1];
+    const last = userParts[userParts.length - 1];
     const hasAmount = /^\d+(\.\d+)?$/.test(last);
-    const username = hasAmount ? parts.slice(0, -1).join('/') : parts.join('/');
-    url.pathname = `/${username}/${amount}`;
+    const username = hasAmount ? userParts.slice(0, -1).join('/') : userParts.join('/');
+    url.pathname = isPayPalComMe ? `/paypalme/${username}/${amount}` : `/${username}/${amount}`;
     if (!url.searchParams.has('currencyCode')) {
       url.searchParams.set('currencyCode', 'USD');
     }
     return url.toString();
   } catch (error) {
-    if (baseLink.includes('paypal.me')) {
+    if (baseLink.includes('paypal.me') || baseLink.includes('/paypalme/')) {
       return `${baseLink.replace(/\/+$/, '')}/${amount}`;
     }
     return baseLink;
@@ -904,7 +908,7 @@ export default function RegisterForm({
     const trimmed = normalizeHandle(paypalHandle);
     if (!trimmed) return '';
     if (/^https?:\/\//i.test(trimmed)) return trimmed;
-    return `https://www.paypal.com/paypalme/${trimmed}`;
+    return `https://paypal.me/${trimmed}`;
   }, [paypalHandle]);
   const paypalLink = useMemo(() => buildPayPalLink(paypalBaseLink, totalCents), [paypalBaseLink, totalCents]);
   const venmoBaseLink = useMemo(() => {

@@ -5,7 +5,10 @@ import { formatCurrency } from '@/lib/utils';
 import { parseExtras, SITE_DEFAULTS } from '@/lib/siteContent';
 import { SITE_SETTINGS_ID } from '@/lib/constants';
 import { normalizeRegistrationFields } from '@/lib/registrationFields';
+import { isStripeCheckoutEnabled } from '@/lib/stripe';
 import type { Database } from '@/types/supabase';
+
+export const runtime = 'nodejs';
 
 type TicketRow = Database['public']['Tables']['ticket_types']['Row'];
 type QuestionRow = Database['public']['Tables']['registration_questions']['Row'];
@@ -59,7 +62,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: { c
   const canceled = searchParams.canceled === '1';
   const { tickets, questions, extras, registrationFields, eventDates } = await getRegistrationConfig();
   const costSummary = extras.costs;
-  const stripeEnabled = process.env.STRIPE_CHECKOUT_ENABLED === 'true';
+  const stripeEnabled = isStripeCheckoutEnabled();
 
   return (
     <div className="section">
