@@ -1931,6 +1931,18 @@ export default function RegisterForm({
         >
           Submit Registration
         </Button>
+        <p className="rounded-2xl border border-slate-200 bg-sand-50 px-4 py-3 text-sm text-koa">
+          If you require financial assistance to come to the reunion, we would like to help! Please email Jade at{' '}
+          <a className="font-semibold text-brandBlue underline" href="mailto:kokua@kekoolanireunion.com">
+            kokua@kekoolanireunion.com
+          </a>
+          . If you would like to help please donate funds, if you would like to donate in other ways, like airline miles,
+          please email Jade at{' '}
+          <a className="font-semibold text-brandBlue underline" href="mailto:kokua@kekoolanireunion.com">
+            kokua@kekoolanireunion.com
+          </a>
+          .
+        </p>
         <div className="sr-only" aria-hidden="true">
           <Label htmlFor={HONEYPOT_KEY}>Leave this field blank</Label>
           <Input id={HONEYPOT_KEY} autoComplete="off" tabIndex={-1} {...register(HONEYPOT_KEY)} />
