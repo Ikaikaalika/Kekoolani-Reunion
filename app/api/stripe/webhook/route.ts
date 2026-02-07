@@ -74,7 +74,7 @@ export async function POST(request: Request) {
     const ticketIds = orderItemRecords.map((item) => item.ticket_type_id);
 
     if (ticketIds.length) {
-      const { error: inventoryError } = await (supabaseAdmin as any).rpc('decrement_ticket_inventory', {
+      const { error: inventoryError } = await supabaseAdmin.rpc('decrement_ticket_inventory', {
         p_order_id: orderId
       });
       if (inventoryError) {

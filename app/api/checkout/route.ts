@@ -282,7 +282,7 @@ export async function POST(request: Request) {
       quantity: item.quantity
     }));
 
-    const { data: order, error: orderError } = await (supabaseAdmin as any).rpc('create_order_with_items', {
+    const { data: order, error: orderError } = await supabaseAdmin.rpc('create_order_with_items', {
       p_purchaser_email: parsed.purchaser_email,
       p_purchaser_name: parsed.purchaser_name,
       p_status: 'pending',

@@ -130,12 +130,8 @@ function usePrefersReducedMotion() {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     const update = () => setPrefersReducedMotion(mediaQuery.matches);
     update();
-    if ('addEventListener' in mediaQuery) {
-      mediaQuery.addEventListener('change', update);
-      return () => mediaQuery.removeEventListener('change', update);
-    }
-    mediaQuery.addListener(update);
-    return () => mediaQuery.removeListener(update);
+    mediaQuery.addEventListener('change', update);
+    return () => mediaQuery.removeEventListener('change', update);
   }, []);
 
   return prefersReducedMotion;

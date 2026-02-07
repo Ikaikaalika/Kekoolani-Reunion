@@ -236,7 +236,26 @@ export interface Database {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      create_order_with_items: {
+        Args: {
+          p_purchaser_email: string;
+          p_purchaser_name: string;
+          p_status: string;
+          p_total_cents: number;
+          p_form_answers: Json;
+          p_payment_method: string;
+          p_items: Json;
+        };
+        Returns: Database['public']['Tables']['orders']['Row'];
+      };
+      decrement_ticket_inventory: {
+        Args: {
+          p_order_id: string;
+        };
+        Returns: void;
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
