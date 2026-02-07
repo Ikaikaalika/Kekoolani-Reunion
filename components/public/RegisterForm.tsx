@@ -1789,7 +1789,7 @@ export default function RegisterForm({
                   disabled={isZeroBalance}
                   {...register('payment_method')}
                 />
-                <span>Stripe</span>
+                <span>Pay with Card (Transaction Fees Apply)</span>
               </label>
             )}
             <label
