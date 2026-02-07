@@ -25,7 +25,7 @@ const SAME_CONTACT_KEY = 'same_contact';
 const SHOW_NAME_KEY = 'show_name';
 const SHOW_PHOTO_KEY = 'show_photo';
 const PHOTO_UPLOAD_KEY = 'photo_upload';
-const HONEYPOT_KEY = 'website';
+const HONEYPOT_KEY = 'website' as const;
 const TSHIRT_CATEGORY_KEY = 'tshirt_category';
 const TSHIRT_STYLE_KEY = 'tshirt_style';
 const TSHIRT_SIZE_KEY = 'tshirt_size';
@@ -1933,7 +1933,7 @@ export default function RegisterForm({
         </Button>
         <div className="sr-only" aria-hidden="true">
           <Label htmlFor={HONEYPOT_KEY}>Leave this field blank</Label>
-          <Input id={HONEYPOT_KEY} autoComplete="off" tabIndex={-1} {...register(HONEYPOT_KEY as const)} />
+          <Input id={HONEYPOT_KEY} autoComplete="off" tabIndex={-1} {...register(HONEYPOT_KEY)} />
         </div>
       </form>
     </div>
