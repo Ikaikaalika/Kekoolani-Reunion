@@ -38,7 +38,7 @@ export default function HeroCarousel({ images, intervalMs = 7000 }: HeroCarousel
     }, intervalMs);
 
     return () => window.clearInterval(interval);
-  }, [advance, activeIsVideo, intervalMs, sanitizedImages.length]);
+  }, [advance, activeIsVideo, intervalMs, isPaused, sanitizedImages.length]);
 
   useEffect(() => {
     videoRefs.current.forEach((video, index) => {
