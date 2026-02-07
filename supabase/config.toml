@@ -1,1 +1,16 @@
 project_id = "kekoolani-reunion"
+
+[api]
+port = 54330
+
+[db]
+port = 55432
+
+[analytics]
+port = 54329
+
+[inbucket]
+port = 54331
+
+[studio]
+port = 54332
