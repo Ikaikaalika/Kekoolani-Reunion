@@ -67,6 +67,30 @@ export default async function PublicLayout({ children }: { children: ReactNode }
               ))}
             </nav>
             <div className="flex items-center gap-3">
+              <details className="relative md:hidden">
+                <summary
+                  className="flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-full border border-slate-200 bg-white text-sand-700"
+                  aria-label="Open navigation menu"
+                >
+                  <span className="flex h-5 w-5 flex-col justify-between">
+                    <span className="block h-0.5 w-full rounded-full bg-sand-700" />
+                    <span className="block h-0.5 w-full rounded-full bg-sand-700" />
+                    <span className="block h-0.5 w-full rounded-full bg-sand-700" />
+                  </span>
+                </summary>
+                <div className="absolute right-0 mt-3 w-56 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-soft backdrop-blur">
+                  <nav className="flex flex-col gap-3 text-sm text-koa">
+                    {navLinks.map((link) => (
+                      <a key={link.href} href={link.href} className="transition-colors hover:text-black">
+                        {link.label}
+                      </a>
+                    ))}
+                    <a href="/register" className="btn btn-large text-center">
+                      Register Now
+                    </a>
+                  </nav>
+                </div>
+              </details>
               <a href="/register" className="btn btn-large">
                 Register Now
               </a>
@@ -150,7 +174,8 @@ export default async function PublicLayout({ children }: { children: ReactNode }
             </div>
           </div>
           <div className="mt-12 border-t border-white/10 pt-8 text-center text-sm text-white/60">
-            © {new Date().getFullYear()} Kekoʻolani Family Reunion. All rights reserved.
+            <p>Made with Aloha by Tyler Alika Gee.</p>
+            <p className="mt-2">© {new Date().getFullYear()} Kekoʻolani Family Reunion. All rights reserved.</p>
           </div>
         </div>
       </footer>

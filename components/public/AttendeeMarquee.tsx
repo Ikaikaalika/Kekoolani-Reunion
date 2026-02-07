@@ -33,6 +33,7 @@ function getInitials(name: string) {
 }
 
 export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
+  const prefersReducedMotion = usePrefersReducedMotion();
   const [isPaused, setIsPaused] = useState(false);
   const [activeBubbleId, setActiveBubbleId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -89,9 +90,17 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
     } as CSSProperties;
   };
 
+  const isMotionPaused = isPaused;
+
   useEffect(() => {
-    pausedRef.current = isPaused;
-  }, [isPaused]);
+    pausedRef.current = isMotionPaused;
+  }, [isMotionPaused]);
+
+  useEffect(() => {
+    if (prefersReducedMotion) {
+      setIsPaused(true);
+    }
+  }, [prefersReducedMotion]);
 
   useEffect(() => {
     if (isEmpty) return;
@@ -180,7 +189,7 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
     return wrapped < 0 ? wrapped + width : wrapped;
   };
 
-  const handleBubbleClick = (bubbleId: string) => (event: MouseEvent<HTMLDivElement>) => {
+  const handleBubbleClick = (bubbleId: string) => (event: MouseEvent<HTMLButtonElement>) => {
     if (Date.now() - lastDragEndRef.current < 200) {
       return;
     }
@@ -262,16 +271,29 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
       No registrants yet. Be the first to register and share your family.
     </div>
   ) : (
-    <div
-      ref={marqueeRef}
-      className={`marquee marquee--js${isPaused ? ' marquee--paused' : ''}${isDragging ? ' marquee--dragging' : ''}`}
-      onClick={handleSectionClick}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerUp}
-    >
-      <div ref={topTrackRef} className="marquee-track marquee-track-top">
+    <div className="relative">
+      <div className="absolute right-6 top-0 z-10">
+        <button
+          type="button"
+          className="rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-xs uppercase tracking-[0.2em] text-sand-700 shadow-soft"
+          onClick={() => setIsPaused((prev) => !prev)}
+          aria-pressed={isPaused}
+        >
+          {isMotionPaused ? 'Play' : 'Pause'}
+        </button>
+      </div>
+      <div
+        ref={marqueeRef}
+        className={`marquee marquee--js${isMotionPaused ? ' marquee--paused' : ''}${
+          isDragging ? ' marquee--dragging' : ''
+        }`}
+        onClick={handleSectionClick}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+      >
+        <div ref={topTrackRef} className="marquee-track marquee-track-top">
         {loopItems.map((attendee, index) => {
           const keyBase = attendee.name || attendee.photoUrl || 'attendee';
           const bubbleId = `top-${index}-${keyBase}`;
@@ -279,12 +301,16 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
             activeBubbleId === bubbleId ? ' marquee-bubble--active' : ''
           }`;
           const lineage = attendee.lineage ?? '';
+          const accessibleLabel = attendee.showName ? attendee.name : 'Reunion attendee';
           return (
-            <div
+            <button
               key={`${keyBase}-${index}`}
+              type="button"
               className={bubbleClass}
               style={getBubbleStyle(index, 0)}
               onClick={handleBubbleClick(bubbleId)}
+              aria-pressed={activeBubbleId === bubbleId}
+              aria-label={accessibleLabel}
             >
               {attendee.showPhoto && (
                 <div className="marquee-bubble-core animate-float">
@@ -306,7 +332,7 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
                   {attendee.name}
                 </span>
               )}
-            </div>
+            </button>
           );
         })}
         {loopItems.map((attendee, index) => {
@@ -316,13 +342,17 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
             activeBubbleId === bubbleId ? ' marquee-bubble--active' : ''
           }`;
           const lineage = attendee.lineage ?? '';
+          const accessibleLabel = attendee.showName ? attendee.name : 'Reunion attendee';
           return (
-            <div
+            <button
               key={`${keyBase}-duplicate-${index}`}
+              type="button"
               className={bubbleClass}
               style={getBubbleStyle(index, 1)}
               aria-hidden="true"
+              tabIndex={-1}
               onClick={handleBubbleClick(bubbleId)}
+              aria-label={accessibleLabel}
             >
               {attendee.showPhoto && (
                 <div className="marquee-bubble-core animate-float">
@@ -340,7 +370,7 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
                   {attendee.name}
                 </span>
               )}
-            </div>
+            </button>
           );
         })}
       </div>
@@ -352,12 +382,16 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
             activeBubbleId === bubbleId ? ' marquee-bubble--active' : ''
           }`;
           const lineage = attendee.lineage ?? '';
+          const accessibleLabel = attendee.showName ? attendee.name : 'Reunion attendee';
           return (
-            <div
+            <button
               key={`${keyBase}-alt-${index}`}
+              type="button"
               className={bubbleClass}
               style={getBubbleStyle(index, 2)}
               onClick={handleBubbleClick(bubbleId)}
+              aria-pressed={activeBubbleId === bubbleId}
+              aria-label={accessibleLabel}
             >
               {attendee.showPhoto && (
                 <div className="marquee-bubble-core animate-float">
@@ -379,7 +413,7 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
                   {attendee.name}
                 </span>
               )}
-            </div>
+            </button>
           );
         })}
         {reverseItems.map((attendee, index) => {
@@ -389,13 +423,17 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
             activeBubbleId === bubbleId ? ' marquee-bubble--active' : ''
           }`;
           const lineage = attendee.lineage ?? '';
+          const accessibleLabel = attendee.showName ? attendee.name : 'Reunion attendee';
           return (
-            <div
+            <button
               key={`${keyBase}-alt-duplicate-${index}`}
+              type="button"
               className={bubbleClass}
               style={getBubbleStyle(index, 3)}
               aria-hidden="true"
+              tabIndex={-1}
               onClick={handleBubbleClick(bubbleId)}
+              aria-label={accessibleLabel}
             >
               {attendee.showPhoto && (
                 <div className="marquee-bubble-core animate-float">
@@ -413,10 +451,30 @@ export default function AttendeeMarquee({ attendees }: AttendeeMarqueeProps) {
                   {attendee.name}
                 </span>
               )}
-            </div>
+            </button>
           );
         })}
       </div>
+      </div>
     </div>
   );
+}
+
+function usePrefersReducedMotion() {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setPrefersReducedMotion(mediaQuery.matches);
+    update();
+    if ('addEventListener' in mediaQuery) {
+      mediaQuery.addEventListener('change', update);
+      return () => mediaQuery.removeEventListener('change', update);
+    }
+    mediaQuery.addListener(update);
+    return () => mediaQuery.removeListener(update);
+  }, []);
+
+  return prefersReducedMotion;
 }

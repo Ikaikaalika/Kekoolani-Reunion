@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from 'next/link';
+import Image from 'next/image';
 import path from 'path';
 import { readdirSync } from 'fs';
 import Countdown from '@/components/public/Countdown';
@@ -8,12 +9,11 @@ import AttendeeMarquee from '@/components/public/AttendeeMarquee';
 import SectionRenderer from '@/components/public/SectionRenderer';
 import { createSupabaseServerClient } from '@/lib/supabaseClient';
 import { SITE_SETTINGS_ID } from '@/lib/constants';
-import { aboutHtmlToText, getSiteExtras, getSiteSchedule, SITE_DEFAULTS } from '@/lib/siteContent';
+import { aboutHtmlToText, getSiteExtras, getSiteSchedule, SITE_DEFAULTS, DEFAULT_EXTRAS } from '@/lib/siteContent';
 import { normalizeSectionList } from '@/lib/sections';
 import type { Database } from '@/types/supabase';
 
 const HERO_IMAGE = '/assets/LoiKalo1.jpg';
-const COUNTDOWN_TARGET = '2026-07-10T10:00:00-10:00';
 
 const scheduleItemPattern =
   /^(\d{1,2}(?::\d{2})?(?:\s*(?:a\.?m\.?|p\.?m\.?|a|p))?(?:\s*[-\u2013\u2014]\s*\d{1,2}(?::\d{2})?(?:\s*(?:a\.?m\.?|p\.?m\.?|a|p))?)?)\s+(.+)$/i;
@@ -201,6 +201,10 @@ function getGenealogyPdfLinks() {
   }
 }
 
+function isLocalAsset(src?: string | null) {
+  return typeof src === 'string' && src.startsWith('/');
+}
+
 export default async function HomePage() {
   const [attendeeHighlights, siteContent] = await Promise.all([getAttendeeHighlights(), getSiteContent()]);
   const { site, extras, schedule, welcomeParagraphs, sections } = siteContent;
@@ -228,6 +232,8 @@ export default async function HomePage() {
 
   const costIntro = extras.cost_intro ?? '';
   const costTotal = extras.cost_total ?? '';
+  const registrationDeadline = extras.registration_deadline ?? DEFAULT_EXTRAS.registration_deadline ?? '';
+  const countdownTarget = extras.countdown_target ?? DEFAULT_EXTRAS.countdown_target ?? '';
   const lodgingParagraphs = extras.lodging ?? [];
   const lodgingLinks = extras.lodging_links ?? [];
   const lodgingHotelsHeading = extras.lodging_hotels_heading ?? '';
@@ -241,12 +247,13 @@ export default async function HomePage() {
     <div>
       <section className="section hero">
         <div className="absolute inset-0">
-          <img
+          <Image
             src={HERO_IMAGE}
             alt="Waipiʻo Valley"
-            className="h-full w-full object-cover"
-            loading="eager"
-            fetchPriority="high"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-emerald-900/50 to-emerald-700/30" />
         </div>
@@ -275,7 +282,11 @@ export default async function HomePage() {
                 </a>
               ) : null}
             </div>
-            <p className="text-lg font-semibold text-white md:text-xl">Deadline to Register is March 31, 2026.</p>
+            {registrationDeadline ? (
+              <p className="text-lg font-semibold text-white md:text-xl">
+                Deadline to Register is {registrationDeadline}.
+              </p>
+            ) : null}
           </div>
           <div>
             <div className="hero-panel">
@@ -297,7 +308,7 @@ export default async function HomePage() {
               <div className="mt-6 rounded-2xl bg-white/15 p-4 text-white shadow-soft">
                 <p className="mono text-xs uppercase tracking-[0.3em] text-white/70">Countdown</p>
                 <div className="mt-3">
-                  <Countdown targetIso={COUNTDOWN_TARGET} fallback={eventDates} />
+                  <Countdown targetIso={countdownTarget} fallback={eventDates} />
                 </div>
               </div>
             </div>
@@ -451,11 +462,21 @@ export default async function HomePage() {
             <div className="card shadow-soft p-8">
               <div className="overflow-hidden rounded-2xl border border-sand-200 bg-white/80">
                 {genealogyImage?.src ? (
-                  <img
-                    src={genealogyImage.src}
-                    alt={genealogyImage.alt ?? 'Nawai and Emily Kekoʻolani'}
-                    className="w-full object-cover"
-                  />
+                  isLocalAsset(genealogyImage.src) ? (
+                    <Image
+                      src={genealogyImage.src}
+                      alt={genealogyImage.alt ?? 'Nawai and Emily Kekoʻolani'}
+                      width={1200}
+                      height={800}
+                      className="w-full object-cover"
+                    />
+                  ) : (
+                    <img
+                      src={genealogyImage.src}
+                      alt={genealogyImage.alt ?? 'Nawai and Emily Kekoʻolani'}
+                      className="w-full object-cover"
+                    />
+                  )
                 ) : (
                   <div className="flex h-64 items-center justify-center text-sm text-sand-400">
                     Photo coming soon

@@ -8,7 +8,6 @@ import type { Database } from '@/types/supabase';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 type OrderItemRow = Database['public']['Tables']['order_items']['Row'];
-type TicketRow = Database['public']['Tables']['ticket_types']['Row'];
 type AttendeeInsert = Database['public']['Tables']['attendees']['Insert'];
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -75,21 +74,11 @@ export async function POST(request: Request) {
     const ticketIds = orderItemRecords.map((item) => item.ticket_type_id);
 
     if (ticketIds.length) {
-      const { data: tickets } = await supabaseAdmin
-        .from('ticket_types')
-        .select('id, inventory')
-        .in('id', ticketIds);
-
-      const ticketsById = new Map(((tickets ?? []) as TicketRow[]).map((ticket) => [ticket.id, ticket] as const));
-
-      for (const item of orderItemRecords) {
-        const ticket = ticketsById.get(item.ticket_type_id);
-        if (ticket && ticket.inventory !== null) {
-          await (supabaseAdmin
-            .from('ticket_types') as any)
-            .update({ inventory: Math.max(0, ticket.inventory - item.quantity) })
-            .eq('id', ticket.id);
-        }
+      const { error: inventoryError } = await supabaseAdmin.rpc('decrement_ticket_inventory', {
+        p_order_id: orderId
+      });
+      if (inventoryError) {
+        console.error('[stripe-webhook] inventory update failed', inventoryError);
       }
     }
 

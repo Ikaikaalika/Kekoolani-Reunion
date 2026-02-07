@@ -17,19 +17,59 @@ import type { Database } from '@/types/supabase';
 
 type TicketRow = Database['public']['Tables']['ticket_types']['Row'];
 type OrderRow = Database['public']['Tables']['orders']['Row'];
-type OrderInsert = Database['public']['Tables']['orders']['Insert'];
-type OrderItemInsert = Database['public']['Tables']['order_items']['Insert'];
 type AttendeeInsert = Database['public']['Tables']['attendees']['Insert'];
+type OrderItemPayload = { ticket_type_id: string; quantity: number };
+
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const RATE_LIMIT_MAX = 20;
+const rateLimitCache = new Map<string, { count: number; start: number }>();
+
+function getClientIp(request: Request) {
+  const forwardedFor = request.headers.get('x-forwarded-for');
+  if (forwardedFor) {
+    return forwardedFor.split(',')[0]?.trim();
+  }
+  return request.headers.get('x-real-ip') ?? null;
+}
+
+function isRateLimited(key: string) {
+  const now = Date.now();
+  const entry = rateLimitCache.get(key);
+  if (!entry) {
+    rateLimitCache.set(key, { count: 1, start: now });
+    return false;
+  }
+  if (now - entry.start > RATE_LIMIT_WINDOW_MS) {
+    rateLimitCache.set(key, { count: 1, start: now });
+    return false;
+  }
+  entry.count += 1;
+  rateLimitCache.set(key, entry);
+  return entry.count > RATE_LIMIT_MAX;
+}
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+    if (ip && isRateLimited(ip)) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+    }
+
     const body = await request.json();
     const parsed = checkoutSchema.parse(body);
     const paymentMethod = parsed.payment_method;
 
     const lineItems = (parsed.tickets ?? []).filter((ticket) => ticket.quantity > 0);
 
-    const answers = parsed.answers ?? {};
+    const answers = (parsed.answers ?? {}) as Record<string, unknown>;
+    const botField = typeof answers.website === 'string' ? answers.website.trim() : '';
+    if (botField) {
+      return NextResponse.json({ error: 'Unable to submit registration.' }, { status: 400 });
+    }
+    if ('website' in answers) {
+      delete answers.website;
+    }
+
     const people = getPeopleFromAnswers(answers);
     const tshirtOnly = Boolean((answers as Record<string, unknown>)?.tshirt_only);
     const attendingPeople = people.filter((person) => isParticipantAttending(person));
@@ -237,20 +277,20 @@ export async function POST(request: Request) {
       totalCents += donationCents;
     }
 
-    const orderInsert: OrderInsert = {
-      purchaser_email: parsed.purchaser_email,
-      purchaser_name: parsed.purchaser_name,
-      status: 'pending',
-      total_cents: totalCents,
-      form_answers: parsed.answers ?? {},
-      payment_method: paymentMethod
-    };
+    const orderItemInserts: OrderItemPayload[] = orderItems.map((item) => ({
+      ticket_type_id: item.ticket_type_id,
+      quantity: item.quantity
+    }));
 
-    const { data: order, error: orderError } = await (supabaseAdmin
-      .from('orders') as any)
-      .insert([orderInsert])
-      .select()
-      .single();
+    const { data: order, error: orderError } = await supabaseAdmin.rpc('create_order_with_items', {
+      p_purchaser_email: parsed.purchaser_email,
+      p_purchaser_name: parsed.purchaser_name,
+      p_status: 'pending',
+      p_total_cents: totalCents,
+      p_form_answers: answers,
+      p_payment_method: paymentMethod,
+      p_items: orderItemInserts
+    });
 
     if (orderError || !order) {
       console.error(orderError);
@@ -259,24 +299,7 @@ export async function POST(request: Request) {
 
     const orderRecord = order as OrderRow;
 
-    const orderItemInserts: OrderItemInsert[] = orderItems.map((item) => ({
-      order_id: orderRecord.id,
-      ticket_type_id: item.ticket_type_id,
-      quantity: item.quantity
-    }));
-
-    const { error: itemsError } = await (supabaseAdmin.from('order_items') as any).insert(orderItemInserts);
-
-    if (itemsError) {
-      console.error(itemsError);
-      throw new Error('Unable to create order items');
-    }
-
-    const origin = request.headers.get('origin');
-    const forwardedHost = request.headers.get('x-forwarded-host') ?? request.headers.get('host');
-    const forwardedProto = request.headers.get('x-forwarded-proto') ?? 'https';
-    const fallbackHost = forwardedHost ? `${forwardedProto}://${forwardedHost}` : 'http://localhost:3000';
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? origin ?? fallbackHost;
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || 'http://localhost:3000';
 
     const cleanEmail = (value: unknown) =>
       typeof value === 'string' && value.includes('@') ? value.trim().toLowerCase() : null;

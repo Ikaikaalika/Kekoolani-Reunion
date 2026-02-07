@@ -71,6 +71,8 @@ function normalizeExtras(extras: SiteExtras) {
     costs,
     costIntro: extras.cost_intro ?? DEFAULT_EXTRAS.cost_intro ?? '',
     costTotal: extras.cost_total ?? DEFAULT_EXTRAS.cost_total ?? '',
+    registrationDeadline: extras.registration_deadline ?? DEFAULT_EXTRAS.registration_deadline ?? '',
+    countdownTarget: extras.countdown_target ?? DEFAULT_EXTRAS.countdown_target ?? '',
     paypalHandle: extras.paypal_handle ?? DEFAULT_EXTRAS.paypal_handle ?? '',
     venmoHandle: extras.venmo_handle ?? DEFAULT_EXTRAS.venmo_handle ?? '',
     stripeAccountId: extras.stripe_account_id ?? DEFAULT_EXTRAS.stripe_account_id ?? '',
@@ -106,6 +108,8 @@ function toExtrasPayload(params: {
   costs: CostFormItem[];
   costIntro: string;
   costTotal: string;
+  registrationDeadline: string;
+  countdownTarget: string;
   paypalHandle: string;
   venmoHandle: string;
   stripeAccountId: string;
@@ -140,6 +144,8 @@ function toExtrasPayload(params: {
 
   const costIntro = params.costIntro.trim();
   const costTotal = params.costTotal.trim();
+  const registrationDeadline = params.registrationDeadline.trim();
+  const countdownTarget = params.countdownTarget.trim();
   const paypalHandle = params.paypalHandle.trim();
   const venmoHandle = params.venmoHandle.trim();
   const stripeAccountId = params.stripeAccountId.trim();
@@ -164,6 +170,8 @@ function toExtrasPayload(params: {
     costs,
     cost_intro: costIntro || DEFAULT_EXTRAS.cost_intro,
     cost_total: costTotal || DEFAULT_EXTRAS.cost_total,
+    registration_deadline: registrationDeadline || DEFAULT_EXTRAS.registration_deadline,
+    countdown_target: countdownTarget || DEFAULT_EXTRAS.countdown_target,
     paypal_handle: paypalHandle || DEFAULT_EXTRAS.paypal_handle,
     venmo_handle: venmoHandle || DEFAULT_EXTRAS.venmo_handle,
     stripe_account_id: stripeAccountId || DEFAULT_EXTRAS.stripe_account_id,
@@ -200,6 +208,8 @@ export default function ContentForm({ site, action }: ContentFormProps) {
   const [costs, setCosts] = useState<CostFormItem[]>(initialExtras.costs);
   const [costIntro, setCostIntro] = useState(initialExtras.costIntro);
   const [costTotal, setCostTotal] = useState(initialExtras.costTotal);
+  const [registrationDeadline, setRegistrationDeadline] = useState(initialExtras.registrationDeadline);
+  const [countdownTarget, setCountdownTarget] = useState(initialExtras.countdownTarget);
   const [paypalHandle, setPayPalHandle] = useState(initialExtras.paypalHandle);
   const [venmoHandle, setVenmoHandle] = useState(initialExtras.venmoHandle);
   const [stripeAccountId] = useState(initialExtras.stripeAccountId);
@@ -224,6 +234,8 @@ export default function ContentForm({ site, action }: ContentFormProps) {
           costs,
           costIntro,
           costTotal,
+          registrationDeadline,
+          countdownTarget,
           paypalHandle,
           venmoHandle,
           stripeAccountId,
@@ -244,6 +256,8 @@ export default function ContentForm({ site, action }: ContentFormProps) {
       costs,
       costIntro,
       costTotal,
+      registrationDeadline,
+      countdownTarget,
       paypalHandle,
       venmoHandle,
       stripeAccountId,
@@ -397,6 +411,26 @@ export default function ContentForm({ site, action }: ContentFormProps) {
           <div className="space-y-2">
             <Label htmlFor="location">Locations</Label>
             <Input id="location" name="location" defaultValue={site.location ?? ''} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="registration_deadline">Registration Deadline</Label>
+            <Input
+              id="registration_deadline"
+              value={registrationDeadline}
+              onChange={(event) => setRegistrationDeadline(event.target.value)}
+              placeholder="March 31, 2026"
+            />
+            <p className="text-xs text-koa">Shown on the homepage and registration page.</p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="countdown_target">Countdown Target (ISO)</Label>
+            <Input
+              id="countdown_target"
+              value={countdownTarget}
+              onChange={(event) => setCountdownTarget(event.target.value)}
+              placeholder="2026-07-10T10:00:00-10:00"
+            />
+            <p className="text-xs text-koa">Used for the homepage countdown timer.</p>
           </div>
         </div>
         <div className="space-y-2">

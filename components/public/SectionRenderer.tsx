@@ -1,5 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
+import Image from 'next/image';
 import type { DynamicSection, SectionContentMap, SectionType } from '@/lib/sections';
+import { sanitizeCustomHtml } from '@/lib/sanitizeHtml';
 
 interface SectionRendererProps {
   section: DynamicSection;
@@ -57,7 +59,17 @@ function PhotoGallerySection({ section }: { section: DynamicSection<'photo_galle
       <div className="grid gap-4 md:grid-cols-3">
         {section.content.images.map((image, index) => (
           <div key={`${image.src}-${index}`} className="card shadow-soft overflow-hidden">
-            <img src={image.src} alt={image.alt ?? 'Gallery image'} className="h-56 w-full object-cover" />
+            {image.src.startsWith('/') ? (
+              <Image
+                src={image.src}
+                alt={image.alt ?? 'Gallery image'}
+                width={600}
+                height={400}
+                className="h-56 w-full object-cover"
+              />
+            ) : (
+              <img src={image.src} alt={image.alt ?? 'Gallery image'} className="h-56 w-full object-cover" />
+            )}
           </div>
         ))}
       </div>
@@ -146,7 +158,10 @@ function CTASection({ section }: { section: DynamicSection<'cta'> }) {
 function CustomHtmlSection({ section }: { section: DynamicSection<'custom_html'> }) {
   return (
     <SectionWrapper section={section}>
-      <div className="prose prose-lg prose-slate max-w-none text-koa" dangerouslySetInnerHTML={{ __html: section.content.html }} />
+      <div
+        className="prose prose-lg prose-slate max-w-none text-koa"
+        dangerouslySetInnerHTML={{ __html: sanitizeCustomHtml(section.content.html) }}
+      />
     </SectionWrapper>
   );
 }

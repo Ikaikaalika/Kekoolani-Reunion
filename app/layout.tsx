@@ -15,7 +15,12 @@ const jetBrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: 'Kekoʻolani Family Reunion',
-  description: 'Celebrate family in Hilo, Hawaiʻi with the Kekoʻolani family gathering.'
+  description: 'Celebrate family in Hilo, Hawaiʻi with the Kekoʻolani family gathering.',
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true
+  }
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

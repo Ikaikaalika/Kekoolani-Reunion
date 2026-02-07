@@ -25,13 +25,14 @@ const SAME_CONTACT_KEY = 'same_contact';
 const SHOW_NAME_KEY = 'show_name';
 const SHOW_PHOTO_KEY = 'show_photo';
 const PHOTO_UPLOAD_KEY = 'photo_upload';
+const HONEYPOT_KEY = 'website';
 const TSHIRT_CATEGORY_KEY = 'tshirt_category';
 const TSHIRT_STYLE_KEY = 'tshirt_style';
 const TSHIRT_SIZE_KEY = 'tshirt_size';
 const TSHIRT_QUANTITY_KEY = 'tshirt_quantity';
 const CONTACT_KEYS = ['email', 'phone', 'address'];
 
-const ALWAYS_REQUIRED_KEYS = new Set([PRIMARY_NAME_KEY, PRIMARY_EMAIL_KEY, AGE_KEY]);
+const ALWAYS_REQUIRED_KEYS = new Set([PRIMARY_NAME_KEY]);
 const OPTIONAL_CHECKBOX_KEYS = new Set([SAME_CONTACT_KEY, SHOW_NAME_KEY, SHOW_PHOTO_KEY]);
 const HIDDEN_KEYS = new Set([PHOTO_UPLOAD_KEY]);
 
@@ -145,6 +146,7 @@ type FormSchema = {
   tshirt_only?: boolean;
   donation_amount?: number;
   donation_note?: string;
+  website?: string;
 };
 
 type Ticket = {
@@ -187,7 +189,13 @@ function buildFieldSchema(field: RegistrationField) {
     field.field_key === TSHIRT_STYLE_KEY ||
     field.field_key === TSHIRT_SIZE_KEY ||
     field.field_key === TSHIRT_QUANTITY_KEY;
-  const required = !isTshirtField && (ALWAYS_REQUIRED_KEYS.has(field.field_key) || field.required);
+  const isEmailField = field.field_key === PRIMARY_EMAIL_KEY;
+  const isAgeField = field.field_key === AGE_KEY;
+  const required =
+    !isTshirtField &&
+    !isEmailField &&
+    !isAgeField &&
+    (ALWAYS_REQUIRED_KEYS.has(field.field_key) || field.required);
   const isOptionalCheckbox = OPTIONAL_CHECKBOX_KEYS.has(field.field_key);
   const requiredMessage = `${field.label} is required`;
 
@@ -238,6 +246,7 @@ function buildPersonSchema(fields: RegistrationField[]) {
       shape[field.field_key] = schema;
     }
   });
+  shape[ATTENDING_KEY] = z.boolean().optional();
 
   const lineageField = fieldMap.get(LINEAGE_KEY);
   const lineageOtherField = fieldMap.get(LINEAGE_OTHER_KEY);
@@ -329,21 +338,47 @@ const tshirtOrderSchema = z.object({
 });
 
 function buildFormSchema(personSchema: z.ZodTypeAny) {
-  return z.object({
-    tickets: z.array(
-      z.object({
-        ticket_type_id: z.string(),
-        quantity: z.coerce.number().int().min(0)
-      })
-    ),
-    people: z.array(personSchema).min(1).max(30),
-    photo_urls: z.array(z.string().url().nullable()).optional(),
-    tshirt_orders: z.array(tshirtOrderSchema).optional(),
-    payment_method: z.enum(['stripe', 'paypal', 'venmo', 'check']),
-    tshirt_only: z.boolean().optional(),
-    donation_amount: z.preprocess(preprocessNumber, z.number().min(0)).optional(),
-    donation_note: z.string().optional()
-  });
+  return z
+    .object({
+      tickets: z.array(
+        z.object({
+          ticket_type_id: z.string(),
+          quantity: z.coerce.number().int().min(0)
+        })
+      ),
+      people: z.array(personSchema).min(1).max(30),
+      photo_urls: z.array(z.string().url().nullable()).optional(),
+      tshirt_orders: z.array(tshirtOrderSchema).optional(),
+      payment_method: z.enum(['stripe', 'paypal', 'venmo', 'check']),
+      tshirt_only: z.boolean().optional(),
+      donation_amount: z.preprocess(preprocessNumber, z.number().min(0)).optional(),
+      donation_note: z.string().optional(),
+      website: z.string().optional()
+    })
+    .superRefine((data, ctx) => {
+      const tshirtOnly = Boolean(data.tshirt_only);
+      data.people.forEach((person, index) => {
+        const email = typeof person?.[PRIMARY_EMAIL_KEY] === 'string' ? person[PRIMARY_EMAIL_KEY].trim() : '';
+        if (index === 0 && !email) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Primary contact email is required',
+            path: ['people', index, PRIMARY_EMAIL_KEY]
+          });
+        }
+
+        const attending = person?.[ATTENDING_KEY] !== false;
+        const age = person?.[AGE_KEY];
+        const hasAge = typeof age === 'number' && Number.isFinite(age);
+        if (!tshirtOnly && attending && !hasAge) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Age is required for attending participants',
+            path: ['people', index, AGE_KEY]
+          });
+        }
+      });
+    });
 }
 
 function createEmptyPerson(fields: RegistrationField[]) {
@@ -463,7 +498,7 @@ export default function RegisterForm({
 }: RegisterFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [pendingNavigation, setPendingNavigation] = useState<PendingNavigation>(null);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [uploadErrors, setUploadErrors] = useState<Record<number, string>>({});
@@ -535,6 +570,8 @@ export default function RegisterForm({
     watch,
     getValues,
     setValue,
+    setError: setFieldError,
+    clearErrors,
     formState: { errors, isDirty }
   } = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
@@ -546,7 +583,8 @@ export default function RegisterForm({
       payment_method: 'check',
       tshirt_only: false,
       donation_amount: 0,
-      donation_note: ''
+      donation_note: '',
+      website: ''
     }
   });
 
@@ -571,6 +609,7 @@ export default function RegisterForm({
   const tshirtOnly = useWatch({ control, name: 'tshirt_only' });
   const donationAmount = watch('donation_amount');
   const paymentMethod = useWatch({ control, name: 'payment_method' });
+  const formErrorMessages = useMemo(() => getFormErrorMessages(errors, formError), [errors, formError]);
   const peopleRecords = useMemo(
     () => (Array.isArray(people) ? (people as Record<string, unknown>[]) : []),
     [people]
@@ -919,33 +958,47 @@ export default function RegisterForm({
   }, [venmoHandle]);
 
   const onSubmit = handleSubmit(async (data) => {
-    setError(null);
+    setFormError(null);
     setLoading(true);
     try {
+      if (data.website && data.website.trim()) {
+        setFormError('Unable to submit registration. Please contact the reunion team.');
+        setLoading(false);
+        return;
+      }
       if (attendingPeople.length > 0 && !hasAgeTickets) {
-        setError('Registration tickets are not available yet. Please check back soon.');
+        setFormError('Registration tickets are not available yet. Please check back soon.');
         setLoading(false);
         return;
       }
       if (missingAgeEntry) {
-        setError('Please enter an age for every participant.');
+        const missingIndex = peopleRecords.findIndex((person) => person === missingAgeEntry);
+        if (missingIndex >= 0) {
+          setFieldError(`people.${missingIndex}.${AGE_KEY}` as const, {
+            type: 'manual',
+            message: 'Age is required for attending participants'
+          });
+        }
+        setFormError('Please enter an age for every attending participant.');
         setLoading(false);
         return;
       }
       if (unmatchedAgeEntry) {
         const age = getParticipantAge(unmatchedAgeEntry as Record<string, unknown>);
-        setError(`No ticket is configured for age ${age}. Please contact the reunion team.`);
+        setFormError(`No ticket is configured for age ${age}. Please contact the reunion team.`);
         setLoading(false);
         return;
       }
       if (ageTicketInventoryIssues.length) {
-        setError('Not enough tickets remain to cover the age-based requirements. Please adjust participant ages or contact the reunion team.');
+        setFormError(
+          'Not enough tickets remain to cover the age-based requirements. Please adjust participant ages or contact the reunion team.'
+        );
         setLoading(false);
         return;
       }
       const derivedTicketPayload = derivedTickets.filter((item) => item.quantity > 0);
       if (!derivedTicketPayload.length && totalTshirtQuantity === 0 && donationCents === 0) {
-        setError('Select at least one ticket.');
+        setFormError('Select at least one ticket.');
         setLoading(false);
         return;
       }
@@ -955,7 +1008,21 @@ export default function RegisterForm({
       const purchaserEmail = typeof primaryContact[PRIMARY_EMAIL_KEY] === 'string' ? primaryContact[PRIMARY_EMAIL_KEY].trim() : '';
 
       if (!purchaserName || !purchaserEmail) {
-        throw new Error('Primary contact name and email are required.');
+        if (!purchaserName) {
+          setFieldError(`people.0.${PRIMARY_NAME_KEY}` as const, {
+            type: 'manual',
+            message: 'Primary contact name is required'
+          });
+        }
+        if (!purchaserEmail) {
+          setFieldError(`people.0.${PRIMARY_EMAIL_KEY}` as const, {
+            type: 'manual',
+            message: 'Primary contact email is required'
+          });
+        }
+        setFormError('Primary contact name and email are required.');
+        setLoading(false);
+        return;
       }
 
       const answers = activeQuestions.reduce<Record<string, unknown>>(
@@ -991,7 +1058,8 @@ export default function RegisterForm({
           tshirt_orders: data.tshirt_orders ?? [],
           tshirt_only: data.tshirt_only ?? false,
           donation_amount: donationCents ? donationCents / 100 : 0,
-          donation_note: data.donation_note || null
+          donation_note: data.donation_note || null,
+          [HONEYPOT_KEY]: data.website || null
         }
       );
 
@@ -1024,9 +1092,9 @@ export default function RegisterForm({
       }
     } catch (err) {
       if (err instanceof Error) {
-        setError(err.message);
+        setFormError(err.message);
       } else {
-        setError('Something went wrong. Please try again.');
+        setFormError('Something went wrong. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -1088,7 +1156,24 @@ export default function RegisterForm({
         </div>
       )}
 
-      <form onSubmit={onSubmit} className="card shadow-soft backdrop-soft space-y-8 p-8">
+      <form
+        onSubmit={(event) => {
+          clearErrors();
+          setFormError(null);
+          return onSubmit(event);
+        }}
+        className="card shadow-soft backdrop-soft space-y-8 p-8"
+      >
+        {formErrorMessages.length > 0 && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700" role="alert" aria-live="polite">
+            <p className="font-semibold">Please fix the following:</p>
+            <ul className="mt-2 space-y-1">
+              {formErrorMessages.map((message) => (
+                <li key={message}>{message}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         <div className="space-y-3 rounded-2xl border border-slate-200 bg-sand-50 px-5 py-4">
           <h2 className="text-lg font-semibold text-black">Registration Type</h2>
           <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
@@ -1162,11 +1247,18 @@ export default function RegisterForm({
               const fieldName = `people.${index}.${fieldItem.field_key}` as const;
               const error = personErrors?.[fieldItem.field_key];
               const isTshirtField = fieldItem.field_key === TSHIRT_SIZE_KEY || fieldItem.field_key === TSHIRT_QUANTITY_KEY;
-              const isRequired =
+              const isEmailField = fieldItem.field_key === PRIMARY_EMAIL_KEY;
+              const isAgeField = fieldItem.field_key === AGE_KEY;
+              const baseRequired =
                 !isTshirtField &&
                 (ALWAYS_REQUIRED_KEYS.has(fieldItem.field_key) ||
                   fieldItem.required ||
                   (fieldItem.field_key === LINEAGE_OTHER_KEY && showLineageOther));
+              const isRequired = isEmailField
+                ? index === 0
+                : isAgeField
+                ? !tshirtOnly && people?.[index]?.[ATTENDING_KEY] !== false
+                : baseRequired;
               const options = Array.isArray(fieldItem.options) ? fieldItem.options : [];
               const isReadOnly = sameContact && CONTACT_KEYS.includes(fieldItem.field_key);
               const wrapperClass =
@@ -1679,7 +1771,9 @@ export default function RegisterForm({
         <div className="space-y-4">
           <h2 className="text-lg font-semibold text-black">Payment Preference</h2>
           <p className="text-sm text-koa">
-            We are recording your preferred payment method. No payment will be collected yet.
+            {stripeEnabled
+              ? 'Stripe payments will be collected immediately. Other methods will be recorded so we can follow up.'
+              : 'We are recording your preferred payment method. No payment will be collected yet.'}
           </p>
           <div className={`grid gap-3 ${stripeEnabled ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}>
             {stripeEnabled && (
@@ -1826,12 +1920,48 @@ export default function RegisterForm({
           <p className="text-2xl font-semibold">{formatCurrency(totalCents)}</p>
         </div>
 
-        {error && <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
+        {formError && <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">{formError}</p>}
 
-        <Button type="submit" size="lg" loading={loading} disabled={!hasAgeTickets} className="w-full">
+        <Button
+          type="submit"
+          size="lg"
+          loading={loading}
+          disabled={!hasAgeTickets && !tshirtOnly}
+          className="w-full"
+        >
           Submit Registration
         </Button>
+        <div className="sr-only" aria-hidden="true">
+          <Label htmlFor={HONEYPOT_KEY}>Leave this field blank</Label>
+          <Input id={HONEYPOT_KEY} autoComplete="off" tabIndex={-1} {...register(HONEYPOT_KEY as const)} />
+        </div>
       </form>
     </div>
   );
+}
+
+function getFormErrorMessages(errors: Record<string, any>, formError?: string | null) {
+  const messages: string[] = [];
+
+  const collect = (value: any) => {
+    if (!value) return;
+    if (Array.isArray(value)) {
+      value.forEach(collect);
+      return;
+    }
+    if (typeof value === 'object') {
+      if (typeof value.message === 'string') {
+        messages.push(value.message);
+      }
+      Object.values(value).forEach(collect);
+    }
+  };
+
+  collect(errors);
+
+  if (formError) {
+    messages.unshift(formError);
+  }
+
+  return Array.from(new Set(messages));
 }

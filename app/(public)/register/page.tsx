@@ -63,6 +63,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: { c
   const { tickets, questions, extras, registrationFields, eventDates } = await getRegistrationConfig();
   const costSummary = extras.costs;
   const stripeEnabled = isStripeCheckoutEnabled();
+  const registrationDeadline = extras.registration_deadline ?? '';
 
   return (
     <div className="section">
@@ -73,7 +74,11 @@ export default async function RegisterPage({ searchParams }: { searchParams: { c
           <p className="mt-2 text-sm text-koa">
             Use this form to register each person. You can add more people below.
           </p>
-          <p className="mt-4 text-xl font-semibold text-brandBlue md:text-2xl">Deadline to Register is March 31, 2026.</p>
+          {registrationDeadline ? (
+            <p className="mt-4 text-xl font-semibold text-brandBlue md:text-2xl">
+              Deadline to Register is {registrationDeadline}.
+            </p>
+          ) : null}
         </div>
         {canceled && (
           <div className="mb-8 rounded-2xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-700">

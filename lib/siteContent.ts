@@ -34,6 +34,8 @@ export type SiteExtras = {
   costs: CostItem[];
   cost_intro?: string;
   cost_total?: string;
+  registration_deadline?: string;
+  countdown_target?: string;
   paypal_handle?: string;
   venmo_handle?: string;
   stripe_account_id?: string;
@@ -51,6 +53,8 @@ export type SiteExtras = {
 
 const DEFAULT_COST_INTRO = 'Ticket pricing is based on age. Adult T-shirts are $25, youth T-shirts are $15.';
 const DEFAULT_COST_TOTAL = '';
+const DEFAULT_REGISTRATION_DEADLINE = 'March 31, 2026';
+const DEFAULT_COUNTDOWN_TARGET = '2026-07-10T10:00:00-10:00';
 
 const DEFAULT_COSTS: CostItem[] = [
   { label: 'Keiki (0-3)', detail: '$0' },
@@ -160,6 +164,8 @@ export const DEFAULT_EXTRAS: SiteExtras = {
   costs: DEFAULT_COSTS,
   cost_intro: DEFAULT_COST_INTRO,
   cost_total: DEFAULT_COST_TOTAL,
+  registration_deadline: DEFAULT_REGISTRATION_DEADLINE,
+  countdown_target: DEFAULT_COUNTDOWN_TARGET,
   paypal_handle: '',
   venmo_handle: '',
   stripe_account_id: '',
@@ -275,6 +281,12 @@ export function parseExtras(raw: unknown): SiteExtras {
       : DEFAULT_EXTRAS.costs;
     const costIntro = typeof record.cost_intro === 'string' ? record.cost_intro : DEFAULT_EXTRAS.cost_intro;
     const costTotal = typeof record.cost_total === 'string' ? record.cost_total : DEFAULT_EXTRAS.cost_total;
+    const registrationDeadline =
+      typeof record.registration_deadline === 'string'
+        ? record.registration_deadline
+        : DEFAULT_EXTRAS.registration_deadline;
+    const countdownTarget =
+      typeof record.countdown_target === 'string' ? record.countdown_target : DEFAULT_EXTRAS.countdown_target;
     const paypalHandle =
       typeof record.paypal_handle === 'string' ? record.paypal_handle : DEFAULT_EXTRAS.paypal_handle;
     const venmoHandle =
@@ -326,6 +338,8 @@ export function parseExtras(raw: unknown): SiteExtras {
       costs: costs.length ? costs : DEFAULT_EXTRAS.costs,
       cost_intro: costIntro ?? DEFAULT_EXTRAS.cost_intro,
       cost_total: costTotal ?? DEFAULT_EXTRAS.cost_total,
+      registration_deadline: registrationDeadline ?? DEFAULT_EXTRAS.registration_deadline,
+      countdown_target: countdownTarget ?? DEFAULT_EXTRAS.countdown_target,
       paypal_handle: paypalHandle ?? DEFAULT_EXTRAS.paypal_handle,
       venmo_handle: venmoHandle ?? DEFAULT_EXTRAS.venmo_handle,
       stripe_account_id: stripeAccountId ?? DEFAULT_EXTRAS.stripe_account_id,
