@@ -114,7 +114,7 @@ test('registration: free attendee disables payment options', async ({ page }) =>
   await page.locator('textarea[name="people.0.address"]').fill('456 Test Rd, Hilo, HI');
   await fillExtraFields(page);
 
-  const stripe = page.getByLabel('Stripe');
+  const stripe = page.getByLabel(/Pay with Card|Stripe/);
   const paypal = page.getByLabel('PayPal');
   const check = page.getByLabel('Mail-in check');
 
