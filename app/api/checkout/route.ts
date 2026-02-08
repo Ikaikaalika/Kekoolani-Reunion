@@ -593,7 +593,7 @@ ${jadeAddressHtml}
       return NextResponse.json({ redirectUrl });
     }
 
-    if (!orderItems.length) {
+    if (!orderItems.length && donationCents <= 0) {
       return NextResponse.json({ redirectUrl });
     }
 

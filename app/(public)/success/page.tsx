@@ -128,7 +128,7 @@ export default async function SuccessPage({
           'After you mail the check, return to this page and click \"Back to Registration\" to register another person, or \"Return Home\" if you are done.'
         ]
       : []),
-    ...(method === 'stripe'
+    ...(method === 'stripe' && !isPending
       ? ['Your payment was completed by Stripe. Save this page for your records.']
       : []),
     'Save your order reference below for your records.',
