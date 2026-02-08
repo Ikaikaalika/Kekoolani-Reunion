@@ -143,6 +143,8 @@ type FormSchema = {
   photo_urls?: Array<string | null>;
   tshirt_orders?: Array<{ category: string; style: string; size: string; quantity: number }>;
   payment_method: 'stripe' | 'paypal' | 'venmo' | 'check';
+  paypal_username?: string;
+  venmo_username?: string;
   tshirt_only?: boolean;
   donation_amount?: number;
   donation_note?: string;
@@ -350,6 +352,8 @@ function buildFormSchema(personSchema: z.ZodTypeAny) {
       photo_urls: z.array(z.string().url().nullable()).optional(),
       tshirt_orders: z.array(tshirtOrderSchema).optional(),
       payment_method: z.enum(['stripe', 'paypal', 'venmo', 'check']),
+      paypal_username: z.string().optional(),
+      venmo_username: z.string().optional(),
       tshirt_only: z.boolean().optional(),
       donation_amount: z.preprocess(preprocessNumber, z.number().min(0)).optional(),
       donation_note: z.string().optional(),
@@ -581,6 +585,8 @@ export default function RegisterForm({
       photo_urls: [],
       tshirt_orders: [],
       payment_method: 'check',
+      paypal_username: '',
+      venmo_username: '',
       tshirt_only: false,
       donation_amount: 0,
       donation_note: '',
@@ -1025,6 +1031,25 @@ export default function RegisterForm({
         return;
       }
 
+      if (!isZeroBalance && data.payment_method === 'paypal' && !(data.paypal_username || '').trim()) {
+        setFieldError('paypal_username', {
+          type: 'manual',
+          message: 'PayPal username is required'
+        });
+        setFormError('Please enter your PayPal username so we can confirm your payment.');
+        setLoading(false);
+        return;
+      }
+      if (!isZeroBalance && data.payment_method === 'venmo' && !(data.venmo_username || '').trim()) {
+        setFieldError('venmo_username', {
+          type: 'manual',
+          message: 'Venmo username is required'
+        });
+        setFormError('Please enter your Venmo username so we can confirm your payment.');
+        setLoading(false);
+        return;
+      }
+
       const answers = activeQuestions.reduce<Record<string, unknown>>(
         (acc, question) => {
           const fieldName = `question_${question.id}`;
@@ -1059,6 +1084,8 @@ export default function RegisterForm({
           tshirt_only: data.tshirt_only ?? false,
           donation_amount: donationCents ? donationCents / 100 : 0,
           donation_note: data.donation_note || null,
+          paypal_username: data.paypal_username?.trim() || null,
+          venmo_username: data.venmo_username?.trim() || null,
           [HONEYPOT_KEY]: data.website || null
         }
       );
@@ -1819,22 +1846,47 @@ export default function RegisterForm({
           </div>
           {isZeroBalance && <p className="text-xs text-koa">No payment is required for this registration.</p>}
           {errors.payment_method && <p className="text-xs text-red-500">{errors.payment_method.message}</p>}
-          {paymentMethod === 'paypal' && paypalBaseLink && !isZeroBalance && (
+          {paymentMethod === 'paypal' && !isZeroBalance && (
             <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-koa">
               <p className="font-semibold text-black">Pay with PayPal</p>
-              <p className="mt-1">We will generate your PayPal link after you submit registration.</p>
-              <a href={paypalLink || paypalBaseLink} target="_blank" rel="noreferrer" className="mt-3 inline-flex text-brandBlue underline">
-                Open PayPal link for {formatCurrency(totalCents)}
-              </a>
+              <p className="mt-1">
+                We will generate your PayPal link after you submit registration.
+                {!paypalBaseLink ? ' PayPal link is not configured yet.' : ''}
+              </p>
+              <div className="mt-3 space-y-2">
+                <Label htmlFor="paypal_username">Your PayPal username</Label>
+                <Input id="paypal_username" placeholder="PayPal username" {...register('paypal_username')} />
+                {errors.paypal_username && <p className="text-xs text-red-500">{errors.paypal_username.message}</p>}
+              </div>
+              {paypalBaseLink && (
+                <a
+                  href={paypalLink || paypalBaseLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-3 inline-flex text-brandBlue underline"
+                >
+                  Open PayPal link for {formatCurrency(totalCents)}
+                </a>
+              )}
             </div>
           )}
-          {paymentMethod === 'venmo' && venmoBaseLink && !isZeroBalance && (
+          {paymentMethod === 'venmo' && !isZeroBalance && (
             <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-koa">
               <p className="font-semibold text-black">Pay with Venmo</p>
-              <p className="mt-1">Use the Venmo handle below after you submit registration.</p>
-              <a href={venmoBaseLink} target="_blank" rel="noreferrer" className="mt-3 inline-flex text-brandBlue underline">
-                Open Venmo profile
-              </a>
+              <p className="mt-1">
+                Use the Venmo handle below after you submit registration.
+                {!venmoBaseLink ? ' Venmo link is not configured yet.' : ''}
+              </p>
+              <div className="mt-3 space-y-2">
+                <Label htmlFor="venmo_username">Your Venmo username</Label>
+                <Input id="venmo_username" placeholder="Venmo username" {...register('venmo_username')} />
+                {errors.venmo_username && <p className="text-xs text-red-500">{errors.venmo_username.message}</p>}
+              </div>
+              {venmoBaseLink && (
+                <a href={venmoBaseLink} target="_blank" rel="noreferrer" className="mt-3 inline-flex text-brandBlue underline">
+                  Open Venmo profile
+                </a>
+              )}
             </div>
           )}
         </div>

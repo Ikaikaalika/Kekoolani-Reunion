@@ -19,6 +19,7 @@ type TicketRow = Database['public']['Tables']['ticket_types']['Row'];
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 type AttendeeInsert = Database['public']['Tables']['attendees']['Insert'];
 type OrderItemPayload = { ticket_type_id: string; quantity: number };
+const JADE_HOME_ADDRESS_LINES = ['224 Hokulani Street', 'Hilo, Hawaii 96720'];
 
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX = 20;
@@ -72,6 +73,17 @@ export async function POST(request: Request) {
 
     const people = getPeopleFromAnswers(answers);
     const tshirtOnly = Boolean((answers as Record<string, unknown>)?.tshirt_only);
+    const paymentAccountUsername = (() => {
+      if (paymentMethod === 'paypal') {
+        const value = (answers as Record<string, unknown>)?.paypal_username;
+        return typeof value === 'string' ? value.trim() : '';
+      }
+      if (paymentMethod === 'venmo') {
+        const value = (answers as Record<string, unknown>)?.venmo_username;
+        return typeof value === 'string' ? value.trim() : '';
+      }
+      return '';
+    })();
     const attendingPeople = people.filter((person) => isParticipantAttending(person));
     const tshirtOrders = Array.isArray((answers as Record<string, unknown>)?.tshirt_orders)
       ? ((answers as Record<string, unknown>).tshirt_orders as Array<Record<string, unknown>>)
@@ -276,6 +288,9 @@ export async function POST(request: Request) {
     if (donationCents > 0) {
       totalCents += donationCents;
     }
+    if (totalCents > 0 && (paymentMethod === 'paypal' || paymentMethod === 'venmo') && !paymentAccountUsername) {
+      return NextResponse.json({ error: `${paymentMethod === 'paypal' ? 'PayPal' : 'Venmo'} username is required.` }, { status: 400 });
+    }
 
     const orderItemInserts: OrderItemPayload[] = orderItems.map((item) => ({
       ticket_type_id: item.ticket_type_id,
@@ -366,6 +381,12 @@ export async function POST(request: Request) {
             : 'If you would like to opt out of reunion emails, please email kokua@kekoolanireunion.com.';
         };
         const allNotAttending = attendingPeople.length === 0;
+        const paymentAccountLine =
+          paymentMethod === 'paypal'
+            ? `PayPal username: ${paymentAccountUsername || 'Not provided'}`
+            : paymentMethod === 'venmo'
+              ? `Venmo username: ${paymentAccountUsername || 'Not provided'}`
+              : '';
         const pdfLinksHtml = pdfLinks.length
           ? `<p><strong>Genealogy Links:</strong></p><ul>${pdfLinks
               .map((link) => `<li><a href="${link.href}">${link.label}</a></li>`)
@@ -374,6 +395,8 @@ export async function POST(request: Request) {
         const pdfLinksText = pdfLinks.length
           ? ['Genealogy Links:', ...pdfLinks.map((link) => `- ${link.label}: ${link.href}`)].join('\n')
           : '';
+        const jadeAddressHtml = `<p><strong>Jade's Home Address:</strong><br/>${JADE_HOME_ADDRESS_LINES.join('<br/>')}</p>`;
+        const jadeAddressText = [`Jade's Home Address:`, ...JADE_HOME_ADDRESS_LINES].join('\n');
 
         const tshirtLineItems: string[] = [];
         people.forEach((person) => {
@@ -411,12 +434,14 @@ export async function POST(request: Request) {
 <ul>
   <li>Tickets: ${ticketSummary}</li>
   ${donationCents > 0 ? `<li>${donationLine}</li>` : ''}
+  ${paymentAccountLine ? `<li>${paymentAccountLine}</li>` : ''}
   <li>Total attendees: ${attendingPeople.length}</li>
 </ul>`;
         const orderSummaryText = [
           'Order details:',
           `Tickets: ${ticketSummary}`,
           donationCents > 0 ? donationLine : '',
+          paymentAccountLine ? paymentAccountLine : '',
           `Total attendees: ${attendingPeople.length}`
         ]
           .filter(Boolean)
@@ -457,25 +482,39 @@ ${tshirtListHtml}
 <p><strong>Line items:</strong></p>
 ${orderLineItemsHtml}
 ${orderSummaryHtml}
+
 ${unsubscribeHtml}
+
 ${pdfLinksHtml}
+
+${jadeAddressHtml}
+
 <p>Me ka haʻahaʻa,<br/>Kekoʻolani Reunion Team</p>`
             : `<p>Aloha ${parsed.purchaser_name},</p>
+
 <p>Mahalo for registering for the Kekoʻolani Family Reunion.</p>
+
 <p><strong>Order ID:</strong> ${orderRecord.id}<br/>
 <strong>Total:</strong> ${formattedTotal}<br/>
 <strong>Payment method:</strong> ${paymentMethod}</p>
+
 <p><strong>Line items:</strong></p>
 ${orderLineItemsHtml}
 ${tshirtLineItems.length ? `<p><strong>Shirt order details:</strong></p>${tshirtListHtml}` : ''}
 ${orderSummaryHtml}
+
 <p>We will follow up with any next steps as we get closer to the event.</p>
+
 ${unsubscribeHtml}
+
 ${pdfLinksHtml}
+
+${jadeAddressHtml}
+
 <p>Me ka haʻahaʻa,<br/>Kekoʻolani Reunion Team</p>`;
           const receiptText = tshirtOnly
-            ? `Aloha ${parsed.purchaser_name},\n\nMahalo for your T-shirt order.\nOrder ID: ${orderRecord.id}\nTotal: ${formattedTotal}\nPayment method: ${paymentMethod}\n\nShirt order details:\n${tshirtListText}\n\nLine items:\n${orderLineItemsText}\n\n${orderSummaryText}\n\n${unsubscribeText}\n\n${pdfLinksText}\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`
-            : `Aloha ${parsed.purchaser_name},\n\nMahalo for registering for the Kekoʻolani Family Reunion.\nOrder ID: ${orderRecord.id}\nTotal: ${formattedTotal}\nPayment method: ${paymentMethod}\n\nLine items:\n${orderLineItemsText}\n\n${tshirtLineItems.length ? `Shirt order details:\n${tshirtListText}\n\n` : ''}${orderSummaryText}\n\n${unsubscribeText}\n\n${pdfLinksText}\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`;
+            ? `Aloha ${parsed.purchaser_name},\n\nMahalo for your T-shirt order.\n\nOrder ID: ${orderRecord.id}\nTotal: ${formattedTotal}\nPayment method: ${paymentMethod}\n\nShirt order details:\n${tshirtListText}\n\nLine items:\n${orderLineItemsText}\n\n${orderSummaryText}\n\n${unsubscribeText}\n\n${pdfLinksText}\n\n${jadeAddressText}\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`
+            : `Aloha ${parsed.purchaser_name},\n\nMahalo for registering for the Kekoʻolani Family Reunion.\n\nOrder ID: ${orderRecord.id}\nTotal: ${formattedTotal}\nPayment method: ${paymentMethod}\n\nLine items:\n${orderLineItemsText}\n\n${tshirtLineItems.length ? `Shirt order details:\n${tshirtListText}\n\n` : ''}${orderSummaryText}\n\n${unsubscribeText}\n\n${pdfLinksText}\n\n${jadeAddressText}\n\nMe ka haʻahaʻa,\nKekoʻolani Reunion Team`;
 
           await sendEmail({
             from: { name: fromName, email: receiptFromEmail },
@@ -491,20 +530,30 @@ ${pdfLinksHtml}
           : 'Mahalo for registering — Kekoʻolani Reunion';
         const thankYouHtml = allNotAttending
           ? `<p>Aloha,</p>
+
 <p>We will miss you at the reunion. Mahalo for ordering a shirt. Even if you do not plan to attend the reunion, could you please complete the family group record to keep our records updated. Please Let me know if you have any questions.</p>
+
 ${pdfLinksHtml}
+
+${jadeAddressHtml}
+
 <p>Me ke aloha nui,</p>
 <p>Jade Pumehana Silva</p>
 <p><img src="${jadeImageSrc}" alt="Jade Pumehana Silva" style="max-width:240px; border-radius:12px;" /></p>`
           : `<p>Aloha,</p>
+
 <p>Mahalo for registering to attend E hoʻi ka piko, our Kekoʻolani Reunion 2026! I am looking forward to our time together. In preparation for our reunion, could you please help update our family records by completing the family group record at the link below. If you have any questions, please let me know.</p>
+
 ${pdfLinksHtml}
+
+${jadeAddressHtml}
+
 <p>Me ke aloha nui,</p>
 <p>Jade Pumehana Silva</p>
 <p><img src="${jadeImageSrc}" alt="Jade Pumehana Silva" style="max-width:240px; border-radius:12px;" /></p>`;
         const thankYouText = allNotAttending
-          ? `Aloha,\n\nWe will miss you at the reunion. Mahalo for ordering a shirt. Even if you do not plan to attend the reunion, could you please complete the family group record to keep our records updated. Please Let me know if you have any questions.\n\n${pdfLinksText}\n\nMe ke aloha nui,\nJade Pumehana Silva`
-          : `Aloha,\n\nMahalo for registering to attend E hoʻi ka piko, our Kekoʻolani Reunion 2026! I am looking forward to our time together. In preparation for our reunion, could you please help update our family records by completing the family group record at the link below. If you have any questions, please let me know.\n\n${pdfLinksText}\n\nMe ke aloha nui,\nJade Pumehana Silva`;
+          ? `Aloha,\n\nWe will miss you at the reunion. Mahalo for ordering a shirt. Even if you do not plan to attend the reunion, could you please complete the family group record to keep our records updated. Please Let me know if you have any questions.\n\n${pdfLinksText}\n\n${jadeAddressText}\n\nMe ke aloha nui,\nJade Pumehana Silva`
+          : `Aloha,\n\nMahalo for registering to attend E hoʻi ka piko, our Kekoʻolani Reunion 2026! I am looking forward to our time together. In preparation for our reunion, could you please help update our family records by completing the family group record at the link below. If you have any questions, please let me know.\n\n${pdfLinksText}\n\n${jadeAddressText}\n\nMe ke aloha nui,\nJade Pumehana Silva`;
         const thankYouAttachments = jadeAttachment ? [jadeAttachment] : [];
 
         if (!tshirtOnly) {

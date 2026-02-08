@@ -85,6 +85,7 @@ test('registration: paid attendee with t-shirt and paypal link', async ({ page }
   await page.locator('input[name="tshirt_orders.0.quantity"]').fill('1');
 
   await page.getByLabel('PayPal').check();
+  await page.locator('input[name="paypal_username"]').fill('paypal-test-user');
   await page.getByRole('button', { name: 'Submit Registration' }).click();
 
   await expect(page).toHaveURL(/\/success\?/);
@@ -124,6 +125,28 @@ test('registration: free attendee disables payment options', async ({ page }) =>
 
   await page.getByRole('button', { name: 'Submit Registration' }).click();
   await expect(page).toHaveURL(/\/success\?/);
+});
+
+test('registration: venmo attendee includes username', async ({ page }) => {
+  await page.route('**/api/checkout', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        redirectUrl: '/success?order=order-126&status=pending&method=venmo&amount=3500'
+      })
+    });
+  });
+
+  await page.goto('/register');
+  await fillPrimaryParticipant(page);
+
+  await page.getByLabel('Venmo').check();
+  await page.locator('input[name="venmo_username"]').fill('venmo-test-user');
+  await page.getByRole('button', { name: 'Submit Registration' }).click();
+
+  await expect(page).toHaveURL(/\/success\?/);
+  await expect(page.getByText('Registration received')).toBeVisible();
 });
 
 test('registration: not attending allows t-shirt only', async ({ page }) => {

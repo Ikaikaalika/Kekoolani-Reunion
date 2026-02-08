@@ -113,13 +113,13 @@ export default async function SuccessPage({
     ...(method === 'paypal'
       ? [
           'Click the PayPal button below. It will open in a new tab.',
-          'Complete your payment in PayPal, then return to this page and click \"Back to Registration\" to register another person, or \"Return Home\" if you are done.'
+          'Complete your payment in PayPal, then come back and submit any additional registrations you still need to complete.'
         ]
       : []),
     ...(method === 'venmo'
       ? [
           'Click the Venmo button below. It will open in a new tab.',
-          'Complete your payment in Venmo, then return to this page and click \"Back to Registration\" to register another person, or \"Return Home\" if you are done.'
+          'Complete your payment in Venmo, then come back and submit any additional registrations you still need to complete.'
         ]
       : []),
     ...(method === 'check'
