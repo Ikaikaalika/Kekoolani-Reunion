@@ -30,6 +30,7 @@ const TSHIRT_CATEGORY_KEY = 'tshirt_category';
 const TSHIRT_STYLE_KEY = 'tshirt_style';
 const TSHIRT_SIZE_KEY = 'tshirt_size';
 const TSHIRT_QUANTITY_KEY = 'tshirt_quantity';
+const ADDRESS_KEY = 'address';
 const CONTACT_KEYS = ['email', 'phone', 'address'];
 
 const ALWAYS_REQUIRED_KEYS = new Set([PRIMARY_NAME_KEY]);
@@ -55,6 +56,23 @@ const TSHIRT_SIZES: Record<string, string[]> = {
 };
 type TshirtTotals = { adultQty: number; youthQty: number; adultCents: number; youthCents: number };
 const EMPTY_TSHIRT_TOTALS: TshirtTotals = { adultQty: 0, youthQty: 0, adultCents: 0, youthCents: 0 };
+type AddressParts = {
+  street: string;
+  line2: string;
+  city: string;
+  state: string;
+  zip: string;
+  country: string;
+};
+
+const EMPTY_ADDRESS_PARTS: AddressParts = {
+  street: '',
+  line2: '',
+  city: '',
+  state: '',
+  zip: '',
+  country: ''
+};
 
 const DEFAULT_TSHIRT_FIELDS: RegistrationField[] = [
   {
@@ -180,6 +198,88 @@ function preprocessNumber(value: unknown) {
   }
   const parsed = typeof value === 'number' ? value : Number(value);
   return Number.isNaN(parsed) ? undefined : parsed;
+}
+
+function parseCityStateZip(line: string) {
+  const trimmed = line.trim();
+  if (!trimmed) return { city: '', state: '', zip: '' };
+  const match = trimmed.match(/^(.+?)(?:,\s*([A-Za-z]{2}))?(?:\s+(\d{5}(?:-\d{4})?))?$/);
+  if (!match) {
+    return { city: trimmed, state: '', zip: '' };
+  }
+  return {
+    city: (match[1] ?? '').trim(),
+    state: (match[2] ?? '').trim(),
+    zip: (match[3] ?? '').trim()
+  };
+}
+
+function looksLikeCityStateZip(line: string) {
+  return /,/.test(line) || /\b\d{5}(?:-\d{4})?\b/.test(line);
+}
+
+function parseAddressParts(value: unknown): AddressParts {
+  if (typeof value !== 'string') return { ...EMPTY_ADDRESS_PARTS };
+  const raw = value.trim();
+  if (!raw) return { ...EMPTY_ADDRESS_PARTS };
+
+  const commaParts = raw
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (commaParts.length >= 3 && !raw.includes('\n')) {
+    const stateZip = parseCityStateZip(commaParts.slice(2).join(', '));
+    return {
+      street: commaParts[0] ?? '',
+      line2: '',
+      city: commaParts[1] ?? '',
+      state: stateZip.state,
+      zip: stateZip.zip,
+      country: ''
+    };
+  }
+
+  const lines = raw
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (!lines.length) return { ...EMPTY_ADDRESS_PARTS };
+
+  const [street, ...rest] = lines;
+  const parts: AddressParts = { ...EMPTY_ADDRESS_PARTS, street };
+
+  if (!rest.length) return parts;
+
+  if (looksLikeCityStateZip(rest[0])) {
+    const parsed = parseCityStateZip(rest[0]);
+    parts.city = parsed.city;
+    parts.state = parsed.state;
+    parts.zip = parsed.zip;
+    parts.country = rest[1] ?? '';
+    return parts;
+  }
+
+  parts.line2 = rest[0] ?? '';
+  if (rest[1]) {
+    const parsed = parseCityStateZip(rest[1]);
+    parts.city = parsed.city;
+    parts.state = parsed.state;
+    parts.zip = parsed.zip;
+  }
+  parts.country = rest[2] ?? '';
+  return parts;
+}
+
+function formatAddressParts(parts: AddressParts) {
+  const street = parts.street.trim();
+  const line2 = parts.line2.trim();
+  const city = parts.city.trim();
+  const state = parts.state.trim().toUpperCase();
+  const zip = parts.zip.trim();
+  const country = parts.country.trim();
+  const cityStateZip = [city, [state, zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+
+  return [street, line2, cityStateZip, country].filter(Boolean).join('\n');
 }
 
 function buildFieldSchema(field: RegistrationField) {
@@ -1354,6 +1454,94 @@ export default function RegisterForm({
                         {fieldItem.help_text ? <span className="mt-1 block text-xs text-koa">{fieldItem.help_text}</span> : null}
                       </span>
                     </label>
+                    {error && <p className="text-xs text-red-500">{error.message}</p>}
+                  </div>
+                );
+              }
+
+              if (fieldItem.field_key === ADDRESS_KEY) {
+                const currentAddress = typeof people?.[index]?.[ADDRESS_KEY] === 'string' ? people[index][ADDRESS_KEY] : '';
+                const parts = parseAddressParts(currentAddress);
+                const updateAddressPart = (key: keyof AddressParts, value: string) => {
+                  const nextAddress = formatAddressParts({ ...parts, [key]: value });
+                  setValue(fieldName as any, nextAddress, { shouldValidate: true, shouldDirty: true });
+                };
+                return (
+                  <div key={`${fieldItem.field_key}-${index}`} className="space-y-2 md:col-span-2">
+                    <Label htmlFor={`person-${index}-address-street`}>
+                      {fieldItem.label}
+                      {isRequired && <span className="ml-2 text-xs font-semibold text-red-500">Required</span>}
+                    </Label>
+                    <input type="hidden" {...register(fieldName as any)} />
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor={`person-${index}-address-street`}>Street Address</Label>
+                        <Input
+                          id={`person-${index}-address-street`}
+                          placeholder="123 Main St"
+                          readOnly={isReadOnly}
+                          className={isReadOnly ? contactClass : ''}
+                          value={parts.street}
+                          onChange={(event) => updateAddressPart('street', event.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor={`person-${index}-address-line2`}>Address Line 2 (Optional)</Label>
+                        <Input
+                          id={`person-${index}-address-line2`}
+                          placeholder="Apt, suite, unit, building, floor, etc."
+                          readOnly={isReadOnly}
+                          className={isReadOnly ? contactClass : ''}
+                          value={parts.line2}
+                          onChange={(event) => updateAddressPart('line2', event.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`person-${index}-address-city`}>City</Label>
+                        <Input
+                          id={`person-${index}-address-city`}
+                          placeholder="Hilo"
+                          readOnly={isReadOnly}
+                          className={isReadOnly ? contactClass : ''}
+                          value={parts.city}
+                          onChange={(event) => updateAddressPart('city', event.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`person-${index}-address-state`}>State</Label>
+                        <Input
+                          id={`person-${index}-address-state`}
+                          placeholder="HI"
+                          readOnly={isReadOnly}
+                          className={isReadOnly ? contactClass : ''}
+                          value={parts.state}
+                          onChange={(event) => updateAddressPart('state', event.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`person-${index}-address-zip`}>ZIP Code</Label>
+                        <Input
+                          id={`person-${index}-address-zip`}
+                          placeholder="96720"
+                          readOnly={isReadOnly}
+                          className={isReadOnly ? contactClass : ''}
+                          value={parts.zip}
+                          onChange={(event) => updateAddressPart('zip', event.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`person-${index}-address-country`}>Country (Optional)</Label>
+                        <Input
+                          id={`person-${index}-address-country`}
+                          placeholder="USA"
+                          readOnly={isReadOnly}
+                          className={isReadOnly ? contactClass : ''}
+                          value={parts.country}
+                          onChange={(event) => updateAddressPart('country', event.target.value)}
+                        />
+                      </div>
+                    </div>
+                    {fieldItem.help_text && <p className="text-xs text-koa">{fieldItem.help_text}</p>}
                     {error && <p className="text-xs text-red-500">{error.message}</p>}
                   </div>
                 );

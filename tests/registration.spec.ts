@@ -20,7 +20,9 @@ async function fillExtraFields(page: any) {
     'people.0.attending'
   ]);
 
-  const extraInputs = page.locator('input[name^="people.0."]:not([type="checkbox"]):not([type="radio"])');
+  const extraInputs = page.locator(
+    'input[name^="people.0."]:not([type="checkbox"]):not([type="radio"]):not([type="hidden"])'
+  );
   const inputCount = await extraInputs.count();
   for (let i = 0; i < inputCount; i += 1) {
     const input = extraInputs.nth(i);
@@ -55,7 +57,10 @@ async function fillPrimaryParticipant(page: any) {
   await page.locator('input[name="people.0.attendance_days"][value="Sunday"]').check();
   await page.locator('input[name="people.0.email"]').fill('test@example.com');
   await page.locator('input[name="people.0.phone"]').fill('808-555-1111');
-  await page.locator('textarea[name="people.0.address"]').fill('123 Test St, Hilo, HI');
+  await page.locator('#person-0-address-street').fill('123 Test St');
+  await page.locator('#person-0-address-city').fill('Hilo');
+  await page.locator('#person-0-address-state').fill('HI');
+  await page.locator('#person-0-address-zip').fill('96720');
   await fillExtraFields(page);
 }
 
@@ -112,7 +117,10 @@ test('registration: free attendee disables payment options', async ({ page }) =>
   await page.locator('input[name="people.0.attendance_days"][value="Friday"]').check();
   await page.locator('input[name="people.0.email"]').fill('free@example.com');
   await page.locator('input[name="people.0.phone"]').fill('808-555-2222');
-  await page.locator('textarea[name="people.0.address"]').fill('456 Test Rd, Hilo, HI');
+  await page.locator('#person-0-address-street').fill('456 Test Rd');
+  await page.locator('#person-0-address-city').fill('Hilo');
+  await page.locator('#person-0-address-state').fill('HI');
+  await page.locator('#person-0-address-zip').fill('96720');
   await fillExtraFields(page);
 
   const stripe = page.getByLabel(/Pay with Card|Stripe/);
@@ -168,7 +176,10 @@ test('registration: not attending allows t-shirt only', async ({ page }) => {
   await page.locator('input[name="people.0.attendance_days"][value="Friday"]').check();
   await page.locator('input[name="people.0.email"]').fill('noshow@example.com');
   await page.locator('input[name="people.0.phone"]').fill('808-555-3333');
-  await page.locator('textarea[name="people.0.address"]').fill('789 Test Ave, Hilo, HI');
+  await page.locator('#person-0-address-street').fill('789 Test Ave');
+  await page.locator('#person-0-address-city').fill('Hilo');
+  await page.locator('#person-0-address-state').fill('HI');
+  await page.locator('#person-0-address-zip').fill('96720');
   await fillExtraFields(page);
 
   await page.getByLabel('Attending in person').uncheck();

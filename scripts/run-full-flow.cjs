@@ -94,7 +94,9 @@ async function fillExtraFields(page) {
     'people.0.attending'
   ]);
 
-  const extraInputs = page.locator('input[name^="people.0."]:not([type="checkbox"]):not([type="radio"])');
+  const extraInputs = page.locator(
+    'input[name^="people.0."]:not([type="checkbox"]):not([type="radio"]):not([type="hidden"])'
+  );
   const inputCount = await extraInputs.count();
   for (let i = 0; i < inputCount; i += 1) {
     const input = extraInputs.nth(i);
@@ -133,7 +135,10 @@ async function runOrder(page, order, method) {
   await checkIfPresent(page, 'input[name="people.0.attendance_days"][value="Sunday"]');
   await page.locator('input[name="people.0.email"]').fill(order.email);
   await page.locator('input[name="people.0.phone"]').fill('808-555-1212');
-  await page.locator('textarea[name="people.0.address"]').fill('123 Test St, Hilo, HI');
+  await page.locator('#person-0-address-street').fill('123 Test St');
+  await page.locator('#person-0-address-city').fill('Hilo');
+  await page.locator('#person-0-address-state').fill('HI');
+  await page.locator('#person-0-address-zip').fill('96720');
 
   await fillExtraFields(page);
 
@@ -164,6 +169,12 @@ async function runOrder(page, order, method) {
     return;
   }
   await methodLabel.check();
+  if (method.value === 'paypal') {
+    await fillIfPresent(page, 'input[name="paypal_username"]', order.slug);
+  }
+  if (method.value === 'venmo') {
+    await fillIfPresent(page, 'input[name="venmo_username"]', order.slug);
+  }
 
   const submitButton = page.getByRole('button', { name: 'Submit Registration' });
   if (method.expectStripe) {
