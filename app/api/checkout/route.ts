@@ -331,7 +331,10 @@ export async function POST(request: Request) {
         const fromName = process.env.EMAIL_FROM_NAME || 'Kekoʻolani Reunion';
         const emailAssetsDir = 'email';
         const pdfFiles = listPublicAssetsByExt(['.pdf'], emailAssetsDir);
-        const genealogyPageUrl = `${baseUrl.replace(/\/$/, '')}/#genealogy`;
+        const pdfLinks = pdfFiles.map((file) => ({
+          label: file,
+          href: `${baseUrl}/assets/${emailAssetsDir}/${encodeURIComponent(file)}`
+        }));
         const jadeImageUrl = `${baseUrl}/assets/${emailAssetsDir}/Jade.jpeg`;
         const jadeAttachment = useSendPulse
           ? null
@@ -363,10 +366,14 @@ export async function POST(request: Request) {
             : 'If you would like to opt out of reunion emails, please email kokua@kekoolanireunion.com.';
         };
         const allNotAttending = attendingPeople.length === 0;
-        const pdfLinksHtml = pdfFiles.length
-          ? `<p>Family record PDFs are available on the reunion site: <a href="${genealogyPageUrl}">View the genealogy section</a>.</p>`
+        const pdfLinksHtml = pdfLinks.length
+          ? `<p><strong>Genealogy Links:</strong></p><ul>${pdfLinks
+              .map((link) => `<li><a href="${link.href}">${link.label}</a></li>`)
+              .join('')}</ul>`
           : '';
-        const pdfLinksText = pdfFiles.length ? `Family record PDFs: ${genealogyPageUrl}` : '';
+        const pdfLinksText = pdfLinks.length
+          ? ['Genealogy Links:', ...pdfLinks.map((link) => `- ${link.label}: ${link.href}`)].join('\n')
+          : '';
 
         const tshirtLineItems: string[] = [];
         people.forEach((person) => {
@@ -484,7 +491,7 @@ ${pdfLinksHtml}
           : 'Mahalo for registering — Kekoʻolani Reunion';
         const thankYouHtml = allNotAttending
           ? `<p>Aloha,</p>
-<p>We will miss you at the reunion. Mahalo for ordering a shirt. Even if you do not plan to attend the reunion, could you please complete the family group record to keep our records updated. Please let me know if you have any questions.</p>
+<p>We will miss you at the reunion. Mahalo for ordering a shirt. Even if you do not plan to attend the reunion, could you please complete the family group record to keep our records updated. Please Let me know if you have any questions.</p>
 ${pdfLinksHtml}
 <p>Me ke aloha nui,</p>
 <p>Jade Pumehana Silva</p>
@@ -496,7 +503,7 @@ ${pdfLinksHtml}
 <p>Jade Pumehana Silva</p>
 <p><img src="${jadeImageSrc}" alt="Jade Pumehana Silva" style="max-width:240px; border-radius:12px;" /></p>`;
         const thankYouText = allNotAttending
-          ? `Aloha,\n\nWe will miss you at the reunion. Mahalo for ordering a shirt. Even if you do not plan to attend the reunion, could you please complete the family group record to keep our records updated. Please let me know if you have any questions.\n\n${pdfLinksText}\n\nMe ke aloha nui,\nJade Pumehana Silva`
+          ? `Aloha,\n\nWe will miss you at the reunion. Mahalo for ordering a shirt. Even if you do not plan to attend the reunion, could you please complete the family group record to keep our records updated. Please Let me know if you have any questions.\n\n${pdfLinksText}\n\nMe ke aloha nui,\nJade Pumehana Silva`
           : `Aloha,\n\nMahalo for registering to attend E hoʻi ka piko, our Kekoʻolani Reunion 2026! I am looking forward to our time together. In preparation for our reunion, could you please help update our family records by completing the family group record at the link below. If you have any questions, please let me know.\n\n${pdfLinksText}\n\nMe ke aloha nui,\nJade Pumehana Silva`;
         const thankYouAttachments = jadeAttachment ? [jadeAttachment] : [];
 
