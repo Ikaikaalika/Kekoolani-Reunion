@@ -3,12 +3,7 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getStripeClient } from '@/lib/stripe';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { getPeopleFromAnswers, isParticipantAttending } from '@/lib/orderUtils';
-import type { Database } from '@/types/supabase';
-
-type OrderRow = Database['public']['Tables']['orders']['Row'];
-type OrderItemRow = Database['public']['Tables']['order_items']['Row'];
-type AttendeeInsert = Database['public']['Tables']['attendees']['Insert'];
+import { finalizeStripeOrder } from '@/lib/finalizeStripeOrder';
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -34,69 +29,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
-  if (event.type === 'checkout.session.completed') {
+  if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
     const session = event.data.object as Stripe.Checkout.Session;
+    if (session.payment_status !== 'paid') {
+      return NextResponse.json({ received: true });
+    }
+
     const orderId = session.metadata?.order_id;
 
     if (!orderId) {
       return NextResponse.json({ received: true });
     }
 
-    const { data: order, error: orderError } = await supabaseAdmin
-      .from('orders')
-      .select('*')
-      .eq('id', orderId)
-      .maybeSingle();
-
-    if (orderError || !order) {
-      console.error('[stripe-webhook] order lookup failed', orderError);
+    const result = await finalizeStripeOrder(orderId);
+    if (!result.ok && result.reason === 'not_found') {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
-
-    const orderRecord = order as OrderRow;
-
-    if (orderRecord.status === 'paid') {
-      return NextResponse.json({ received: true });
+    if (!result.ok) {
+      return NextResponse.json({ error: 'Unable to finalize order' }, { status: 500 });
     }
-
-    const { data: orderItems, error: itemsError } = await supabaseAdmin
-      .from('order_items')
-      .select('*')
-      .eq('order_id', orderId);
-
-    if (itemsError) {
-      console.error('[stripe-webhook] items fetch failed', itemsError);
-      return NextResponse.json({ error: 'Order items missing' }, { status: 500 });
-    }
-
-    const orderItemRecords = (orderItems ?? []) as OrderItemRow[];
-
-    const ticketIds = orderItemRecords.map((item) => item.ticket_type_id);
-
-    if (ticketIds.length) {
-      const { error: inventoryError } = await (supabaseAdmin as any).rpc('decrement_ticket_inventory', {
-        p_order_id: orderId
-      });
-      if (inventoryError) {
-        console.error('[stripe-webhook] inventory update failed', inventoryError);
-      }
-    }
-
-    const people = getPeopleFromAnswers(orderRecord.form_answers ?? {});
-    const attendingPeople = people.filter((person) => isParticipantAttending(person));
-    const attendeeInserts: AttendeeInsert[] = Array.from({ length: attendingPeople.length }).map(() => ({
-      order_id: orderId,
-      answers: orderRecord.form_answers ?? {}
-    }));
-
-    if (attendeeInserts.length) {
-      await (supabaseAdmin.from('attendees') as any).insert(attendeeInserts);
-    }
-
-    await (supabaseAdmin
-      .from('orders') as any)
-      .update({ status: 'paid' })
-      .eq('id', orderId);
 
     return NextResponse.json({ received: true });
   }

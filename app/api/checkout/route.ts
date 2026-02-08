@@ -576,7 +576,7 @@ ${pdfLinksHtml}
     const session = await stripe.checkout.sessions.create(
       {
         mode: 'payment',
-        success_url: `${baseUrl}/success?order=${orderRecord.id}&status=paid&method=stripe&amount=${totalCents}`,
+        success_url: `${baseUrl}/api/stripe/complete?session_id={CHECKOUT_SESSION_ID}&amount=${totalCents}`,
         cancel_url: `${baseUrl}/register?canceled=1`,
         customer_email: parsed.purchaser_email,
         metadata: {
