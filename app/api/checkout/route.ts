@@ -6,6 +6,7 @@ import { getStripeClient, isStripeCheckoutEnabled } from '@/lib/stripe';
 import { getParticipantAge, getPeopleFromAnswers, isParticipantAttending, selectTicketForAge } from '@/lib/orderUtils';
 import { SITE_SETTINGS_ID } from '@/lib/constants';
 import { getSiteExtras } from '@/lib/siteContent';
+import { normalizeEmail, validateEmailAddress } from '@/lib/emailValidation';
 import {
   buildInlineImageAttachmentFromPublicAsset,
   listPublicAssetsByExt,
@@ -73,6 +74,19 @@ export async function POST(request: Request) {
     }
 
     const people = getPeopleFromAnswers(answers);
+    const invalidPersonEmailIndex = people.findIndex((person) => {
+      const rawEmail = (person as Record<string, unknown>)?.email;
+      if (typeof rawEmail !== 'string' || !rawEmail.trim()) return false;
+      return !validateEmailAddress(rawEmail).isValid;
+    });
+    if (invalidPersonEmailIndex >= 0) {
+      return NextResponse.json(
+        {
+          error: `Participant ${invalidPersonEmailIndex + 1} has an invalid email address. Please correct it and try again.`
+        },
+        { status: 400 }
+      );
+    }
     const tshirtOnly = Boolean((answers as Record<string, unknown>)?.tshirt_only);
     const checkMailingAddressConfirmed = (() => {
       const value = (answers as Record<string, unknown>)?.check_mailing_address_confirm;
@@ -324,8 +338,12 @@ export async function POST(request: Request) {
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || 'http://localhost:3000';
 
-    const cleanEmail = (value: unknown) =>
-      typeof value === 'string' && value.includes('@') ? value.trim().toLowerCase() : null;
+    const cleanEmail = (value: unknown) => {
+      if (typeof value !== 'string') return null;
+      const result = validateEmailAddress(value);
+      if (!result.isValid) return null;
+      return normalizeEmail(value);
+    };
     const peopleEmails = people
       .map((person) => cleanEmail((person as Record<string, unknown>)?.email))
       .filter((email): email is string => Boolean(email));

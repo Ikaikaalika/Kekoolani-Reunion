@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { formatCurrency } from '@/lib/utils';
+import { optionalEmailSchema, requiredEmailSchema } from '@/lib/emailValidation';
 import { uploadRegistrationImage } from '@/lib/actions/blob';
 import type { RegistrationField } from '@/lib/registrationFields';
 import { getParticipantAge, selectTicketForAge } from '@/lib/orderUtils';
@@ -205,14 +206,18 @@ function preprocessNumber(value: unknown) {
 function parseCityStateZip(line: string) {
   const trimmed = line.trim();
   if (!trimmed) return { city: '', state: '', zip: '' };
-  const match = trimmed.match(/^(.+?)(?:,\s*([A-Za-z]{2}))?(?:\s+(\d{5}(?:-\d{4})?))?$/);
-  if (!match) {
-    return { city: trimmed, state: '', zip: '' };
-  }
+  const zipMatch = trimmed.match(/(?:^|\s)(\d{5}(?:-\d{4})?)$/);
+  const zip = zipMatch?.[1] ?? '';
+  const zipIndex = zipMatch?.index ?? trimmed.length;
+  const withoutZip = zip ? trimmed.slice(0, zipIndex).trim().replace(/,\s*$/, '') : trimmed;
+  const stateMatch = withoutZip.match(/(?:,\s*|\s+)([A-Za-z]{2})$/);
+  const state = (stateMatch?.[1] ?? '').toUpperCase();
+  const city = stateMatch ? withoutZip.slice(0, stateMatch.index).trim().replace(/,\s*$/, '') : withoutZip;
+
   return {
-    city: (match[1] ?? '').trim(),
-    state: (match[2] ?? '').trim(),
-    zip: (match[3] ?? '').trim()
+    city: city.trim(),
+    state: state.trim(),
+    zip: zip.trim()
   };
 }
 
@@ -308,14 +313,18 @@ function buildFieldSchema(field: RegistrationField) {
     case 'text':
     case 'select':
     case 'date':
-    case 'email':
     case 'phone': {
-      const schema = field.field_type === 'email' ? z.string().email('Email is required') : z.string();
+      const schema = z.string();
       if (required && !isOptionalCheckbox) {
         return schema.min(1, requiredMessage);
       }
       return schema.optional();
     }
+    case 'email':
+      if (required && !isOptionalCheckbox) {
+        return requiredEmailSchema;
+      }
+      return optionalEmailSchema;
     case 'number': {
       const minValue = field.field_key === TSHIRT_QUANTITY_KEY ? 0 : 0;
       const schema = z.preprocess(

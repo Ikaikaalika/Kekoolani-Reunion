@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { optionalEmailSchema, requiredEmailSchema } from '@/lib/emailValidation';
 
 export const updateSiteSettingsSchema = z.object({
   hero_title: z.string().min(1),
@@ -60,7 +61,7 @@ export const questionSchema = z.object({
 
 export const checkoutSchema = z.object({
   purchaser_name: z.string().min(1),
-  purchaser_email: z.string().email(),
+  purchaser_email: requiredEmailSchema,
   payment_method: z.enum(['stripe', 'paypal', 'venmo', 'check']),
   tickets: z
     .array(
@@ -153,7 +154,7 @@ const sectionContentSchemas = {
         z.object({
           name: z.string().min(1),
           role: z.string().optional().nullable(),
-          email: z.string().email().optional().nullable(),
+          email: z.preprocess((value) => (value === null ? undefined : value), optionalEmailSchema),
           phone: z.string().optional().nullable()
         })
       )
