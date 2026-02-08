@@ -190,7 +190,10 @@ test('registration: not attending allows t-shirt only', async ({ page }) => {
   await page.locator('input[name="people.0.tshirt_quantity"]').fill('1');
 
   await page.getByLabel('Mail-in check').check();
+  await page.locator('input[name="check_mailing_address_confirm"]').check();
   await page.getByRole('button', { name: 'Submit Registration' }).click();
 
   await expect(page).toHaveURL(/\/success\?/);
+  await expect(page.getByText('Amount to mail:')).toBeVisible();
+  await expect(page.getByText('Mailing Address', { exact: true })).toBeVisible();
 });

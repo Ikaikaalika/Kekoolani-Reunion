@@ -12,6 +12,7 @@ const PAYMENT_LABELS: Record<string, string> = {
 };
 
 const PAYPAL_LINK = process.env.NEXT_PUBLIC_PAYPAL_LINK ?? '';
+const CHECK_MAILING_ADDRESS_LINES = ['PO Box 10124', 'Hilo, HI 96721'];
 
 function buildPayPalLink(baseLink: string, amountCents?: number | null) {
   if (!baseLink) return '';
@@ -95,20 +96,28 @@ export default async function SuccessPage({
   const paymentLabel = method ? PAYMENT_LABELS[method] ?? method : null;
   const isPending = status === 'pending';
   const amountCents = amount ? Number(amount) : null;
+  const formattedAmount =
+    typeof amountCents === 'number' && Number.isFinite(amountCents)
+      ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amountCents / 100)
+      : null;
   const { paypalBase: paypalBaseLink, venmoBase: venmoBaseLink, genealogyEmail, contactEmail } =
     await getSiteEmailConfig();
   const paypalLink = method === 'paypal' ? buildPayPalLink(paypalBaseLink, amountCents) : '';
   const showPayPalLink = method === 'paypal' && Boolean(paypalBaseLink);
   const showVenmoLink = method === 'venmo' && Boolean(venmoBaseLink);
+  const showCheckMailingCard = method === 'check' && Boolean(formattedAmount) && amountCents !== null && amountCents > 0;
   const headline = isPending ? 'Registration received' : 'Mahalo nui loa!';
   const message = isPending
     ? `Your registration is confirmed. We have recorded your payment preference${
         paymentLabel ? ` (${paymentLabel})` : ''
       }. We will follow up with next steps.`
     : 'Your registration is confirmed. A receipt and event details are on the way to your inbox.';
-  const receiptMessage = isPending
-    ? 'A receipt will be emailed once your payment is completed.'
-    : 'Keep an eye out for your receipt in the next few minutes.';
+  const receiptMessage =
+    method === 'check' && isPending
+      ? 'Your confirmation email includes check mailing instructions. Please mail the exact amount below.'
+      : isPending
+        ? 'A receipt will be emailed once your payment is completed.'
+        : 'Keep an eye out for your receipt in the next few minutes.';
   const instructionItems = [
     ...(method === 'paypal'
       ? [
@@ -124,7 +133,7 @@ export default async function SuccessPage({
       : []),
     ...(method === 'check'
       ? [
-          'If you chose mail-in check, we will email the mailing instructions.',
+          'Review the mail-in check box below for the exact amount and mailing address.',
           'After you mail the check, return to this page and click \"Back to Registration\" to register another person, or \"Return Home\" if you are done.'
         ]
       : []),
@@ -190,6 +199,20 @@ export default async function SuccessPage({
             <a href={venmoBaseLink} target="_blank" rel="noreferrer" className="btn">
               Open Venmo Link
             </a>
+          </div>
+        )}
+        {showCheckMailingCard && (
+          <div className="card shadow-soft w-full max-w-xl px-6 py-5 text-left text-sm text-koa">
+            <p className="font-semibold text-black">Mail-in Check</p>
+            <p className="mt-2">
+              Amount to mail: <span className="font-semibold text-black">{formattedAmount}</span>
+            </p>
+            <p className="mt-3 font-semibold text-black">Mailing Address</p>
+            <p className="mt-1">
+              {CHECK_MAILING_ADDRESS_LINES[0]}
+              <br />
+              {CHECK_MAILING_ADDRESS_LINES[1]}
+            </p>
           </div>
         )}
         {order && (

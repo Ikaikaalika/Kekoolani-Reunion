@@ -32,6 +32,7 @@ const TSHIRT_SIZE_KEY = 'tshirt_size';
 const TSHIRT_QUANTITY_KEY = 'tshirt_quantity';
 const ADDRESS_KEY = 'address';
 const CONTACT_KEYS = ['email', 'phone', 'address'];
+const CHECK_MAILING_ADDRESS = 'PO Box 10124, Hilo, HI 96721';
 
 const ALWAYS_REQUIRED_KEYS = new Set([PRIMARY_NAME_KEY]);
 const OPTIONAL_CHECKBOX_KEYS = new Set([SAME_CONTACT_KEY, SHOW_NAME_KEY, SHOW_PHOTO_KEY]);
@@ -161,6 +162,7 @@ type FormSchema = {
   photo_urls?: Array<string | null>;
   tshirt_orders?: Array<{ category: string; style: string; size: string; quantity: number }>;
   payment_method: 'stripe' | 'paypal' | 'venmo' | 'check';
+  check_mailing_address_confirm?: boolean;
   paypal_username?: string;
   venmo_username?: string;
   tshirt_only?: boolean;
@@ -452,6 +454,7 @@ function buildFormSchema(personSchema: z.ZodTypeAny) {
       photo_urls: z.array(z.string().url().nullable()).optional(),
       tshirt_orders: z.array(tshirtOrderSchema).optional(),
       payment_method: z.enum(['stripe', 'paypal', 'venmo', 'check']),
+      check_mailing_address_confirm: z.boolean().optional(),
       paypal_username: z.string().optional(),
       venmo_username: z.string().optional(),
       tshirt_only: z.boolean().optional(),
@@ -685,6 +688,7 @@ export default function RegisterForm({
       photo_urls: [],
       tshirt_orders: [],
       payment_method: 'check',
+      check_mailing_address_confirm: false,
       paypal_username: '',
       venmo_username: '',
       tshirt_only: false,
@@ -1149,6 +1153,15 @@ export default function RegisterForm({
         setLoading(false);
         return;
       }
+      if (!isZeroBalance && data.payment_method === 'check' && !data.check_mailing_address_confirm) {
+        setFieldError('check_mailing_address_confirm', {
+          type: 'manual',
+          message: 'Please confirm you have the mailing address'
+        });
+        setFormError('Please confirm you have the check mailing address before submitting.');
+        setLoading(false);
+        return;
+      }
 
       const answers = activeQuestions.reduce<Record<string, unknown>>(
         (acc, question) => {
@@ -1184,6 +1197,7 @@ export default function RegisterForm({
           tshirt_only: data.tshirt_only ?? false,
           donation_amount: donationCents ? donationCents / 100 : 0,
           donation_note: data.donation_note || null,
+          check_mailing_address_confirm: Boolean(data.check_mailing_address_confirm),
           paypal_username: data.paypal_username?.trim() || null,
           venmo_username: data.venmo_username?.trim() || null,
           [HONEYPOT_KEY]: data.website || null
@@ -2074,6 +2088,24 @@ export default function RegisterForm({
                 <a href={venmoBaseLink} target="_blank" rel="noreferrer" className="mt-3 inline-flex text-brandBlue underline">
                   Open Venmo profile
                 </a>
+              )}
+            </div>
+          )}
+          {paymentMethod === 'check' && !isZeroBalance && (
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-koa">
+              <p className="font-semibold text-black">Mail-in Check Instructions</p>
+              <p className="mt-1">
+                Amount to mail: <span className="font-semibold text-black">{formatCurrency(totalCents)}</span>
+              </p>
+              <p className="mt-1">
+                Mailing: <span className="font-semibold text-black">{CHECK_MAILING_ADDRESS}</span>
+              </p>
+              <label className="mt-3 flex items-start gap-3 rounded-xl border border-slate-200 bg-sand-50 px-4 py-3 text-sm">
+                <input type="checkbox" className="mt-1 h-4 w-4" {...register('check_mailing_address_confirm')} />
+                <span>I have this mailing address and will mail the check for the amount above.</span>
+              </label>
+              {errors.check_mailing_address_confirm && (
+                <p className="mt-2 text-xs text-red-500">{errors.check_mailing_address_confirm.message}</p>
               )}
             </div>
           )}

@@ -175,6 +175,9 @@ async function runOrder(page, order, method) {
   if (method.value === 'venmo') {
     await fillIfPresent(page, 'input[name="venmo_username"]', order.slug);
   }
+  if (method.value === 'check') {
+    await checkIfPresent(page, 'input[name="check_mailing_address_confirm"]');
+  }
 
   const submitButton = page.getByRole('button', { name: 'Submit Registration' });
   if (method.expectStripe) {
