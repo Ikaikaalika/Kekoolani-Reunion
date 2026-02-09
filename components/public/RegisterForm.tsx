@@ -425,18 +425,6 @@ function buildPersonSchema(fields: RegistrationField[]) {
       }
     }
 
-    const showName = Boolean(data[SHOW_NAME_KEY]);
-    const showPhoto = Boolean(data[SHOW_PHOTO_KEY]);
-    if (SHOW_NAME_KEY in data || SHOW_PHOTO_KEY in data) {
-      if (!showName && !showPhoto) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Select name or photo for the Who's Coming section",
-          path: [SHOW_NAME_KEY]
-        });
-      }
-    }
-
     if (tshirtQuantityField) {
       const categoryValue = typeof data[TSHIRT_CATEGORY_KEY] === 'string' ? data[TSHIRT_CATEGORY_KEY].trim() : '';
       const styleValue = typeof data[TSHIRT_STYLE_KEY] === 'string' ? data[TSHIRT_STYLE_KEY].trim() : '';

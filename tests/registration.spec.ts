@@ -135,6 +135,45 @@ test('registration: free attendee disables payment options', async ({ page }) =>
   await expect(page).toHaveURL(/\/success\?/);
 });
 
+test('registration: can submit without photo and without who\'s coming display', async ({ page }) => {
+  await page.route('**/api/checkout', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        redirectUrl: '/success?order=order-127&status=pending&method=check&amount=0'
+      })
+    });
+  });
+
+  await page.goto('/register');
+  await page.locator('input[name="people.0.full_name"]').fill('No Photo Person');
+  await page.locator('input[name="people.0.age"]').fill('2');
+  await page.locator('input[name="people.0.relationship"]').fill('Grandchild');
+  await page.locator('select[name="people.0.lineage"]').selectOption('Amy');
+  await page.locator('input[name="people.0.attendance_days"][value="Friday"]').check();
+  await page.locator('input[name="people.0.email"]').fill('nophoto@example.com');
+  await page.locator('input[name="people.0.phone"]').fill('808-555-4444');
+  await page.locator('#person-0-address-street').fill('123 No Photo Ln');
+  await page.locator('#person-0-address-city').fill('Hilo');
+  await page.locator('#person-0-address-state').fill('HI');
+  await page.locator('#person-0-address-zip').fill('96720');
+  await fillExtraFields(page);
+
+  const showName = page.getByLabel(/Show name/i).first();
+  if (await showName.count()) {
+    await showName.uncheck();
+  }
+
+  const showPhoto = page.getByLabel(/Show photo/i).first();
+  if (await showPhoto.count()) {
+    await expect(showPhoto).toBeDisabled();
+  }
+
+  await page.getByRole('button', { name: 'Submit Registration' }).click();
+  await expect(page).toHaveURL(/\/success\?/);
+});
+
 test('registration: venmo attendee includes username', async ({ page }) => {
   await page.route('**/api/checkout', async (route) => {
     await route.fulfill({
