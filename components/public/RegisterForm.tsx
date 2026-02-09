@@ -206,12 +206,15 @@ function preprocessNumber(value: unknown) {
 function parseCityStateZip(line: string) {
   const trimmed = line.trim();
   if (!trimmed) return { city: '', state: '', zip: '' };
-  const zipMatch = trimmed.match(/(?:^|\s)(\d{5}(?:-\d{4})?)$/);
+  const zipMatch = trimmed.match(/(?:^|\s)(\d{1,5}(?:-\d{0,4})?)$/);
   const zip = zipMatch?.[1] ?? '';
   const zipIndex = zipMatch?.index ?? trimmed.length;
   const withoutZip = zip ? trimmed.slice(0, zipIndex).trim().replace(/,\s*$/, '') : trimmed;
-  const stateMatch = withoutZip.match(/(?:,\s*|\s+)([A-Za-z]{2})$/);
+  const stateMatch = withoutZip.match(/(?:,\s*|\s+)([A-Za-z]{1,2})$/);
   const state = (stateMatch?.[1] ?? '').toUpperCase();
+  if (!stateMatch && !zip && /^[A-Za-z]{1,2}$/.test(withoutZip)) {
+    return { city: '', state: withoutZip.toUpperCase(), zip: '' };
+  }
   const city = stateMatch ? withoutZip.slice(0, stateMatch.index).trim().replace(/,\s*$/, '') : withoutZip;
 
   return {
@@ -221,8 +224,12 @@ function parseCityStateZip(line: string) {
   };
 }
 
+function looksLikeStreetLine(line: string) {
+  return /\d/.test(line) || /\b(st|street|rd|road|ave|avenue|blvd|boulevard|ln|lane|dr|drive|ct|court|way|hwy|highway|pl|place|po box|apt|suite|unit|#)\b/i.test(line);
+}
+
 function looksLikeCityStateZip(line: string) {
-  return /,/.test(line) || /\b\d{5}(?:-\d{4})?\b/.test(line);
+  return /,/.test(line) || /\b\d{1,5}(?:-\d{0,4})?\b/.test(line);
 }
 
 function parseAddressParts(value: unknown): AddressParts {
@@ -255,9 +262,16 @@ function parseAddressParts(value: unknown): AddressParts {
   const [street, ...rest] = lines;
   const parts: AddressParts = { ...EMPTY_ADDRESS_PARTS, street };
 
-  if (!rest.length) return parts;
+  if (!rest.length) {
+    if (looksLikeStreetLine(street)) return parts;
+    const parsed = parseCityStateZip(street);
+    if (parsed.city || parsed.state || parsed.zip) {
+      return { ...EMPTY_ADDRESS_PARTS, city: parsed.city, state: parsed.state, zip: parsed.zip };
+    }
+    return parts;
+  }
 
-  if (looksLikeCityStateZip(rest[0])) {
+  if (looksLikeCityStateZip(rest[0]) || (!rest[1] && !looksLikeStreetLine(rest[0]))) {
     const parsed = parseCityStateZip(rest[0]);
     parts.city = parsed.city;
     parts.state = parsed.state;

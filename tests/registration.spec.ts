@@ -197,3 +197,22 @@ test('registration: not attending allows t-shirt only', async ({ page }) => {
   await expect(page.getByText('Amount to mail:')).toBeVisible();
   await expect(page.getByText('Mailing Address', { exact: true })).toBeVisible();
 });
+
+test('registration: typing state does not overwrite city', async ({ page }) => {
+  await page.goto('/register');
+
+  const city = page.locator('#person-0-address-city');
+  const state = page.locator('#person-0-address-state');
+
+  await city.fill('Hilo');
+  await state.click();
+  await state.type('H');
+
+  await expect(city).toHaveValue('Hilo');
+  await expect(state).toHaveValue('H');
+
+  await state.type('I');
+
+  await expect(city).toHaveValue('Hilo');
+  await expect(state).toHaveValue('HI');
+});
