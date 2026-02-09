@@ -206,6 +206,23 @@ function preprocessNumber(value: unknown) {
 function parseCityStateZip(line: string) {
   const trimmed = line.trim();
   if (!trimmed) return { city: '', state: '', zip: '' };
+  const commaParts = trimmed
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (commaParts.length >= 2) {
+    const city = commaParts[0] ?? '';
+    const remainderRaw = commaParts.slice(1).join(' ').trim();
+    const zipMatch = remainderRaw.match(/(\d{1,5}(?:-\d{0,4})?)$/);
+    const zip = zipMatch?.[1] ?? '';
+    const remainder = zip ? remainderRaw.slice(0, zipMatch!.index).trim() : remainderRaw;
+    const state = remainder.split(/\s+/).filter(Boolean).pop()?.toUpperCase() ?? '';
+    return {
+      city,
+      state,
+      zip
+    };
+  }
   const zipMatch = trimmed.match(/(?:^|\s)(\d{1,5}(?:-\d{0,4})?)$/);
   const zip = zipMatch?.[1] ?? '';
   const zipIndex = zipMatch?.index ?? trimmed.length;
@@ -242,6 +259,15 @@ function parseAddressParts(value: unknown): AddressParts {
     .map((part) => part.trim())
     .filter(Boolean);
   if (commaParts.length >= 3 && !raw.includes('\n')) {
+    if (!looksLikeStreetLine(commaParts[0] ?? '')) {
+      const parsed = parseCityStateZip(raw);
+      return {
+        ...EMPTY_ADDRESS_PARTS,
+        city: parsed.city,
+        state: parsed.state,
+        zip: parsed.zip
+      };
+    }
     const stateZip = parseCityStateZip(commaParts.slice(2).join(', '));
     return {
       street: commaParts[0] ?? '',
@@ -1515,6 +1541,8 @@ export default function RegisterForm({
                         <Label htmlFor={`person-${index}-address-street`}>Street Address</Label>
                         <Input
                           id={`person-${index}-address-street`}
+                          name={`people.${index}.address_street`}
+                          autoComplete="address-line1"
                           placeholder="123 Main St"
                           readOnly={isReadOnly}
                           className={isReadOnly ? contactClass : ''}
@@ -1526,6 +1554,8 @@ export default function RegisterForm({
                         <Label htmlFor={`person-${index}-address-line2`}>Address Line 2 (Optional)</Label>
                         <Input
                           id={`person-${index}-address-line2`}
+                          name={`people.${index}.address_line2`}
+                          autoComplete="address-line2"
                           placeholder="Apt, suite, unit, building, floor, etc."
                           readOnly={isReadOnly}
                           className={isReadOnly ? contactClass : ''}
@@ -1537,6 +1567,8 @@ export default function RegisterForm({
                         <Label htmlFor={`person-${index}-address-city`}>City</Label>
                         <Input
                           id={`person-${index}-address-city`}
+                          name={`people.${index}.address_city`}
+                          autoComplete="address-level2"
                           placeholder="Hilo"
                           readOnly={isReadOnly}
                           className={isReadOnly ? contactClass : ''}
@@ -1548,6 +1580,8 @@ export default function RegisterForm({
                         <Label htmlFor={`person-${index}-address-state`}>State</Label>
                         <Input
                           id={`person-${index}-address-state`}
+                          name={`people.${index}.address_state`}
+                          autoComplete="address-level1"
                           placeholder="HI"
                           readOnly={isReadOnly}
                           className={isReadOnly ? contactClass : ''}
@@ -1559,6 +1593,8 @@ export default function RegisterForm({
                         <Label htmlFor={`person-${index}-address-zip`}>ZIP Code</Label>
                         <Input
                           id={`person-${index}-address-zip`}
+                          name={`people.${index}.address_zip`}
+                          autoComplete="postal-code"
                           placeholder="96720"
                           readOnly={isReadOnly}
                           className={isReadOnly ? contactClass : ''}
@@ -1570,6 +1606,8 @@ export default function RegisterForm({
                         <Label htmlFor={`person-${index}-address-country`}>Country (Optional)</Label>
                         <Input
                           id={`person-${index}-address-country`}
+                          name={`people.${index}.address_country`}
+                          autoComplete="country-name"
                           placeholder="USA"
                           readOnly={isReadOnly}
                           className={isReadOnly ? contactClass : ''}

@@ -216,3 +216,16 @@ test('registration: typing state does not overwrite city', async ({ page }) => {
   await expect(city).toHaveValue('Hilo');
   await expect(state).toHaveValue('HI');
 });
+
+test('registration: state edits recover from comma-heavy city autofill text', async ({ page }) => {
+  await page.goto('/register');
+
+  const city = page.locator('#person-0-address-city');
+  const state = page.locator('#person-0-address-state');
+
+  await city.fill('Taylorsville, UTA, UTAH, UTAH');
+  await state.fill('HI');
+
+  await expect(city).toHaveValue('Taylorsville');
+  await expect(state).toHaveValue('HI');
+});
