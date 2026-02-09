@@ -174,6 +174,68 @@ test('registration: can submit without photo and without who\'s coming display',
   await expect(page).toHaveURL(/\/success\?/);
 });
 
+test('registration: t-shirt-only order does not require attendance days', async ({ page }) => {
+  await page.route('**/api/checkout', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        redirectUrl: '/success?order=order-128&status=pending&method=check&amount=2500'
+      })
+    });
+  });
+
+  await page.goto('/register');
+  await page.locator('input[name="tshirt_only"]').check();
+  await page.locator('input[name="people.0.full_name"]').fill('Shirt Only');
+  await page.locator('input[name="people.0.age"]').fill('30');
+  await page.locator('input[name="people.0.relationship"]').fill('Cousin');
+  await page.locator('select[name="people.0.lineage"]').selectOption('Nawai');
+  await page.locator('input[name="people.0.email"]').fill('shirtonly@example.com');
+  await page.locator('input[name="people.0.phone"]').fill('808-555-6666');
+  await page.locator('#person-0-address-street').fill('123 Shirt Ln');
+  await page.locator('#person-0-address-city').fill('Hilo');
+  await page.locator('#person-0-address-state').fill('HI');
+  await page.locator('#person-0-address-zip').fill('96720');
+  await fillExtraFields(page);
+
+  await page.locator('select[name="people.0.tshirt_category"]').selectOption('mens');
+  await page.locator('select[name="people.0.tshirt_style"]').selectOption('T-shirt');
+  await page.locator('select[name="people.0.tshirt_size"]').selectOption('M');
+  await page.locator('input[name="people.0.tshirt_quantity"]').fill('1');
+  await page.getByLabel('Mail-in check').check();
+  await page.locator('input[name="check_mailing_address_confirm"]').check();
+
+  await page.getByRole('button', { name: 'Submit Registration' }).click();
+  await expect(page).toHaveURL(/\/success\?/);
+});
+
+test('registration: age is required even for t-shirt-only not attending', async ({ page }) => {
+  await page.goto('/register');
+  await page.locator('input[name="tshirt_only"]').check();
+  await page.getByLabel('Attending in person').uncheck();
+  await page.locator('input[name="people.0.full_name"]').fill('Missing Age');
+  await page.locator('input[name="people.0.relationship"]').fill('Cousin');
+  await page.locator('select[name="people.0.lineage"]').selectOption('Nawai');
+  await page.locator('input[name="people.0.email"]').fill('missingage@example.com');
+  await page.locator('input[name="people.0.phone"]').fill('808-555-7777');
+  await page.locator('#person-0-address-street').fill('456 Age Ln');
+  await page.locator('#person-0-address-city').fill('Hilo');
+  await page.locator('#person-0-address-state').fill('HI');
+  await page.locator('#person-0-address-zip').fill('96720');
+  await fillExtraFields(page);
+  await page.locator('select[name="people.0.tshirt_category"]').selectOption('mens');
+  await page.locator('select[name="people.0.tshirt_style"]').selectOption('T-shirt');
+  await page.locator('select[name="people.0.tshirt_size"]').selectOption('M');
+  await page.locator('input[name="people.0.tshirt_quantity"]').fill('1');
+  await page.getByLabel('Mail-in check').check();
+  await page.locator('input[name="check_mailing_address_confirm"]').check();
+
+  await page.getByRole('button', { name: 'Submit Registration' }).click();
+  await expect(page).toHaveURL(/\/register/);
+  await expect(page.getByText('Age is required', { exact: true })).toBeVisible();
+});
+
 test('registration: venmo attendee includes username', async ({ page }) => {
   await page.route('**/api/checkout', async (route) => {
     await route.fulfill({
@@ -212,7 +274,6 @@ test('registration: not attending allows t-shirt only', async ({ page }) => {
   await page.locator('input[name="people.0.age"]').fill('30');
   await page.locator('input[name="people.0.relationship"]').fill('Cousin');
   await page.locator('select[name="people.0.lineage"]').selectOption('Katherine');
-  await page.locator('input[name="people.0.attendance_days"][value="Friday"]').check();
   await page.locator('input[name="people.0.email"]').fill('noshow@example.com');
   await page.locator('input[name="people.0.phone"]').fill('808-555-3333');
   await page.locator('#person-0-address-street').fill('789 Test Ave');

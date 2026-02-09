@@ -21,6 +21,7 @@ const PRIMARY_EMAIL_KEY = 'email';
 const LINEAGE_KEY = 'lineage';
 const LINEAGE_OTHER_KEY = 'lineage_other';
 const AGE_KEY = 'age';
+const ATTENDANCE_DAYS_KEY = 'attendance_days';
 const ATTENDING_KEY = 'attending';
 const SAME_CONTACT_KEY = 'same_contact';
 const SHOW_NAME_KEY = 'show_name';
@@ -340,11 +341,12 @@ function buildFieldSchema(field: RegistrationField) {
     field.field_key === TSHIRT_QUANTITY_KEY;
   const isEmailField = field.field_key === PRIMARY_EMAIL_KEY;
   const isAgeField = field.field_key === AGE_KEY;
+  const isAttendanceDaysField = field.field_key === ATTENDANCE_DAYS_KEY;
   const required =
     !isTshirtField &&
     !isEmailField &&
-    !isAgeField &&
-    (ALWAYS_REQUIRED_KEYS.has(field.field_key) || field.required);
+    !isAttendanceDaysField &&
+    (ALWAYS_REQUIRED_KEYS.has(field.field_key) || field.required || isAgeField);
   const isOptionalCheckbox = OPTIONAL_CHECKBOX_KEYS.has(field.field_key);
   const requiredMessage = `${field.label} is required`;
 
@@ -514,11 +516,23 @@ function buildFormSchema(personSchema: z.ZodTypeAny) {
         const attending = person?.[ATTENDING_KEY] !== false;
         const age = person?.[AGE_KEY];
         const hasAge = typeof age === 'number' && Number.isFinite(age);
-        if (!tshirtOnly && attending && !hasAge) {
+        if (!hasAge) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: 'Age is required for attending participants',
+            message: 'Age is required',
             path: ['people', index, AGE_KEY]
+          });
+        }
+
+        const attendanceDays = person?.[ATTENDANCE_DAYS_KEY];
+        const hasAttendanceDays =
+          Array.isArray(attendanceDays) &&
+          attendanceDays.some((value) => typeof value === 'string' && value.trim().length > 0);
+        if (!tshirtOnly && attending && !hasAttendanceDays) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Select at least one attendance day',
+            path: ['people', index, ATTENDANCE_DAYS_KEY]
           });
         }
       });
@@ -1083,7 +1097,7 @@ export default function RegisterForm({
   const baseTotal = ticketTotalCents + totalTshirtCents;
   const totalCents = baseTotal + donationCents;
   const hasAgeTickets = ageBasedTickets.length > 0;
-  const missingAgeEntry = attendingPeople.find((person) => getParticipantAge(person) === null);
+  const missingAgeEntry = peopleRecords.find((person) => getParticipantAge(person) === null);
   const unmatchedAgeEntry = attendingPeople.find((person) => {
     const age = getParticipantAge(person);
     if (age === null) return false;
@@ -1123,10 +1137,10 @@ export default function RegisterForm({
         if (missingIndex >= 0) {
           setFieldError(`people.${missingIndex}.${AGE_KEY}` as const, {
             type: 'manual',
-            message: 'Age is required for attending participants'
+            message: 'Age is required'
           });
         }
-        setFormError('Please enter an age for every attending participant.');
+        setFormError('Please enter an age for every participant.');
         setLoading(false);
         return;
       }
@@ -1427,6 +1441,7 @@ export default function RegisterForm({
               const isTshirtField = fieldItem.field_key === TSHIRT_SIZE_KEY || fieldItem.field_key === TSHIRT_QUANTITY_KEY;
               const isEmailField = fieldItem.field_key === PRIMARY_EMAIL_KEY;
               const isAgeField = fieldItem.field_key === AGE_KEY;
+              const isAttendanceDaysField = fieldItem.field_key === ATTENDANCE_DAYS_KEY;
               const baseRequired =
                 !isTshirtField &&
                 (ALWAYS_REQUIRED_KEYS.has(fieldItem.field_key) ||
@@ -1435,6 +1450,8 @@ export default function RegisterForm({
               const isRequired = isEmailField
                 ? index === 0
                 : isAgeField
+                ? true
+                : isAttendanceDaysField
                 ? !tshirtOnly && people?.[index]?.[ATTENDING_KEY] !== false
                 : baseRequired;
               const options = Array.isArray(fieldItem.options) ? fieldItem.options : [];
@@ -2275,6 +2292,7 @@ export default function RegisterForm({
 
 function getFormErrorMessages(errors: Record<string, any>, formError?: string | null) {
   const messages: string[] = [];
+  const visited = new WeakSet<object>();
 
   const collect = (value: any) => {
     if (!value) return;
@@ -2283,6 +2301,8 @@ function getFormErrorMessages(errors: Record<string, any>, formError?: string | 
       return;
     }
     if (typeof value === 'object') {
+      if (visited.has(value)) return;
+      visited.add(value);
       if (typeof value.message === 'string') {
         messages.push(value.message);
       }
