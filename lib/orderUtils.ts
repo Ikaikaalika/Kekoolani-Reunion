@@ -3,6 +3,7 @@ export type PersonRecord = Record<string, unknown>;
 export type OrderParticipant = {
   index: number;
   name: string;
+  email: string;
   attending: boolean;
   refunded: boolean;
   showName: boolean;
@@ -44,6 +45,11 @@ export function getParticipantName(person: PersonRecord): string {
   return name.trim();
 }
 
+export function getParticipantEmail(person: PersonRecord): string {
+  const email = typeof person.email === 'string' ? person.email : '';
+  return email.trim();
+}
+
 export function isParticipantAttending(person: PersonRecord): boolean {
   return person.attending !== false;
 }
@@ -58,6 +64,7 @@ export function normalizeOrderParticipants(answers: unknown): OrderParticipant[]
   return people.map((person, index) => ({
     index,
     name: getParticipantName(person) || `Participant ${index + 1}`,
+    email: getParticipantEmail(person),
     attending: isParticipantAttending(person),
     refunded: isParticipantRefunded(person),
     showName: typeof person.show_name === 'boolean' ? person.show_name : true,

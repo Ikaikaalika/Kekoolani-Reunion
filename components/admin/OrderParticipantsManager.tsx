@@ -1,11 +1,13 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { updateOrderParticipantStatus } from '@/lib/actions/orders';
 
 type Participant = {
   index: number;
   name: string;
+  email: string;
   attending: boolean;
   refunded: boolean;
   showName: boolean;
@@ -19,6 +21,7 @@ interface OrderParticipantsManagerProps {
 }
 
 export default function OrderParticipantsManager({ orderId, participants }: OrderParticipantsManagerProps) {
+  const router = useRouter();
   const normalizeItems = (list: Participant[]) =>
     list.map((participant, idx) => ({
       ...participant,
@@ -34,7 +37,7 @@ export default function OrderParticipantsManager({ orderId, participants }: Orde
 
   const updateParticipant = (
     index: number,
-    updates: Partial<Pick<Participant, 'attending' | 'refunded' | 'showName' | 'showPhoto' | 'hasPhoto'>>
+    updates: Partial<Pick<Participant, 'attending' | 'refunded' | 'showName' | 'showPhoto' | 'hasPhoto' | 'email'>>
   ) => {
     if (!canEdit) return;
     const current = items[index];
@@ -53,12 +56,15 @@ export default function OrderParticipantsManager({ orderId, participants }: Orde
         attending: updates.attending ?? current.attending,
         refunded: updates.refunded ?? current.refunded,
         showName: updates.showName ?? current.showName,
-        showPhoto: updates.showPhoto ?? current.showPhoto
+        showPhoto: updates.showPhoto ?? current.showPhoto,
+        ...(typeof updates.email === 'string' ? { email: updates.email } : {})
       });
 
       if ('error' in result) {
         setItems(items);
         setError(result.error ?? 'Unable to update participant');
+      } else if (typeof updates.email === 'string' && index === 0) {
+        router.refresh();
       }
       setPendingIndex(null);
     });
@@ -106,6 +112,30 @@ export default function OrderParticipantsManager({ orderId, participants }: Orde
               disabled={isPending && pendingIndex === idx}
             >
               Delete
+            </button>
+          </div>
+          <div className="mt-2 flex flex-wrap items-end gap-2">
+            <div className="min-w-[220px] flex-1">
+              <label className="block text-[11px] font-semibold uppercase tracking-[0.1em] text-koa">Email</label>
+              <input
+                type="email"
+                value={participant.email ?? ''}
+                disabled={isPending && pendingIndex === idx}
+                className="mt-1 w-full rounded-lg border border-sand-200 bg-white px-2 py-1 text-xs text-sand-900"
+                onChange={(event) => {
+                  const nextItems = [...items];
+                  nextItems[idx] = { ...participant, email: event.target.value, index: idx };
+                  setItems(nextItems);
+                }}
+              />
+            </div>
+            <button
+              type="button"
+              className="rounded-full border border-brandBlue/30 bg-white px-3 py-1 text-[11px] font-semibold text-brandBlue transition hover:bg-brandBlue hover:text-white"
+              onClick={() => updateParticipant(idx, { email: participant.email ?? '' })}
+              disabled={isPending && pendingIndex === idx}
+            >
+              Save email
             </button>
           </div>
           <div className="mt-2 flex flex-wrap gap-3 text-xs text-koa">

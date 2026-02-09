@@ -4,6 +4,7 @@ import { formatCurrency } from '@/lib/utils';
 import { REGISTRATION_FORM_FIELDS } from '@/lib/registrationGuidelines';
 import OrderParticipantsManager from '@/components/admin/OrderParticipantsManager';
 import DeleteEmptyOrderButton from '@/components/admin/DeleteEmptyOrderButton';
+import ResendReceiptButton from '@/components/admin/ResendReceiptButton';
 import {
   buildTicketPriceSlots,
   calculateNetTotalCents,
@@ -169,7 +170,10 @@ export default async function AdminOrdersPage() {
                     <OrderParticipantsManager orderId={order.id} participants={participants} />
                   </td>
                   <td className="py-3 pr-6 text-xs text-koa">
-                    {isEmptyOrder ? <DeleteEmptyOrderButton orderId={order.id} /> : '-'}
+                    <div className="space-y-2">
+                      <ResendReceiptButton orderId={order.id} initialEmail={order.purchaser_email} />
+                      {isEmptyOrder ? <DeleteEmptyOrderButton orderId={order.id} /> : null}
+                    </div>
                   </td>
                   {staticFields.map((field) => (
                     <td key={`${order.id}-${field.key}`} className="py-3 pr-6 text-xs text-koa">
