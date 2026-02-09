@@ -13,6 +13,13 @@ test('unsubscribe endpoint accepts valid token', async ({ request }) => {
   expect(body.ok).toBeTruthy();
 });
 
+test('unsubscribe endpoint rejects malformed token', async ({ request }) => {
+  const response = await request.get('/api/unsubscribe?email=unsubscribe-test@example.com&token=badtoken');
+  expect(response.status()).toBe(403);
+  const body = await response.json();
+  expect(body.error).toBe('Invalid token.');
+});
+
 test('ses webhook accepts bounce notifications', async ({ request }) => {
   const payload = {
     Type: 'Notification',
