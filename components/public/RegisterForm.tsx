@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { formatCurrency } from '@/lib/utils';
+import { calculateStripeProcessingFeeCents } from '@/lib/stripeFees';
 import { optionalEmailSchema, requiredEmailSchema } from '@/lib/emailValidation';
 import { uploadRegistrationImage } from '@/lib/actions/blob';
 import type { RegistrationField } from '@/lib/registrationFields';
@@ -1094,8 +1095,10 @@ export default function RegisterForm({
     if (!ticket || isTshirtTicket(ticket)) return sum;
     return sum + ticket.price_cents * (Number.isFinite(item.quantity) ? item.quantity : 0);
   }, 0);
-  const baseTotal = ticketTotalCents + totalTshirtCents;
-  const totalCents = baseTotal + donationCents;
+  const subtotalCents = ticketTotalCents + totalTshirtCents + donationCents;
+  const stripeProcessingFeeCents =
+    paymentMethod === 'stripe' && subtotalCents > 0 ? calculateStripeProcessingFeeCents(subtotalCents) : 0;
+  const totalCents = subtotalCents + stripeProcessingFeeCents;
   const hasAgeTickets = ageBasedTickets.length > 0;
   const missingAgeEntry = peopleRecords.find((person) => getParticipantAge(person) === null);
   const unmatchedAgeEntry = attendingPeople.find((person) => {
@@ -2113,6 +2116,12 @@ export default function RegisterForm({
             </label>
           </div>
           {isZeroBalance && <p className="text-xs text-koa">No payment is required for this registration.</p>}
+          {paymentMethod === 'stripe' && stripeProcessingFeeCents > 0 && (
+            <p className="text-xs text-koa">
+              Card processing fee: <span className="font-semibold text-black">{formatCurrency(stripeProcessingFeeCents)}</span>{' '}
+              (included in total)
+            </p>
+          )}
           {errors.payment_method && <p className="text-xs text-red-500">{errors.payment_method.message}</p>}
           {paymentMethod === 'paypal' && !isZeroBalance && (
             <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-koa">

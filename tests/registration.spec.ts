@@ -1,5 +1,12 @@
 import { test, expect } from '@playwright/test';
 
+function parseCurrencyToCents(value: string) {
+  const normalized = value.replace(/[^0-9.-]/g, '');
+  const amount = Number(normalized);
+  if (!Number.isFinite(amount)) return 0;
+  return Math.round(amount * 100);
+}
+
 async function fillExtraFields(page: any) {
   const knownFields = new Set([
     'people.0.full_name',
@@ -96,6 +103,31 @@ test('registration: paid attendee with t-shirt and paypal link', async ({ page }
   await expect(page).toHaveURL(/\/success\?/);
   await expect(page.getByText('Pay with PayPal')).toBeVisible();
   await expect(page.getByText('($60.00 USD)')).toBeVisible();
+});
+
+test('registration: stripe total includes buyer-paid card processing fee', async ({ page }) => {
+  await page.goto('/register');
+  await fillPrimaryParticipant(page);
+
+  const totalAmount = page.locator('div.rounded-2xl.bg-deep p.text-2xl.font-semibold');
+
+  await page.getByLabel('Mail-in check').check();
+  const subtotalText = (await totalAmount.textContent()) ?? '$0.00';
+  const subtotalCents = parseCurrencyToCents(subtotalText);
+
+  await page.getByLabel(/Pay with Card/).check();
+  const feeNote = page.getByText(/Card processing fee:/);
+  await expect(feeNote).toBeVisible();
+  const feeText = (await feeNote.textContent()) ?? '';
+  const feeMatch = feeText.match(/\$[0-9,]+\.\d{2}/);
+  expect(feeMatch).toBeTruthy();
+  const feeCents = parseCurrencyToCents(feeMatch![0]);
+
+  const stripeTotalText = (await totalAmount.textContent()) ?? '$0.00';
+  const stripeTotalCents = parseCurrencyToCents(stripeTotalText);
+
+  expect(feeCents).toBeGreaterThan(0);
+  expect(stripeTotalCents).toBe(subtotalCents + feeCents);
 });
 
 test('registration: free attendee disables payment options', async ({ page }) => {

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { checkoutSchema } from '@/lib/validators';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getStripeClient, isStripeCheckoutEnabled } from '@/lib/stripe';
+import { calculateStripeProcessingFeeCents } from '@/lib/stripeFees';
 import { getParticipantAge, getPeopleFromAnswers, isParticipantAttending, selectTicketForAge } from '@/lib/orderUtils';
 import { SITE_SETTINGS_ID } from '@/lib/constants';
 import { getSiteExtras } from '@/lib/siteContent';
@@ -307,6 +308,15 @@ export async function POST(request: Request) {
     if (donationCents > 0) {
       totalCents += donationCents;
     }
+    const subtotalCents = totalCents;
+    const stripeProcessingFeeCents =
+      paymentMethod === 'stripe' ? calculateStripeProcessingFeeCents(subtotalCents) : 0;
+    if (stripeProcessingFeeCents > 0) {
+      totalCents += stripeProcessingFeeCents;
+      answers.stripe_processing_fee_cents = stripeProcessingFeeCents;
+    } else if ('stripe_processing_fee_cents' in answers) {
+      delete answers.stripe_processing_fee_cents;
+    }
     if (totalCents > 0 && (paymentMethod === 'paypal' || paymentMethod === 'venmo') && !paymentAccountUsername) {
       return NextResponse.json({ error: `${paymentMethod === 'paypal' ? 'PayPal' : 'Venmo'} username is required.` }, { status: 400 });
     }
@@ -465,11 +475,14 @@ export async function POST(request: Request) {
           ? orderItems.map((item) => `${item.quantity} × ${item.name}`).join('; ')
           : 'No tickets selected.';
         const donationLine = donationCents > 0 ? `Donation: ${formatCurrency(donationCents)}` : '';
+        const stripeFeeLine =
+          stripeProcessingFeeCents > 0 ? `Card processing fee: ${formatCurrency(stripeProcessingFeeCents)}` : '';
         const orderSummaryHtml = `
 <p><strong>Order details:</strong></p>
 <ul>
   <li>Tickets: ${ticketSummary}</li>
   ${donationCents > 0 ? `<li>${donationLine}</li>` : ''}
+  ${stripeProcessingFeeCents > 0 ? `<li>${stripeFeeLine}</li>` : ''}
   ${paymentAccountLine ? `<li>${paymentAccountLine}</li>` : ''}
   <li>Total attendees: ${attendingPeople.length}</li>
 </ul>`;
@@ -477,20 +490,33 @@ export async function POST(request: Request) {
           'Order details:',
           `Tickets: ${ticketSummary}`,
           donationCents > 0 ? donationLine : '',
+          stripeProcessingFeeCents > 0 ? stripeFeeLine : '',
           paymentAccountLine ? paymentAccountLine : '',
           `Total attendees: ${attendingPeople.length}`
         ]
           .filter(Boolean)
           .join('\n');
-        const orderLineItems = orderItems.map((item) => {
-          const lineTotal = item.unit_amount * item.quantity;
-          return {
-            label: item.name,
-            quantity: item.quantity,
-            unit: formatCurrency(item.unit_amount),
-            total: formatCurrency(lineTotal)
-          };
-        });
+        const orderLineItems = [
+          ...orderItems.map((item) => {
+            const lineTotal = item.unit_amount * item.quantity;
+            return {
+              label: item.name,
+              quantity: item.quantity,
+              unit: formatCurrency(item.unit_amount),
+              total: formatCurrency(lineTotal)
+            };
+          }),
+          ...(stripeProcessingFeeCents > 0
+            ? [
+                {
+                  label: 'Card Processing Fee',
+                  quantity: 1,
+                  unit: formatCurrency(stripeProcessingFeeCents),
+                  total: formatCurrency(stripeProcessingFeeCents)
+                }
+              ]
+            : [])
+        ];
         const orderLineItemsHtml = orderLineItems.length
           ? `<ul>${orderLineItems
               .map((item) => `<li>${item.label} — ${item.quantity} × ${item.unit} = ${item.total}</li>`)
@@ -665,6 +691,18 @@ ${jadeAddressHtml}
           unit_amount: donationCents,
           product_data: {
             name: 'Reunion Donation'
+          }
+        },
+        quantity: 1
+      });
+    }
+    if (stripeProcessingFeeCents > 0) {
+      stripeLineItems.push({
+        price_data: {
+          currency: 'usd',
+          unit_amount: stripeProcessingFeeCents,
+          product_data: {
+            name: 'Card Processing Fee'
           }
         },
         quantity: 1
