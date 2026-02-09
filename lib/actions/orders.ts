@@ -289,6 +289,36 @@ type UpdateOrderStatusPayload = {
   status: 'pending' | 'paid' | 'canceled';
 };
 
+type UpdateOrderPurchaserNamePayload = {
+  orderId: string;
+  purchaserName: string;
+};
+
+export async function updateOrderPurchaserName(payload: UpdateOrderPurchaserNamePayload) {
+  await requireAdmin();
+  const orderId = payload.orderId?.trim();
+  const purchaserName = payload.purchaserName?.trim();
+
+  if (!orderId) {
+    return { error: 'Order id required' };
+  }
+  if (!purchaserName) {
+    return { error: 'Purchaser name is required' };
+  }
+
+  const admin = supabaseAdmin as any;
+  const { error } = await admin.from('orders').update({ purchaser_name: purchaserName }).eq('id', orderId);
+  if (error) {
+    return { error: 'Failed to update purchaser name' };
+  }
+
+  revalidatePath('/');
+  revalidatePath('/admin');
+  revalidatePath('/admin/orders');
+
+  return { ok: true as const, purchaserName };
+}
+
 export async function updateOrderStatus(formData: FormData) {
   await requireAdmin();
   const orderId = String(formData.get('order_id') ?? '');

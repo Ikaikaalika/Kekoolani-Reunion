@@ -5,6 +5,7 @@ import { REGISTRATION_FORM_FIELDS } from '@/lib/registrationGuidelines';
 import OrderParticipantsManager from '@/components/admin/OrderParticipantsManager';
 import DeleteEmptyOrderButton from '@/components/admin/DeleteEmptyOrderButton';
 import ResendReceiptButton from '@/components/admin/ResendReceiptButton';
+import EditOrderPurchaserName from '@/components/admin/EditOrderPurchaserName';
 import {
   buildTicketPriceSlots,
   calculateNetTotalCents,
@@ -122,7 +123,9 @@ export default async function AdminOrdersPage() {
                   <td className="py-3 pr-6 whitespace-nowrap text-xs text-koa">
                     {new Date(order.created_at).toLocaleString()}
                   </td>
-                  <td className="py-3 pr-6">{order.purchaser_name}</td>
+                  <td className="py-3 pr-6">
+                    <EditOrderPurchaserName orderId={order.id} initialName={order.purchaser_name} />
+                  </td>
                   <td className="py-3 pr-6 text-xs text-koa">{order.purchaser_email}</td>
                   <td className="py-3 pr-6">
                     <div className="space-y-2">
