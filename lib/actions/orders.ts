@@ -294,6 +294,189 @@ type UpdateOrderPurchaserNamePayload = {
   purchaserName: string;
 };
 
+type UpdateOrderDetailsPayload = {
+  orderId: string;
+  purchaserName: string;
+  purchaserEmail: string;
+  status: 'pending' | 'paid' | 'canceled';
+  paymentMethod: string;
+  totalCents: number;
+  stripeSessionId: string;
+  formAnswersJson: string;
+  orderItemsJson: string;
+};
+
+type EditableOrderItem = {
+  ticket_type_id: string;
+  quantity: number;
+};
+
+const ALLOWED_ORDER_STATUSES = new Set<UpdateOrderStatusPayload['status']>(['pending', 'paid', 'canceled']);
+const ALLOWED_PAYMENT_METHODS = new Set(['stripe', 'paypal', 'venmo', 'check']);
+
+function parseOrderItemsJson(raw: string): { items: EditableOrderItem[]; error?: string } {
+  if (!raw.trim()) {
+    return { items: [] };
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return { items: [], error: 'Order items must be valid JSON.' };
+  }
+
+  if (!Array.isArray(parsed)) {
+    return { items: [], error: 'Order items JSON must be an array.' };
+  }
+
+  const combined = new Map<string, number>();
+  for (let index = 0; index < parsed.length; index += 1) {
+    const item = parsed[index];
+    if (!item || typeof item !== 'object') {
+      return { items: [], error: `Order item #${index + 1} must be an object.` };
+    }
+    const record = item as Record<string, unknown>;
+    const ticketTypeId = typeof record.ticket_type_id === 'string' ? record.ticket_type_id.trim() : '';
+    const quantityRaw = record.quantity;
+    const quantity = typeof quantityRaw === 'number' ? quantityRaw : Number(quantityRaw);
+
+    if (!ticketTypeId) {
+      return { items: [], error: `Order item #${index + 1} is missing ticket_type_id.` };
+    }
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      return { items: [], error: `Order item #${index + 1} must have a positive integer quantity.` };
+    }
+
+    combined.set(ticketTypeId, (combined.get(ticketTypeId) ?? 0) + quantity);
+  }
+
+  return {
+    items: Array.from(combined.entries()).map(([ticket_type_id, quantity]) => ({ ticket_type_id, quantity }))
+  };
+}
+
+function parseFormAnswersJson(raw: string): { answers: Record<string, unknown>; error?: string } {
+  if (!raw.trim()) {
+    return { answers: {} };
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return { answers: {}, error: 'Form answers must be valid JSON.' };
+  }
+
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return { answers: {}, error: 'Form answers JSON must be an object.' };
+  }
+
+  return { answers: parsed as Record<string, unknown> };
+}
+
+export async function updateOrderDetails(payload: UpdateOrderDetailsPayload) {
+  await requireAdmin();
+
+  const orderId = payload.orderId?.trim();
+  const purchaserName = payload.purchaserName?.trim();
+  const purchaserEmailRaw = payload.purchaserEmail?.trim();
+  const status = payload.status;
+  const paymentMethodRaw = payload.paymentMethod?.trim().toLowerCase();
+  const totalCents = Number(payload.totalCents);
+  const stripeSessionId = payload.stripeSessionId?.trim() || null;
+
+  if (!orderId) {
+    return { error: 'Order id required.' };
+  }
+  if (!purchaserName) {
+    return { error: 'Purchaser name is required.' };
+  }
+  if (!purchaserEmailRaw) {
+    return { error: 'Purchaser email is required.' };
+  }
+  const emailValidation = validateEmailAddress(purchaserEmailRaw);
+  if (!emailValidation.isValid) {
+    return { error: emailValidation.message ?? 'Invalid purchaser email.' };
+  }
+  if (!ALLOWED_ORDER_STATUSES.has(status)) {
+    return { error: 'Invalid order status.' };
+  }
+  if (!Number.isInteger(totalCents) || totalCents < 0) {
+    return { error: 'Total cents must be a non-negative integer.' };
+  }
+  if (paymentMethodRaw && !ALLOWED_PAYMENT_METHODS.has(paymentMethodRaw)) {
+    return { error: 'Payment method must be stripe, paypal, venmo, check, or blank.' };
+  }
+
+  const { answers, error: answersError } = parseFormAnswersJson(payload.formAnswersJson ?? '');
+  if (answersError) {
+    return { error: answersError };
+  }
+
+  const { items, error: itemsError } = parseOrderItemsJson(payload.orderItemsJson ?? '');
+  if (itemsError) {
+    return { error: itemsError };
+  }
+
+  const admin = supabaseAdmin as any;
+  const normalizedEmail = normalizeEmail(purchaserEmailRaw);
+
+  if (items.length > 0) {
+    const ticketIds = items.map((item) => item.ticket_type_id);
+    const { data: ticketRows, error: ticketError } = await admin.from('ticket_types').select('id').in('id', ticketIds);
+    if (ticketError) {
+      return { error: 'Unable to validate ticket types.' };
+    }
+    const existingIds = new Set((ticketRows ?? []).map((row: { id: string }) => row.id));
+    const missingId = ticketIds.find((id) => !existingIds.has(id));
+    if (missingId) {
+      return { error: `Ticket type not found: ${missingId}` };
+    }
+  }
+
+  const { error: orderError } = await admin
+    .from('orders')
+    .update({
+      purchaser_name: purchaserName,
+      purchaser_email: normalizedEmail,
+      status,
+      payment_method: paymentMethodRaw || null,
+      total_cents: totalCents,
+      stripe_session_id: stripeSessionId,
+      form_answers: answers
+    })
+    .eq('id', orderId);
+
+  if (orderError) {
+    return { error: 'Failed to update order details.' };
+  }
+
+  const { error: deleteItemsError } = await admin.from('order_items').delete().eq('order_id', orderId);
+  if (deleteItemsError) {
+    return { error: 'Failed to replace order items.' };
+  }
+
+  if (items.length > 0) {
+    const { error: insertItemsError } = await admin.from('order_items').insert(
+      items.map((item) => ({
+        order_id: orderId,
+        ticket_type_id: item.ticket_type_id,
+        quantity: item.quantity
+      }))
+    );
+    if (insertItemsError) {
+      return { error: 'Failed to save order items.' };
+    }
+  }
+
+  revalidatePath('/');
+  revalidatePath('/admin');
+  revalidatePath('/admin/orders');
+
+  return { ok: true as const };
+}
+
 export async function updateOrderPurchaserName(payload: UpdateOrderPurchaserNamePayload) {
   await requireAdmin();
   const orderId = payload.orderId?.trim();

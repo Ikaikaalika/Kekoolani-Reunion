@@ -6,6 +6,7 @@ import OrderParticipantsManager from '@/components/admin/OrderParticipantsManage
 import DeleteEmptyOrderButton from '@/components/admin/DeleteEmptyOrderButton';
 import ResendReceiptButton from '@/components/admin/ResendReceiptButton';
 import EditOrderPurchaserName from '@/components/admin/EditOrderPurchaserName';
+import EditOrderDetailsPanel from '@/components/admin/EditOrderDetailsPanel';
 import {
   buildTicketPriceSlots,
   calculateNetTotalCents,
@@ -176,6 +177,20 @@ export default async function AdminOrdersPage() {
                     <div className="space-y-2">
                       <ResendReceiptButton orderId={order.id} initialEmail={order.purchaser_email} />
                       {isEmptyOrder ? <DeleteEmptyOrderButton orderId={order.id} /> : null}
+                      <EditOrderDetailsPanel
+                        orderId={order.id}
+                        initialPurchaserName={order.purchaser_name}
+                        initialPurchaserEmail={order.purchaser_email}
+                        initialStatus={order.status}
+                        initialPaymentMethod={order.payment_method}
+                        initialTotalCents={order.total_cents}
+                        initialStripeSessionId={order.stripe_session_id}
+                        initialFormAnswers={answerRecord}
+                        initialOrderItems={(order.order_items ?? []).map((item) => ({
+                          ticket_type_id: item.ticket_type_id,
+                          quantity: item.quantity
+                        }))}
+                      />
                     </div>
                   </td>
                   {staticFields.map((field) => (
