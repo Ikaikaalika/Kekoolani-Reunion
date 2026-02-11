@@ -13,6 +13,7 @@ const PAYMENT_LABELS: Record<string, string> = {
 
 const PAYPAL_LINK = process.env.NEXT_PUBLIC_PAYPAL_LINK ?? '';
 const CHECK_MAILING_ADDRESS_LINES = ['PO Box 10124', 'Hilo, HI 96721'];
+const CHECK_MAILING_ADDRESS = CHECK_MAILING_ADDRESS_LINES.join(', ');
 
 function buildPayPalLink(baseLink: string, amountCents?: number | null) {
   if (!baseLink) return '';
@@ -133,7 +134,8 @@ export default async function SuccessPage({
       : []),
     ...(method === 'check'
       ? [
-          'Review the mail-in check box below for the exact amount and mailing address.',
+          `Mail your check to ${CHECK_MAILING_ADDRESS}.`,
+          'Review the mail-in check card below for the exact amount and mailing address.',
           'After you mail the check, return to this page and click \"Back to Registration\" to register another person, or \"Return Home\" if you are done.'
         ]
       : []),
@@ -157,6 +159,11 @@ export default async function SuccessPage({
         <div className="max-w-xl space-y-3 text-lg text-koa">
           <p>{message}</p>
           <p>{receiptMessage}</p>
+          {method === 'check' && (
+            <p>
+              Mail checks to <span className="font-semibold text-black">{CHECK_MAILING_ADDRESS}</span>.
+            </p>
+          )}
           {showPayPalLink && (
             <p>
               Use the PayPal link below to complete your payment

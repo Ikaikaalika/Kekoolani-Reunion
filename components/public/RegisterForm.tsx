@@ -2107,12 +2107,21 @@ export default function RegisterForm({
               <span>Venmo</span>
             </label>
             <label
-              className={`flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm ${
+              className={`flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm ${
                 isZeroBalance ? 'cursor-not-allowed opacity-60' : ''
               }`}
             >
-              <input type="radio" value="check" className="h-4 w-4" disabled={isZeroBalance} {...register('payment_method')} />
-              <span>Mail-in check</span>
+              <input
+                type="radio"
+                value="check"
+                className="mt-0.5 h-4 w-4"
+                disabled={isZeroBalance}
+                {...register('payment_method')}
+              />
+              <span className="flex flex-col">
+                <span>Mail-in check</span>
+                <span className="text-xs text-koa">Mail to {CHECK_MAILING_ADDRESS}</span>
+              </span>
             </label>
           </div>
           {isZeroBalance && <p className="text-xs text-koa">No payment is required for this registration.</p>}
@@ -2173,11 +2182,14 @@ export default function RegisterForm({
                 Amount to mail: <span className="font-semibold text-black">{formatCurrency(totalCents)}</span>
               </p>
               <p className="mt-1">
-                Mailing: <span className="font-semibold text-black">{CHECK_MAILING_ADDRESS}</span>
+                Mail to: <span className="font-semibold text-black">{CHECK_MAILING_ADDRESS}</span>
               </p>
               <label className="mt-3 flex items-start gap-3 rounded-xl border border-slate-200 bg-sand-50 px-4 py-3 text-sm">
                 <input type="checkbox" className="mt-1 h-4 w-4" {...register('check_mailing_address_confirm')} />
-                <span>I have this mailing address and will mail the check for the amount above.</span>
+                <span>
+                  I have this mailing address (<span className="font-semibold text-black">{CHECK_MAILING_ADDRESS}</span>) and will
+                  mail the check for the amount above.
+                </span>
               </label>
               {errors.check_mailing_address_confirm && (
                 <p className="mt-2 text-xs text-red-500">{errors.check_mailing_address_confirm.message}</p>

@@ -23,6 +23,7 @@ type AttendeeInsert = Database['public']['Tables']['attendees']['Insert'];
 type OrderItemPayload = { ticket_type_id: string; quantity: number };
 const JADE_HOME_ADDRESS_LINES = ['224 Hokulani Street', 'Hilo, Hawaii 96720'];
 const CHECK_MAILING_ADDRESS_LINES = ['PO Box 10124', 'Hilo, HI 96721'];
+const CHECK_MAILING_ADDRESS = CHECK_MAILING_ADDRESS_LINES.join(', ');
 
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX = 20;
@@ -433,8 +434,8 @@ export async function POST(request: Request) {
           : '';
         const jadeAddressHtml = `<p><strong>Jade's Home Address:</strong><br/>${JADE_HOME_ADDRESS_LINES.join('<br/>')}</p>`;
         const jadeAddressText = [`Jade's Home Address:`, ...JADE_HOME_ADDRESS_LINES].join('\n');
-        const checkAddressHtml = `<p><strong>Mailing Address:</strong><br/>${CHECK_MAILING_ADDRESS_LINES.join('<br/>')}</p>`;
-        const checkAddressText = ['Mailing Address:', ...CHECK_MAILING_ADDRESS_LINES].join('\n');
+        const checkAddressHtml = `<p><strong>Mail to:</strong> ${CHECK_MAILING_ADDRESS}<br/><strong>Mailing Address:</strong><br/>${CHECK_MAILING_ADDRESS_LINES.join('<br/>')}</p>`;
+        const checkAddressText = ['Mail to: ' + CHECK_MAILING_ADDRESS, 'Mailing Address:', ...CHECK_MAILING_ADDRESS_LINES].join('\n');
         const checkPaymentInstructionsHtml =
           paymentMethod === 'check' && totalCents > 0
             ? `<p><strong>Mail-in Check Instructions:</strong><br/><strong>Amount to mail:</strong> ${formattedTotal}</p>${checkAddressHtml}`
