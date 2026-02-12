@@ -176,6 +176,13 @@ export default async function PublicLayout({ children }: { children: ReactNode }
           <div className="mt-12 border-t border-white/10 pt-8 text-center text-sm text-white/60">
             <p>Made with Aloha by Tyler Alika Gee.</p>
             <p className="mt-2">© {new Date().getFullYear()} Kekoʻolani Family Reunion. All rights reserved.</p>
+            <p className="mt-2">
+              For website changes or bugs please contact{' '}
+              <a href="mailto:alika@kekoolanireunion.com" className="underline decoration-white/40 underline-offset-2">
+                alika@kekoolanireunion.com
+              </a>
+              .
+            </p>
           </div>
         </div>
       </footer>
