@@ -72,7 +72,7 @@ nextExtras.lodging_links = [
   },
   {
     label: 'Hilo Hawaiian Hotel form with group code',
-    href: 'https://drive.google.com/file/d/1_tlRIQ5jtG7uWn1XXmIDfzr59vi-NF-p/view?usp=sharing'
+    href: '/assets/site/Hilo-Hawaiian-Hotel-Group-Code.pdf'
   }
 ];
 nextExtras.paypal_handle = 'JadeSilva224';
